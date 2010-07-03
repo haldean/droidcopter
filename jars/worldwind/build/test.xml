@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--$Id: test.xml 9076 2009-02-27 23:42:40Z jlittle $-->
+<project name="test">
+ 
+	<target name="compile.tests">
+	    <mkdir dir="${worldwind.test.classes.dir}"/>
+        <javac destdir="${worldwind.test.classes.dir}" fork="true">
+            <src path="${worldwind.test.src.dir}"/>
+			<classpath>
+                <pathelement path="${worldwind.classes.dir}"/>
+				<pathelement location="jogl.jar"/>
+                <pathelement location="gluegen-rt.jar"/>
+                <pathelement location="${java.home}/lib/plugin.jar"/>
+            </classpath>
+        </javac>
+	</target>
+ 
+	<target name="run.tests" depends="compile.tests">
+	  <mkdir dir="${test.reports.dir}"/>
+		<junit haltonfailure="no">
+		 <formatter type="xml"/>
+		  <batchtest todir="${test.reports.dir}">
+			<fileset dir="${worldwind.test.classes.dir}">
+			  <include name="**/*Test*.class"/>
+			</fileset>
+		  </batchtest>
+		</junit>
+	</target>
+ 
+</project>

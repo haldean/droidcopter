@@ -1,0 +1,34 @@
+#+TODO: TODO PROGRESS | DONE
+* TODO First Programming Iteration
+** DONE Automatic Frame Rate Compensation				   :Ben:
+   CLOSED: [2010-05-03 Mon 22:18]*
+** DONE Data receiver on chopper					   :Ben:
+   CLOSED: [2010-05-03 Mon 22:19]
+** DONE Data transmitter on host 					  :Will:
+   CLOSED: [2010-05-02 Sun 21:00]
+** TODO Authentication on server					  :Will:
+** DONE Teach Ben git							  :Will:
+   CLOSED: [2010-05-02 Sun 10:31]
+** TODO Flight control							  :Will:
+** TODO Stability							   :Ben:
+** TODO Navigation							   :Ben:
+** TODO Host commands							  :Will:
+** TODO Raw statistics							  :Will:
+*** Visualization of bounds and accuracy
+** DONE Acceleration visualization					  :Will:
+   CLOSED: [2010-05-02 Sun 21:00]
+*** Graphs of acceleration over time
+*** Graph labels
+*** Textual data
+**** Running average
+**** Delta from running average
+**** Accuracy
+** TODO Pressure sensor as altimeter					  :Will:
+** TODO Transmit battery data						   :Ben:
+** TODO Visualize battery data						  :Will:
+
+* TODO First Hardware Iteration
+** TODO Radio control of motors						  :Will:
+** TODO Serial port from Arduino to Droid				  :Will:
+** TODO Buy hardware							  :Both:
+** TODO Pressure sensor

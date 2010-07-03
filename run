@@ -1,0 +1,60 @@
+#!/bin/bash
+
+export CLASSPATH=$CLASSPATH:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
+OSNAME=`uname`
+
+if [ 'Linux' == "$OSNAME" ]; then
+    DOCK=
+else
+    DOCK='-Xdock:icon=img/logo.png -Xdock:name=HorizonServer'
+fi
+
+clean() {
+    echo "Clean old classfiles" 1>&2
+    rm -f org/haldean/chopper/server/*.class
+    echo "Clean backup java files" 1>&2
+    rm -f org/haldean/chopper/server/*.java\~
+}
+
+run() {
+    java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m \
+	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator \
+	-h pices.dynalias.org:23 -d
+}
+
+doc() {
+    javadoc -d doc/ -author org.haldean.chopper.server
+    javadoc -d doc/check/ -doclet com.sun.tools.doclets.doccheck.DocCheck \
+	-docletpath jars/doccheck.jar org.haldean.chopper.server
+}
+
+check() {
+    checkstyle -c style-checks.xml -r org/ -o doc/check-results.txt
+}
+
+build() {
+    javac org/haldean/chopper/server/ServerCreator.java -Xlint:deprecation
+}
+
+if [ 'clean' == "$1" ]; then
+    clean
+    exit
+fi
+
+if [ 'pack' == "$1" ]; then
+    echo "Creating archive" 1>&2
+    tar -czf server.tar.gz org unit
+elif [ 'doc' == "$1" ]; then
+    doc
+elif [ 'check' == "$1" ]; then
+    clean
+    check
+elif [ 'nobuild' == "$1" ]; then
+    run
+elif [ 'build' == "$1" ]; then
+    clean
+    build
+else
+    clean
+    build && echo "Compiled" 1>&2 && run
+fi

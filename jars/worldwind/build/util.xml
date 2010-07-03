@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--$Id: util.xml 11721 2009-06-18 13:10:04Z tgaskins $-->
+<project name="util">
+
+    <!--
+    ====================================================================================================
+    JOGL setup target.
+    Installs the latest JOGL runtime Jar files and native libraries to the base directory.
+    The JOGL runtime Jar files are required to compile the World Wind source.
+    The JOGL native libraries are required to run all World Wind demos and World Wind based applications.
+    -->
+    <!-- Disabled this on 6/18/09 to eliminate the possibility of downloading JOGL 2 libraries. The JOGL 1-->
+    <!-- libraries are now checked in to the WWJ repository. -->
+    <!--<target name="jogl-setup" description="Set up the JOGL library">-->
+        <!--<mkdir dir="${jogl.dir}"/>-->
+        <!--<mkdir dir="${jogl.dir}/jogl_runtime"/>-->
+        <!--<get src="${jogl.version.url}" dest="${jogl.dir}/version.txt"/>-->
+        <!--<loadfile property="jogl.version.number" srcfile="${jogl.dir}/version.txt"/>-->
+        <!--<property name="jogl.version" value="jogl-${jogl.version.number}"/>-->
+        <!--<get src="${jogl.site.url}/${jogl.version}-macosx-universal.zip" dest="${jogl.dir}/jogl-runtime.zip"-->
+             <!--verbose="on"/>-->
+        <!--<unzip src="${jogl.dir}/jogl-runtime.zip" dest="${jogl.dir}/jogl_runtime" overwrite="true"-->
+               <!--encoding="native-encoding"/>-->
+        <!--<get src="${jogl.site.url}/${jogl.version}-linux-i586.zip" dest="${jogl.dir}/jogl-runtime.zip" verbose="on"/>-->
+        <!--<unzip src="${jogl.dir}/jogl-runtime.zip" dest="${jogl.dir}/jogl_runtime" overwrite="true"-->
+               <!--encoding="native-encoding"/>-->
+        <!--<get src="${jogl.site.url}/${jogl.version}-windows-i586.zip" dest="${jogl.dir}/jogl-runtime.zip" verbose="on"/>-->
+        <!--<unzip src="${jogl.dir}/jogl-runtime.zip" dest="${jogl.dir}/jogl_runtime" overwrite="true"-->
+               <!--encoding="native-encoding"/>-->
+        <!--<move flatten="true" overwrite="true" todir="${basedir}">-->
+            <!--<fileset dir="${jogl.dir}/jogl_runtime">-->
+                <!--<include name="**/lib/*"/>-->
+            <!--</fileset>-->
+        <!--</move>-->
+        <!--<delete dir="${jogl.dir}"/>-->
+    <!--</target>-->
+	
+	<!--
+	====================================================================================================
+	Jar signing support target.
+	The Jar to sign is specified by the parameter "jarfile".
+	Keystore information is read from a keystore properties file ("keystore.properties").
+	If this file exists, and its contents specify a valid keystore, the specified jar is signed.
+	The keystore properties file must be a Java properties file, with at least the following properties
+	defined:
+		keystore.file
+		keystore.alias
+		keystore.storepass
+	These properties coincide with the jarsigner properties of the same name.
+	-->
+
+	<target name="jarsigner" depends="jarsigner-check,keystore-setup,keystore-missing" if="keystore.available">
+		<signjar jar="${jarfile}"
+				 keystore="${keystore.file}"
+				 alias="${keystore.alias}" 
+				 storepass="${keystore.storepass}"/>
+	</target>
+	
+	<target name="jarsigner-check">
+		<fail unless="jarfile" message="Jar file not specified. Set the property 'jarfile'."/>
+	</target>
+	
+	<target name="keystore-missing" unless="keystore.available">
+		<echo level="info">Jar '${jarfile}' will NOT be signed.
+		The keystore file is unavailable or improperly specified.
+		To enable Jar file signing:
+		1. Create a plain text file:
+			${keystore.properties}
+		2. Give it the following contents:
+			keystore.file=[myKeystore]
+			keystore.alias=[myAlais]
+			keystore.storepass=[myPassword]
+		3. If you don't have a keystore, you can create a temporary one
+		(use [myPassword] as the password):
+			keytool -genkey -Keystore ./[myKeystore] -alias [myAlias]
+			keytool -selfcert -Keystore ./[myKeystore] -alias [myAlias]
+		For help with keystores or signing Jar files, see
+		http://java.sun.com/j2se/1.5.0/docs/guide/security/SecurityToolsSummary.html
+		(to suppress this message, enable the quiet option: -quiet, -q)</echo>
+	</target>
+	
+	<target name="keystore-setup">
+		<copy todir="${basedir}">
+			<fileset dir="${keystore.dir}"/>
+		</copy>
+	<property file="${keystore.properties}"/>
+		<condition property="keystore.available">
+			<and>
+				<isset property="keystore.file"/>
+				<isset property="keystore.alias"/>
+				<isset property="keystore.storepass"/>
+				<available file="${keystore.file}"/>
+			</and>
+		</condition>
+	</target>	
+	
+	
+    <!--
+    ====================================================================================================
+    World Wind data download and setup.
+    Downloads data from the World Wind data site and installs it locally.
+    WARNING: The test data is over 300 MB.
+    -->
+    <target name="data-setup" description="Download data from the World Wind data site and install it locally">
+        <mkdir dir="${data.dir}"/>
+        <get src="${hawaii.data.url}" dest="${data.dir}/${data.hawaii}" verbose="on"/>
+    </target>
+
+    <!--
+    ====================================================================================================
+    Diagnostic Targets.
+    These targets do not have corresponding "clean" targets.
+    WARNING: these targets will not work with the World Wind public release.
+    -->
+    <property name="worldwinddiagnostics.jarfile" value="WorldWindDiagnostics.jar"/>
+    <property name="pathdiagnostics.jarfile" value="PathDiagnostics.jar"/>
+    <property name="gltextureview.jarfile" value="GLTextureView.jar"/>
+    <!-- Creates the WorldWindDiagnostic application Jar file.
+         WARNING: this target does not work with the World Wind public release. -->
+    <target name="worldwinddiagnostics.jarfile" depends="worldwind.jarfile">
+        <available file="${worldwind.classes.dir}/worldwinddiagnostics" property="worldwinddiagnostics.available"/>
+        <fail unless="worldwinddiagnostics.available"
+              message="WorldWindDiagnostics target does not work with the World Wind public release."/>
+        <jar jarfile="${basedir}/${worldwinddiagnostics.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="${worldwind.jarfile} jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="worldwinddiagnostics.WorldWindDiagnostics"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="worldwinddiagnostics/WorldWindDiagnostics*.class"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${worldwinddiagnostics.jarfile}"/>
+        </antcall>
+    </target>
+    <!-- Creates the PathDiagnostics application Jar file.
+         WARNING: this target does not work with the World Wind public release. -->
+    <target name="pathdiagnostics.jarfile" depends="compile">
+        <available file="${worldwind.classes.dir}/worldwinddiagnostics" property="worldwinddiagnostics.available"/>
+        <fail unless="worldwinddiagnostics.available"
+              message="PathDiagnostics target does not work with the World Wind public release."/>
+        <jar jarfile="${basedir}/${pathdiagnostics.jarfile}">
+            <manifest>
+                <attribute name="Main-Class" value="worldwinddiagnostics.PathDiagnostics"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="worldwinddiagnostics/PathDiagnostics*.class"/>
+                <type type="file"/>
+            </fileset>
+            <fileset  dir="${worldwind.src.dir}">
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${pathdiagnostics.jarfile}"/>
+        </antcall>
+    </target>
+    <!-- Creates the GLTextureView application Jar file.
+         WARNING: this target does not work with the World Wind public release. -->
+    <target name="gltextureview.jarfile" depends="compile">
+        <available file="${worldwind.classes.dir}/worldwinddiagnostics" property="worldwinddiagnostics.available"/>
+        <fail unless="worldwinddiagnostics.available"
+              message="GLTextureView target does not work with the World Wind public release."/>
+        <jar jarfile="${basedir}/${gltextureview.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="worldwinddiagnostics.GLTextureView"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="worldwinddiagnostics/GLTextureView*.class"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${gltextureview.jarfile}"/>
+        </antcall>
+    </target>	
+
+    <!--
+    ====================================================================================================
+    Clean Targets.
+    Removes any files and directories created by this build script.
+    -->
+    <target name="clean.all" depends="clean.build,
+                                      clean.worldwind.release,
+                                      clean.applet,
+                                      clean.demosite.release"
+            description="Remove all build-generated files and directories"/>
+
+    <!-- Deletes files and directories created by the World Wind build targets. -->
+    <target name="clean.classes">
+        <delete dir="${worldwind.classes.dir}"/>
+    </target>
+    <target name="clean.javadocs">
+        <delete dir="${worldwind.doc.dir}"/>
+    </target>
+    <target name="clean.test.classes">
+        <delete dir="${worldwind.test.classes.dir}"/>
+    </target>
+    <target name="clean.worldwind.jarfile">
+        <delete file="${basedir}/${worldwind.jarfile}"/>
+    </target>
+    <target name="clean.basicdemo.jarfile">
+        <delete file="${basedir}/${basicdemo.jarfile}"/>
+    </target>
+    <target name="clean.build" depends="clean.classes,
+                                        clean.test.classes,
+                                        clean.javadocs,
+                                        clean.worldwind.jarfile,
+                                        clean.basicdemo.jarfile"/>	
+  
+</project>

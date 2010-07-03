@@ -1,0 +1,445 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 3.1  (Unix)">
+	<META NAME="AUTHOR" CONTENT="Jim Terhorst">
+	<META NAME="CREATED" CONTENT="20090817;12302300">
+	<META NAME="CHANGEDBY" CONTENT="Jim Terhorst">
+	<META NAME="CHANGED" CONTENT="20090828;12125500">
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<H4 ALIGN=CENTER><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=5><B>The
+New World Wind View/Animation Interface Architecture</B></FONT></FONT></FONT></H4>
+<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>This
+document describes what is required in order to move application code
+from the old View/StateIterator Architecture in World Wind, to the
+new View/Animator interface architecture in World Wind. The View and
+Animation system was rearchitected to provide a framework for
+supporting varying View/Navigation paradigms. Prior to this
+rearchitecture, OrbitView was the only view/navigation paradigm
+provided with World Wind. Now there is a fly view
+paradigm(gov.nasa.worldwind.view.firstperson.BasicFlyView), and the
+system has been architected to support derivations of existing views,
+and instances of completely new views. </FONT></FONT></FONT>
+</P>
+<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>The
+first section describes the change to the <B>View</B> interface. The
+second section is a list of old methods for creating view state
+iteratations, and the matching methods in the new View/Animator
+interface. The final section is a case study example from
+gov.nasa.worldwind.applications.sar.</FONT></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=4 STYLE="font-size: 15pt"><B>Changes
+to the View interface</B></FONT></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>The
+View interface has changed to :</FONT></FONT></FONT></P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Remove
+	interface methods that were specific to the OrbitView
+	implementation.</FONT></FONT></FONT></P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>setDetectCollisions</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+		</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>hadCollisions</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+		and </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>isDetectCollisions</B></FONT></FONT></FONT><FONT COLOR="#000000">
+		</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">are
+		no longer specified in the View interface. The BasicOrbitView View
+		implementation still has those methods.</SPAN></FONT></FONT></FONT></P>
+	</UL>
+	<LI><P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Near
+	and Far Distance setters/getters</FONT></FONT></FONT></P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Remove
+		the methods for setting near and far distance.</FONT></FONT></FONT></P>
+		<UL>
+			<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Views
+			by default control the near and far distance. When an application
+			needs to specify clip distances, it can derive a new </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>View</B></FONT></FONT></FONT><FONT COLOR="#000000">
+			</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">from
+			</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>BasicView</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+			</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>BasicOrbitView</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+			or </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>BasicFlyView</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+			overriding the protected methods </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>computeNearClipDistance()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+			and </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>computeFarClipDistance()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">.
+			This means the general View interface does not provide set
+			capability for the near and far clip distances. Note that these
+			are the methods that do not take any parameters. They are called
+			from the doApply() method that sets up the modelview and
+			projection matrices.</SPAN></FONT></FONT></FONT></P>
+		</UL>
+		<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Remove
+		the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getAutoNearClipDistance()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">,
+		and </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getAutoFarClipDistance()</B></FONT></FONT></FONT></P>
+		<UL>
+			<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">View
+			implementations now return the near and far clip distances in
+			</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getNearClipDistance()</B></FONT></FONT></FONT><FONT COLOR="#000000">
+			</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">and
+			</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getFarClipDistance()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">.</SPAN></FONT></FONT></FONT></P>
+		</UL>
+	</UL>
+	<LI><P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Remove
+	methods for setting and starting Iterators, and for determining
+	whether an iterator is operational.</FONT></FONT></FONT></P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Iterator</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">s
+		have been replaced by </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Animator</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">s
+		which reside in the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>gov.nasa.worldwind.animation</B></FONT></FONT></FONT><FONT COLOR="#000000">
+		</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">package.
+		See the next section in this document: </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><I><SPAN STYLE="font-weight: normal">Old/New
+		Method Mappings for View Animation</SPAN></I></FONT></FONT></FONT><FONT COLOR="#000000">
+		</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">for
+		more information.</SPAN></FONT></FONT></FONT></P>
+	</UL>
+	<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">The
+	</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Iterator</B></FONT></FONT></FONT><FONT COLOR="#000000">
+	</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">methods
+	are replaced by </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Animator</B></FONT></FONT></FONT><FONT COLOR="#000000">
+	</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">methods:</SPAN></FONT></FONT></FONT></P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>stopAnimations()</B></FONT></FONT></FONT><FONT COLOR="#000000">
+		</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">will
+		stop running all </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>View</B></FONT></FONT></FONT><FONT COLOR="#000000">
+		</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Animator</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">s.
+		</SPAN></FONT></FONT></FONT>
+		</P>
+		<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>IsAnimating()</B></FONT></FONT></FONT><FONT COLOR="#000000">
+		</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">returns
+		true if there are active animations, false otherwise.</SPAN></FONT></FONT></FONT></P>
+	</UL>
+	<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Added
+	a method for getting the center point of the globe in the view: </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>vec4
+	View.getCenterPoint()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">.</SPAN></FONT></FONT></FONT></P>
+	<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Added
+	a method for getting the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Globe</B></FONT></FONT></FONT><FONT COLOR="#000000">
+	</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">used
+	in the view: </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getGlobe()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">.</SPAN></FONT></FONT></FONT></P>
+	<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Added
+	a method for getting the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>ViewInputHandler</B></FONT></FONT></FONT><FONT COLOR="#000000">
+	</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">:
+	</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getViewInputHandler()</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">.
+	The architecture has changed in that the ViewInputHandler used to be
+	created and owned by the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>AWTInputHandler</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">.
+	Now it is created and owned by the View. </SPAN></FONT></FONT></FONT>
+	</P>
+	<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Added
+	</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>getViewPropertyLimits()</B></FONT></FONT></FONT><FONT COLOR="#000000">
+	</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">for
+	getting a reference to the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>View</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">'s
+	limits.</SPAN></FONT></FONT></FONT></P>
+	<LI><P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">Added
+	</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>copyViewState(View
+	view)</B></FONT></FONT></FONT><FONT COLOR="#000000"> </FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">to
+	support switching from one View implementation to another.</SPAN></FONT></FONT></FONT></P>
+</UL>
+<P><BR><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=4 STYLE="font-size: 15pt"><B>Old/New
+Method Mappings for View Animation</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Helvetica, sans-serif">There
+is a new method in the View interface :</FONT></P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>void
+	goTo(Position lookAtPos, double elevation);</FONT></FONT></FONT></P>
+</UL>
+<P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>This
+method can be used without knowing the underlying View implementation
+if that application simply wants the view to be looking at a
+particular location.</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.5in; text-indent: -0.49in; margin-bottom: 0in">
+<BR>
+</P>
+<P STYLE="margin-bottom: 0in">From the <FONT COLOR="#000000"><FONT FACE="Times New Roman, serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">FlyToOrbitViewStateIterator
+class:</SPAN></FONT></FONT></FONT></P>
+<TABLE WIDTH=100% BORDER=1 CELLPADDING=4 CELLSPACING=4>
+	<COL WIDTH=128*>
+	<COL WIDTH=128*>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P><FONT COLOR="#000000"><FONT FACE="Times New Roman, serif"><FONT SIZE=3><B>FlyToOrbitViewStateIterator
+			Method</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P><B>Corresponding BasicOrbitView method</B></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>createPanToIterator(OrbitView
+			orbitView, Globe globe,Position center,</FONT></FONT></FONT></P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle,
+			heading, Angle pitch, double zoom)</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>addPanToAnimator(Position
+			center,Angle heading, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			pitch, double zoom)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>createPanToIterator(OrbitView
+			orbitView, Globe globe, Position center, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			heading, Angle pitch, double zoom, boolean endCenterOnSurface)</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>addPanToAnimator(Position
+			center, Angle heading, Angle pitch, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>double
+			zoom, boolean endCenterOnSurface)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>createPanToIterator(Globe
+			globe, Position beginCenter, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Position
+			endCenter, Angle beginHeading, Angle endHeading,</FONT></FONT></FONT></P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			beginPitch, Angle endPitch, double beginZoom, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>double
+			endZoom)</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>addPanToAnimator(Position
+			beginCenter, Position endCenter, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			beginHeading, Angle endHeading, Angle beginPitch, Angle endPitch,</FONT></FONT></FONT></P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>double
+			beginZoom, double endZoom)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>CreatePanToIterator(Globe
+			globe, Position beginCenter, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Position
+			endCenter, Angle beginHeading, Angle endHeading,</FONT></FONT></FONT></P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			beginPitch, Angle endPitch, double beginZoom, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>double
+			endZoom, boolean endCenterOnSurface)</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>AddPanToAnimator(Position
+			beginCenter, Position endCenter,</FONT></FONT></FONT></P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			beginHeading, Angle endHeading, Angle beginPitch, Angle endPitch,</FONT></FONT></FONT></P>
+			<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; font-weight: normal">
+			<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>double
+			beginZoom, double endZoom, boolean endCenterOnSurface)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>From
+the ScheduledViewStateIterator class:</FONT></FONT></FONT></P>
+<TABLE WIDTH=100% BORDER=1 CELLPADDING=4 CELLSPACING=4>
+	<COL WIDTH=128*>
+	<COL WIDTH=128*>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>ScheduledViewStateIterator
+			Method</B></FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>Corresponding
+			BasicOrbitView method</B></FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>createHeadingPitchIterator(OrbitView
+			view,</FONT></FONT></FONT></P>
+			<P STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			beginHeding, Angle endHeading, Angle beginPitch, Angle endPitch);</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>addHeadingPitchAnimator(Angle
+			beginHeading, Angle endHeading, Angle beginPitch, Angle endPitch)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>createHeadingIterator(OrbitView
+			view, Angle beginHeding, Angle endHeading)</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>addHeadingAnimator(Angle
+			beginHeading, Angle endHeading)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>createHeadingIterator(OrbitView
+			view, Angle beginHeding, </FONT></FONT></FONT>
+			</P>
+			<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Angle
+			endHeading)</FONT></FONT></FONT></P>
+		</TD>
+		<TD WIDTH=50%>
+			<P ALIGN=LEFT STYLE="font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>addPitchAnimator(Angle
+			beginPitch, Angle endPitch)</FONT></FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in">
+<BR>
+</P>
+<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in">
+<FONT FACE="Helvetica, sans-serif">If your code uses an
+EyePositionIterator, you can simply replace its construction and
+application to the View, with the</FONT></P>
+<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in">
+<FONT FACE="Helvetica, sans-serif">BasicOrbitView method :</FONT></P>
+<UL>
+	<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>BasicOrbitView.addEyePositionAnimator(long
+	timeToIterate, Position beginPosition, Position endPosition)</B></FONT></FONT></FONT></P>
+</UL>
+<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>To
+stop and motion that is associated with animations in the View use:</FONT></FONT></FONT></P>
+<UL>
+	<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>View.stopAnimations()</B></FONT></FONT></FONT></P>
+</UL>
+<P ALIGN=LEFT STYLE="margin-left: 1.5in; text-indent: -1.5in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>To
+determine if a View is currently running any animations use:</FONT></FONT></FONT></P>
+<UL>
+	<LI><P ALIGN=LEFT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>View.isAnimating()</B></FONT></FONT></FONT></P>
+</UL>
+<P ALIGN=LEFT><BR><BR>
+</P>
+<P ALIGN=LEFT STYLE="margin-left: 0.5in; text-indent: -0.5in; margin-bottom: 0in">
+<FONT FACE="Helvetica, sans-serif"><FONT SIZE=4 STYLE="font-size: 15pt"><FONT COLOR="#000000"><B>An
+example of what is required of an application to adapt to the new
+View/Animator Interface architecture</B></FONT><FONT COLOR="#000000">
+</FONT></FONT></FONT>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">This
+section shows how the Search and Rescue(SAR) application
+gov.nasa.worldwind.applications.sar was modified to use the new
+</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><I><SPAN STYLE="font-weight: normal">View/Animator</SPAN></I></FONT></FONT></FONT><FONT COLOR="#000000">
+</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">interface
+architecture. In the SAR application, there are 3 uses of :</SPAN></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 1in; margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>FlyToOrbitViewStateIterator.createPanToIterator</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 1in; margin-bottom: 0in"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">view.applyStateIterator</SPAN></FONT></FONT></FONT><FONT COLOR="#000000">
+</FONT>
+</P>
+<P STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>These
+are easily replaced with calls to :</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.99in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>OrbitViewInputHandler.addPanToAnimator</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.99in; margin-bottom: 0in"><BR>
+</P>
+<P ALIGN=LEFT STYLE="margin-left: 1in; text-indent: -1in; margin-bottom: 0in">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">In
+the </SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><I><SPAN STYLE="font-weight: normal">AnalysisPanel</SPAN></I></FONT></FONT></FONT><FONT COLOR="#000000">
+</FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">class
+there are 2 usages of</SPAN></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><B>:</B></FONT></FONT></FONT></P>
+<P STYLE="margin-left: 1in; margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>FlyToOrbitViewStateIterator.createPanToIterator</FONT></FONT></FONT></P>
+<P ALIGN=LEFT STYLE="margin-left: 1in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>view.applyStateIterator</FONT></FONT></FONT></P>
+<P ALIGN=LEFT STYLE="margin-left: 1in; margin-bottom: 0in"><BR>
+</P>
+<UL>
+	<UL>
+		<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Line
+		369 in the method updateView:</FONT></FONT></FONT></P>
+		<UL>
+			<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>is
+			changed from :</FONT></FONT></FONT></P>
+			<UL>
+				<PRE STYLE="margin-bottom: 0.2in">view.applyStateIterator(FlyToOrbitViewStateIterator.createPanToIterator(view,    this.wwd.getModel().getGlobe(),groundPos, initialHeading, initialPitch, initialZoom, true));</PRE>
+			</UL>
+			<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>To
+			:</FONT></FONT></FONT></P>
+			<PRE STYLE="margin-bottom: 0.2in">((BasicOrbitView) view).addPanToAnimator(groundPos, initialHeading, initialPitch, initialZoom, true);</PRE>
+		</UL>
+	</UL>
+</UL>
+<UL>
+	<UL>
+		<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Line
+		424 in updateView:</FONT></FONT></FONT></P>
+		<UL>
+			<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>is
+			changed from :</FONT></FONT></FONT></P>
+			<UL>
+				<PRE>view.applyStateIterator(FlyToOrbitViewStateIterator.createPanToIterator(
+view, this.wwd.getModel().getGlobe(), addpos, heading, pitch, zoom));</PRE>
+			</UL>
+			<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>To:</FONT></FONT></FONT></P>
+			<UL>
+				<PRE>((BasicOrbitView) view).addPanToAnimator(
+pos, heading, pitch, zoom, false);</PRE>
+			</UL>
+		</UL>
+	</UL>
+</UL>
+<P ALIGN=LEFT STYLE="margin-left: 1in; text-indent: -1in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>In
+the TrackController class there is one usage of :</FONT></FONT></FONT></P>
+<P ALIGN=LEFT STYLE="margin-left: 1in; text-indent: -0.01in; margin-bottom: 0in; font-weight: normal">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>FlyToOrbitViewStateIterator.createPanToIterator</FONT></FONT></FONT></P>
+<P ALIGN=LEFT STYLE="margin-left: 1in; text-indent: -0.01in; margin-bottom: 0in">
+<FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3><SPAN STYLE="font-weight: normal">view.applyStateIterator</SPAN></FONT></FONT></FONT><FONT COLOR="#000000">
+</FONT>
+</P>
+<UL>
+	<UL>
+		<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>Line
+		335 in the method moveToTrack :</FONT></FONT></FONT></P>
+		<UL>
+			<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>is
+			changed from:</FONT></FONT></FONT></P>
+			<UL>
+				<PRE>view.applyStateIterator(FlyToOrbitViewStateIterator.createPanToIterator(
+view, this.wwd.getModel().getGlobe(),
+pos, view.getHeading(), Angle.ZERO, 10000, true))</PRE>
+			</UL>
+			<LI><P ALIGN=LEFT STYLE="margin-bottom: 0in; font-weight: normal"><FONT COLOR="#000000"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=3>To:</FONT></FONT></FONT></P>
+			<UL>
+				<PRE STYLE="margin-bottom: 0.2in; font-weight: normal; text-align: left"><FONT COLOR="#000000"><FONT FACE="Times New Roman, serif"><FONT SIZE=3>((BasicOrbitView) view).addPanToAnimator(pos, view.getHeading(), Angle.ZERO, 10000, true);</FONT></FONT></FONT></PRE>
+			</UL>
+		</UL>
+	</UL>
+</UL>
+</BODY>
+</HTML>

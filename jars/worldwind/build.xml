@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--$Id: build.xml 13328 2010-04-22 03:28:06Z dcollins $-->
+<project name="worldwind" default="worldwind.jarfile" basedir=".">
+<description>
+    Build script for the World Wind Java API.
+</description>
+
+    <!-- Load up World Wind build properties.  All properties expected by ANT are defined in build.properties. -->
+		<property file="build/build.properties"/>
+
+    <!-- Load up supporting build files with function-specific targets -->
+		<!-- master build script with main build targets -->
+		<import file="build/worldwind.build.xml"/>
+		<!-- release-related tasks and targets -->
+		<import file="build/release.xml"/>
+		<!-- general purpose utility targets (clean, jarsigning, diagnostics, metrics -->
+		<import file="build/util.xml"/>
+		<!-- test-related targets -->
+		<import file="build/test.xml"/>
+		<!-- targets for preparing the assets for the demo site -->
+		<import file="build/demosite.xml"/>
+
+	<!-- Main build targets - high level targets for building World Wind Java -->
+
+	<!-- Invokes all World Wind build targets. -->
+    <target name="build" depends="compile,
+                                  javadocs,
+                                  worldwind.jarfile,
+                                  basicdemo.jarfile"/>
+
+    <!-- Compiles the World Wind library.
+          We configure the javac task parameters 'source' and 'target' in order to explicity control the Java compiler 
+          version used to build World Wind classes. Without these parameters, the javac task would use the most recent
+          compiler available on the current machine, and the Java compiler version used to build WorldWind classes would
+          be unprecitable. For this reason, the Apache ANT manual strongly recommends speicfying the 'source' and
+          'target' parameters. See the following link for more detail:
+          http://ant.apache.org/manual/CoreTasks/javac.html
+
+          The Java compiler version used by the javac task is defined by the build parameter 'worldwind.jdk.version'.
+          By default, this parameter is defined in the file 'build/build.properties'.
+          -->
+    <target name="compile"
+            description="Compile the World Wind source">
+        <mkdir dir="${worldwind.classes.dir}"/>
+        <javac destdir="${worldwind.classes.dir}"
+               fork="true"
+               memoryMaximumSize="512m"
+               source="${worldwind.jdk.version}"
+               target="${worldwind.jdk.version}">
+            <src path="${worldwind.src.dir}"/>
+            <src path="${worldwind.experimental.src.dir}"/>
+            <exclude name="${worldwind.src.dir}/worldwinddiagnostics/StressTest*.*"/>
+            <classpath>
+                <pathelement location="jogl.jar"/>
+                <pathelement location="gluegen-rt.jar"/>
+                <pathelement location="${java.home}/lib/plugin.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- Builds the World Wind library Jar file. -->
+    <target name="worldwind.jarfile" depends="compile"
+            description="Build the World Wind library">
+        <jar jarfile="${basedir}/${worldwind.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="${basicdemo.classname}"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <exclude name="worldwinddiagnostics/StressTest*.class"/>
+                <exclude name="gov/nasa/worldwind/applications/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/util/csw/**/*.class"/>
+                <type type="file"/>
+            </fileset>
+            <!-- Note: SARApp depends on html files in the same directory as it's classes. -->
+            <fileset dir="${worldwind.src.dir}">
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/applications/sar/**/*.html"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+    </target>
+
+    <!-- Builds the World Wind Jar file with GLIDER application classes. -->
+    <target name="worldwind.jarfile.glider" depends="compile"
+            description="Build the World Wind library and include the GLIDER classes">
+        <jar jarfile="${basedir}/${worldwind.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="${basicdemo.classname}"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <exclude name="worldwinddiagnostics/StressTest*.class"/>
+                <exclude name="gov/nasa/worldwind/applications/sar/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/applications/gio/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/applications/glider/GliderTestApp*.class"/>
+                <exclude name="gov/nasa/worldwind/util/csw/**/*.class"/>
+                <type type="file"/>
+            </fileset>
+            <!-- Note: SARApp depends on html files in the same directory as it's classes. -->
+            <fileset dir="${worldwind.src.dir}">
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/applications/sar/**/*.html"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+    </target>
+
+    <!-- Builds the World Wind Jar file with MySpringfield demo classes. -->
+    <target name="worldwind.jarfile.springfield" depends="compile"
+            description="Build the World Wind library and include the MySpringfield classes">
+        <jar jarfile="${basedir}/${worldwind.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="${basicdemo.classname}"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <include name="springfield/**"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <exclude name="worldwinddiagnostics/StressTest*.class"/>
+                <exclude name="gov/nasa/worldwind/applications/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/util/csw/**/*.class"/>
+                <type type="file"/>
+            </fileset>
+            <!-- Note: SARApp depends on html files in the same directory as it's classes. -->
+            <fileset dir="${worldwind.src.dir}">
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/applications/sar/**/*.html"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <include name="gov/nasa/worldwindow/config/**"/>
+                <include name="gov/nasa/worldwindow/images/**"/>
+                <include name="springfield/config/**"/>
+                <include name="springfield/images/**"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${worldwind.jarfile}"/>
+        </antcall>
+    </target>
+
+</project>

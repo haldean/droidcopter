@@ -1,0 +1,26 @@
+<!--$Id: WorldWindDiagnostics.jnlp 12846 2009-11-30 18:41:49Z dcollins $-->
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0"
+      codebase="http://worldwind.arc.nasa.gov/java/0.5.0/webstart/"
+      href="WorldWindDiagnostics.jnlp">
+    <information>
+        <title>World Wind Diagnostics Program</title>
+        <vendor>NASA</vendor>
+        <homepage href="http://worldwind.arc.nasa.gov"/>
+        <description>World Wind Diagnostics Program</description>
+        <description kind="short">Java Application</description>
+        <offline-allowed/>
+    </information>
+    <security>
+        <all-permissions/>
+    </security>
+
+    <resources>
+        <j2se href="http://java.sun.com/products/autodl/j2se" version="1.6+" initial-heap-size="512m"
+              max-heap-size="512m"/>
+        <property name="sun.java2d.noddraw" value="true"/>
+        <jar href="WorldWindDiagnostics.jar" main="true"/>
+        <extension name="worldwind" href="http://worldwind.arc.nasa.gov/java/0.5.0/webstart/worldwind.jnlp"/>
+    </resources>
+    <application-desc main-class="worldwinddiagnostics.WorldWindDiagnostics"/>
+</jnlp>

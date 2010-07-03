@@ -1,0 +1,131 @@
+<rss version="2.0" xmlns:gdas="http://www.gdacs.org" xmlns:icbm="http://postneo.com/icbm/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:asgard="http://asgard.jrc.it"
+     xmlns:geo="http://www.w3.org/2003/01/geo/" xmlns:glide="http://glidenumber.net"
+     xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+    <channel>
+        <item>
+          <title>M 3.2, Mona Passage</title>
+          <link>http://example.org/2005/09/09/atom01</link>
+          <pubDate>Wed, 17 Aug 2005 07:02:32 GMT</pubDate>
+          <georss:where>
+            <gml:LineString>
+              <gml:posList>
+                  45.256 -110.45 46.46 -109.48 43.84 -109.86
+               </gml:posList>
+            </gml:LineString>
+          </georss:where>
+        </item>
+        <item>
+            <title>450 WOODHAVEN DRIVE : NEW SINGLE FAMILY DWELLING</title>
+            <description>Construct a 4 storey sprinklered single family dwelling, slab-on-grade, with an attached double
+                garage.
+            </description>
+            <category>test</category>
+            <pubDate>2007-03-23T12:37:56-08:00</pubDate>
+            <dc:creator>2007 City of Nanaimo</dc:creator>
+            <dc:date>2007-03-22</dc:date>
+            <georss:where>
+                <gml:Polygon>
+                    <gml:exterior>
+                        <gml:LinearRing>
+                            <gml:posList>49.211169220248 -124.012330424292 49.2111691826382 -124.012297925585
+                                49.2111663254301 -124.012256013822 49.2111636404396 -124.012237304243 49.211428809547
+                                -124.012193076491 49.2114443802205 -124.01241057665 49.2114525783372 -124.012440302622
+                                49.2111679219427 -124.012487779239 49.2111681543631 -124.012452023584 49.2111685254955
+                                -124.012409685365 49.2111689311341 -124.012363408706 49.211169220248 -124.012330424292
+                            </gml:posList>
+                        </gml:LinearRing>
+                    </gml:exterior>
+                </gml:Polygon>
+            </georss:where>
+        </item>
+        <!-- Around (0 lat 0 lon-->
+        <georss:where>
+            <gml:Polygon>
+                <gml:exterior>
+                    <gml:LinearRing>
+                        5, 2.5 5, -2.5 2.5, -5 -2.5, -5 -5, -2.5 -5, 2.5 -2.5, 5 2.5 5
+                    </gml:LinearRing>
+                </gml:exterior>
+            </gml:Polygon>
+        </georss:where>
+        <!-- Shasta -->
+        <!--<item>-->
+            <!--<georss:where>-->
+                <!--<gml:Envelope>-->
+                    <!--<gml:lowerCorner>41 -122.5</gml:lowerCorner>-->
+                    <!--<gml:upperCorner>41.6 -121.7</gml:upperCorner>-->
+                <!--</gml:Envelope>-->
+            <!--</georss:where>-->
+        <!--</item>-->
+        <!-- Tahoe -->
+        <!--<item>-->
+            <!--<georss:where>-->
+                <!--<gml:Envelope>-->
+                    <!--<gml:lowerCorner>38.9 -120.2</gml:lowerCorner>-->
+                    <!--<gml:upperCorner>39.3 -119.9</gml:upperCorner>-->
+                <!--</gml:Envelope>-->
+            <!--</georss:where>-->
+        <!--</item>-->
+        <!-- Chicago -->
+        <item>
+            <georss:where>
+                <gml:Point>
+                    <gml:pos>41.86 -87.68</gml:pos>
+                </gml:Point>
+            </georss:where>
+        </item>
+        <!-- New York to Baltimore-->
+        <item>
+            <georss:where>
+                <gml:LineString>
+                    <gml:posList>
+                        40.62 -74 39.18 -76.67
+                    </gml:posList>
+                </gml:LineString>
+            </georss:where>
+        </item>
+        <!-- New York to Baltimore to D.C. -->
+        <item>
+            <georss:line>40.62 -74 39.18 -76.67 38.889 -77.035</georss:line>
+            <georss:elev>2000</georss:elev>
+        </item>
+        <!---->
+        <item>
+            <georss:polygon>
+                45.256 -110.45 46.46 -109.48 43.84 -109.86 45.256 -110.45
+            </georss:polygon>
+        </item>
+        <!---->
+        <item>
+            <georss:box>42.943 -71.032 43.039 -69.856</georss:box>
+        </item>
+        <!---->
+        <item>
+            <georss:elev>2000</georss:elev>
+            <georss:box>42.943 -71.032 43.039 -69.856</georss:box>
+        </item>
+        <item>
+            <georss:elev>313</georss:elev>
+            <georss:radius>500</georss:radius>
+            <georss:point>45.256 -71.92</georss:point>
+        </item>
+        <item>
+            <georss:where>
+                <gml:LineString>
+                    <gml:posList>
+                        0 0 89 0
+                    </gml:posList>
+                </gml:LineString>
+            </georss:where>
+        </item>
+        <!--<item>-->
+            <!--<georss:line>0 0 89 0</georss:line>-->
+            <!--<georss:elev>1000</georss:elev>-->
+        <!--</item>-->
+        <!-- New York to Baltimore to D.C. -->
+        <!--<item>-->
+        <!--<georss:line>-89 -80 89 -80</georss:line>-->
+        <!--</item>-->
+    </channel>
+</rss>

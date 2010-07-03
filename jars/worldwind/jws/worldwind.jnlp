@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0"
+      codebase="http://worldwind.arc.nasa.gov/java/0.5.0/webstart/"
+      href="worldwind.jnlp">
+  <information>
+    <title>NASA World Wind Java</title>
+    <vendor>NASA</vendor>
+    <homepage href="http://worldwind.arc.nasa.gov/java"/>
+    <description>NASA World Wind Java version 0.5.0</description>
+    <description kind="short">NASA World Wind Planetary Visualization Software Library</description>
+    <offline-allowed/>
+  </information>
+  <security>
+      <all-permissions/>
+  </security>
+
+    <resources>
+      <j2se href="http://java.sun.com/products/autodl/j2se" version="1.6+" initial-heap-size="512m" max-heap-size="512m"/>
+      <property name="sun.java2d.noddraw" value="true"/>
+      <jar href="worldwind.jar"/>
+      <extension name="jogl"
+                 href="http://download.java.net/media/jogl/builds/archive/jsr-231-webstart-current/jogl.jnlp"/>
+    </resources>
+    <component-desc/>
+</jnlp>

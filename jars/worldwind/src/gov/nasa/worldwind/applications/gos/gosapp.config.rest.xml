@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorldWindConfiguration version="1">
+    <Property name="gov.nasa.worldwind.gos.GeodataControllerClassName"
+              value="gov.nasa.worldwind.applications.gos.services.RESTGeodataController"/>
+    <!-- Set the maximum number of records to (2^31)-1, the maximum value of a 32 bit integer.-->
+    <Property name="gov.nasa.worldwind.gos.RestServiceURI"
+              value="http://catalog.geodata.gov/geoportal/rest/find/document?"/>
+</WorldWindConfiguration>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

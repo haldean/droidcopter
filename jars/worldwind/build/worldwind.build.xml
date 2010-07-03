@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--$Id: worldwind.build.xml 13132 2010-02-16 05:40:38Z dcollins $-->
+<project name="worldwind.build">
+    <!--
+    ====================================================================================================
+    World Wind build targets.
+    Compiles the World Wind source, creates World Wind API documentation, and builds World Wind Jar packages.
+    ====================================================================================================
+    -->
+
+    <!-- Generates the World Wind API documentation. -->
+    <target name="javadocs" depends="clean.javadocs"
+            description="Generate the World Wind API documentation">
+        <javadoc packagenames="gov.nasa.worldwind.*" defaultexcludes="yes"
+                 maxmemory="512m"
+                 splitindex="true" protected="true" nodeprecated="true" version="false" author="false" use="true"
+                 overview="${worldwind.src.dir}/overview.html"
+                 windowtitle="NASA World Wind" doctitle="NASA World Wind API" header="NASA World Wind"
+                 destdir="${worldwind.doc.dir}">
+            <sourcepath path="${worldwind.src.dir}"/>
+            <excludepackage name="gov.nasa.worldwind.formats.*"/>
+            <classpath>
+                <pathelement path="jogl.jar"/>
+                <pathelement path="${java.home}/lib/plugin.jar"/>
+            </classpath>
+            <link href="http://java.sun.com/j2se/1.5.0/docs/api"/>
+            <link href="http://download.java.net/media/jogl/builds/archive/jsr-231-1.1.1/jogl-1.1.1-docs.zip"/>
+        </javadoc>
+    </target>
+
+    <target name="worldwind.jarfile.with.source" depends="compile"
+            description="Build the World Wind library">
+        <jar jarfile="${basedir}/${worldwind.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="${basicdemo.classname}"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/util/csw/**/*.class"/>
+                <type type="file"/>
+            </fileset>
+            <fileset dir="${worldwind.src.dir}">
+                <include name="gov/nasa/**/*.java"/>
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="**/*.html"/>
+                <include name="**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+    </target>
+
+    <!-- Builds the BasicDemo application Jar file. -->
+    <target name="basicdemo.jarfile" depends="worldwind.jarfile"
+            description="Build the BasicDemo application">
+        <jar jarfile="${basedir}/${basicdemo.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="${worldwind.jarfile}"/>
+                <attribute name="Main-Class" value="${basicdemo.classname}"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/worldwind/examples/ApplicationTemplate.class"/>
+                <include name="gov/nasa/worldwind/examples/ApplicationTemplate$*.class"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+    </target>
+
+    <!-- Runs the BasicDemo application. -->
+    <target name="run.basicdemo"
+            description="Run the BasicDemo application">
+        <available file="${basedir}/${worldwind.jarfile}" property="worldwind.jarfile.available"/>
+        <fail unless="worldwind.jarfile.available"
+              message="Failed to run BasicDemo application. Cannot find World Wind library.
+To create the World Wind libarary Jar file run: ant worldwind.jarfile"/>
+        <java classname="${basicdemo.classname}" fork="true" maxmemory="512m">
+            <classpath>
+                <pathelement location="${worldwind.jarfile}"/>
+            </classpath>
+        </java>
+    </target>
+
+    <!--
+    ====================================================================================================
+    SAR (Search and Rescue) targets.
+    Creates the World Wind SAR application.
+    These targets do not have corresponding "clean" targets.
+    -->
+    <property name="sarapp.jarfile" value="SARApp.jar"/>
+    <!-- Builds the SAR (Search and Rescue) application Jar file. -->
+    <target name="sarapp.jarfile" depends="compile"
+            description="Build the SAR (Search and Rescue) application">
+        <jar jarfile="${basedir}/${sarapp.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="gov.nasa.worldwind.applications.sar.SARApp"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <type type="file"/>
+            </fileset>
+            <!-- Note: SARApp depends on html files in the same directory as it's classes, and on similar resources
+                 in the GOSApp package directories. -->
+            <fileset dir="${worldwind.src.dir}">
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/applications/sar/**/*.html"/>
+                <include name="gov/nasa/worldwind/applications/sar/images/**"/>
+                <include name="gov/nasa/worldwind/applications/gos/**/**"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${sarapp.jarfile}"/>
+        </antcall>
+    </target>
+
+    <!--
+    ====================================================================================================
+    World Wind Catalogs targets.
+    Creates the World Wind Catalogs application.
+    These targets do not have corresponding "clean" targets.
+    -->
+    <property name="worldwindcatalogs.jarfile" value="WorldWindCatalogs.jar"/>
+    <!-- Builds the World Wind catalogs application Jar file. -->
+    <target name="worldwindcatalogs.jarfile" depends="compile"
+            description="Build the World Wind Catalogs application">
+        <jar jarfile="${basedir}/${worldwindcatalogs.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="gov.nasa.worldwind.applications.gio.WorldWindCatalogs"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/util/csw/**/*.class"/>
+                <type type="file"/>
+            </fileset>
+            <fileset dir="${worldwind.src.dir}">
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/applications/gio/**/*.html"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${worldwindcatalogs.jarfile}"/>
+        </antcall>
+    </target>
+
+    <!--
+    ====================================================================================================
+    World Wind GOS App targets.
+    Creates the World Wind Geospatial One-Stop application.
+    These targets do not have corresponding "clean" targets.
+    -->
+    <property name="gosapp.jarfile" value="worldwind-gosapp.jar"/>
+    <!-- Builds the World Wind GOS application Jar file. -->
+    <target name="gosapp.jarfile" depends="compile"
+            description="Build the World Wind GOS application">
+        <jar jarfile="${basedir}/${gosapp.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="jogl.jar gluegen-rt.jar"/>
+                <attribute name="Main-Class" value="gov.nasa.worldwind.applications.gos.GOSApp"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/**/*.class"/>
+                <exclude name="gov/nasa/worldwind/examples/applet/**/*.class"/>
+                <exclude name="worldwinddiagnostics/StressTest*.class"/>
+                <type type="file"/>
+            </fileset>
+            <fileset dir="${worldwind.src.dir}">
+                <include name="images/**"/>
+                <include name="config/**"/>
+                <include name="gov/nasa/worldwind/applications/gos/**/**"/>
+                <include name="gov/nasa/worldwind/util/**/*.properties"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${basedir}/${gosapp.jarfile}"/>
+        </antcall>
+    </target>
+
+</project>

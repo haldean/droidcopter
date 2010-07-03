@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--$Id: release.xml 13145 2010-02-17 03:55:11Z dcollins $-->
+<project name="release">
+
+    <!--
+    ====================================================================================================
+    Release targets.
+    Builds the World Wind SDK release, and creates the release archive.
+    ==================================================================================================== 
+	-->
+
+	<!-- Creates the World Wind SDK release directory. -->
+    <target name="worldwind.release" depends="clean.build,
+                                              clean.worldwind.release,
+                                              build"
+            description="Create the World Wind SDK release">
+        <mkdir dir="${worldwind.release.dir}"/>
+        <copy todir="${worldwind.release.dir}">
+            <fileset dir="${basedir}">
+                <include name="build.xml"/>
+                <include name="build/**"/>
+                <include name="buildjogl.xml"/>
+                <include name="JavaWebStartTemplate.jnlp"/>
+                <include name="logging.properties"/>
+                <include name="README.txt"/>
+                <include name="run-demo.bash"/>
+                <include name="run-demo.bat"/>
+                <include name="*.html"/>
+                <include name="${worldwind.jarfile}"/>
+                <include name="jogl.jar"/>
+                <include name="gluegen-rt.jar"/>
+                <include name="*.jnilib"/>
+                <include name="*.dll"/>
+                <include name="*.so"/>
+                <include name="src/*.html"/>
+                <include name="src/config/**"/>
+                <include name="src/images/**"/>
+                <include name="src/gov/nasa/**"/>
+                <include name="doc/**"/>
+                <include name="experimental/**"/>
+                <include name="notes/**"/>
+                <include name="jws/**"/>		
+                <include name="obsolete/**"/>
+                <include name="demodata/**"/>
+				<!-- items to explicitly exclude from zip file -->
+                <exclude name="STL"/>
+                <exclude name="CALIPSO"/>
+                <exclude name="**/keystore.*"/>
+                <exclude name="*wwwstore*"/>
+                <exclude name="demodata/SeqSarAppTk1.csv"/>
+                <exclude name="demodata/KaweahRiverTrack.xml"/>
+				<exclude name="src/worldwinddiagnostics/StressTest*.*"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        <antcall target="jarsigner">
+                <param name="jarfile" value="${worldwind.release.dir}/${worldwind.jarfile}"/>
+        </antcall>
+        <chmod file="${worldwind.release.dir}/run-demo.bash" perm="ugo+rwx"/>
+	</target>
+	
+    <!-- Packages the World Wind SDK release components into a zip file. -->
+    <target name="worldwind.release.zipfile" depends="worldwind.release"
+            description="Package the World Wind SDK release">
+        <zip destfile="${worldwind.release.zipfile}">
+            <fileset dir="${worldwind.release.dir}"/>
+        </zip>
+    </target>
+
+	<!-- Drops the release package to a local drop folder for consumption -->
+	<target name="drop.zip" depends="worldwind.release, worldwind.release.zipfile"
+			description="Prepares zipped up package for release">
+    	<copy file="${worldwind.release.zipfile}" todir="${worldwind.drop.dir}"/>
+    	<copy overwrite="true" file="${worldwind.release.zipfile}" tofile="${worldwind.drop.dir}/worldwind-latest.zip"/>    	
+    </target>	
+	
+    <!-- Deletes the World Wind SDK release directory and zip file. -->
+    <target name="clean.worldwind.release">
+        <delete dir="${worldwind.release.dir}"/>
+        <delete file="${worldwind.release.zipfile}"/>
+    </target>
+  
+</project>

@@ -1,0 +1,208 @@
+<html>
+<head>
+<title>NASA World Wind Java - Picking notes</title>
+
+<link rel="stylesheet" href="style.css" type="text/css">
+
+</head>
+
+<body>
+<h1>NASA World Wind Java - Picking notes</h1>
+
+<small>Last updated july 29, 2007 by Patrick Murris</small>
+
+<h2>Picking at objects in WWJ</h2>
+<p>
+In <a href="http://worldwind.arc.nasa.gov/java/">WWJ</a> the <tt>WorldWindow</tt>, via <tt>WorldWindowGlAutoDrawable</tt>, continually maintains the identities of the objects under the cursor and the terrain position there. 
+This is determined with every redraw. The picking operation is very fast and does not significantly impact display performance.
+</p>
+<p> 
+To determine what is currently under the cursor, the application can simply call:
+</p>
+
+<blockquote><pre>WorldWindow.getObjectsAtCursorPosition()</pre></blockquote> 
+
+<h2>Unique color picking - how it works</h2>
+
+<p>
+To determine which object lies under a screen pixel to be 'picked', WWJ will actualy render the world with unique colors for each object, read the color in the frame buffer under the pick position, and find out which object was drawn with that color. This temporary frame is never displayed - see image below. 
+</p>
+
+<p align="center"><img src="images/WWJ_Picking_02_600.jpg" /><br /><small>Frame buffer at the end of the pick process on terrain</small></p>
+
+<p>
+At the end of the pick process, the <tt>DrawContext</tt> has a <tt>PickedObjectList</tt> of all the objects - if any, that lie under the pick screen position. One of them is on top and is the picked (or selected) object for this frame.
+</p>
+<p>
+In turn, at the end of the display process, the <tt>WorldWindGLAutoDrawable</tt> can call the registered <tt>SelectListener</tt>s with a reference to the <tt>PickedObject</tt> in the <tt>SelectEvent</tt>.
+</p>
+
+<h3>WW display process overview</h3>
+
+<p>
+Here is the overall process for one display frame:
+</p>
+
+<blockquote><pre>
+WorldWindGLAutoDrawable.display() {
+
+    // Before rendering
+    callRenderingListeners( new RenderingEvent() );   
+
+    SceneController.repaint()
+
+        // Clear global picked object list
+        initializeDrawContext();
+
+        // Calls pick() on all layers and ordered renderables
+        pick();
+
+        // Calls render() on all layers and ordered renderables
+        draw();
+
+
+    // After rendering
+    callRenderingListeners( new RenderingEvent() );
+
+    // If current view position has changed
+    callPositionListeners( new PositionEvent() );
+
+    // If current picked/selected object has changed
+    callSelectListeners( new SelectEvent() );
+
+}
+</pre></blockquote>
+
+<h2>Using PickSupport</h2>
+
+<p>
+Layers that want to provide picking support must implement the <tt>pick()</tt> method that is responsible for finding out which of its objects is under the pick position and add it to the global picked object list. 
+</p>
+<p>
+At the end of the picking process that list may contain several objects from several layers. It will be sorted out by the scene controller to compute which one is on top.
+</p>
+<p>
+The <tt>pick()</tt> method is essentialy the same as the <tt>render()</tt> method used to draw, with the additon of a couple steps that the <tt>PickSupport</tt> object will make very easy. 
+</p>
+
+
+<h3>Code sample for a layer</h3>
+
+<blockquote><pre>
+PickSupport pickSupport = new PickSupport();
+
+pick(DrawContext dc, Point pickPoint) {
+
+    // Clear local pickable object list
+    this.pickSupport.clearPickList();
+
+    // GL setup for unique colors rendering (no textures, no blend, no fog...)
+    this.pickSupport.beginPicking(dc);
+
+
+    // For each object
+
+        // Get a unique color
+        Color color = dc.getUniquePickColor();
+        int colorCode = color.getRGB();
+
+	// Find out the picked lat/lon/alt position under the screen pickPoint
+	Position pickPosition = null;
+	...
+
+        // Add our object to the local pickable object list 
+	// Here we refer to this, the current layer, but it could be finer parts of it 
+	// - like icons, or geometry faces.
+	// (false = not terrain)
+        this.pickSupport.addPickableObject(colorCode, this, pickPosition, false);
+
+	// Set GL color
+        gl.glColor3ub((byte) color.getRed(), (byte) color.getGreen(), (byte) color.getBlue());
+
+
+	... draw object ...
+
+
+
+    // Restore GL states
+    this.pickSupport.endPicking(dc);
+
+    // Find out which local object has been picked 
+    // and add it to the global dc.pickedObject list
+    pickSupport.resolvePick(dc, pickPoint, this);
+
+}
+</pre></blockquote>
+<p>
+A very similar and more complete code structure can be seen at work in <tt>gov.nasa.worldwind.layers.RenderableLayer.java</tt> in the <tt>doPick()</tt> method override.
+</p>
+
+<h3>Merging render() and pick()</h3>
+
+<p>
+In many situations it may be more appropriate to have one single method to handle both rendering and picking. In that case it is possible to query the current draw context to know whether we are in picking mode and what the pick point is.
+</p>
+
+<blockquote><pre>
+if(dc.isPickingMode()) 
+{
+   Point pickPoint = dc.getPickPoint(); // in screen coordinates
+
+   ... do picking steps here
+
+}
+</pre></blockquote>
+
+
+<h2>Responding to select events</h2>
+
+<p>
+Here is an anonymous select listener example that responds to left click on the world map (from <tt>WWJApplet</tt>):
+</p>
+
+<blockquote><pre>
+private WorldWindowGLCanvas wwd;
+...
+
+// Setup a select listener for the worldmap click-and-go feature
+this.wwd.addSelectListener(new SelectListener()
+{
+    public void selected(SelectEvent event)
+    {
+        if (event.getEventAction().equals(SelectEvent.LEFT_CLICK))
+        {
+            if (event.hasObjects())
+            {
+                if (event.getTopObject() instanceof WorldMapLayer)
+                {
+                    // Left click on World Map : iterate view to target position
+                    Position targetPos = event.getTopPickedObject().getPosition();
+
+                    OrbitView view = (OrbitView)WWJApplet.this.wwd.getView();
+                    Globe globe = WWJApplet.this.wwd.getModel().getGlobe();
+
+                    // Use a PanToIterator
+                    view.applyStateIterator(FlyToOrbitViewStateIterator.createPanToIterator(
+                         view, globe, new LatLon(targetPos.getLatitude(), targetPos.getLongitude()),
+                         Angle.ZERO, Angle.ZERO, targetPos.getElevation()));
+                 }
+             }
+         }
+     }
+});
+</pre></blockquote>
+
+<h2>Notes</h2>
+
+<p>
+Picking currently identifies objects at a single pixel, not a small window of pixels. Plans are to allow specification of pick-window size and multiple simultaneous pick windows.
+</p>
+<p>
+For more on unique color picking see <a href="http://www.glprogramming.com/red/chapter14.html#name6">Object Selection Using the Back Buffer</a>, from the original <a href="http://www.glprogramming.com/red/">OpenGL Programming Guide</a> (aka The Red Book)<br />
+
+</p>
+
+<br /><br /><br />
+</body>
+</html>
+

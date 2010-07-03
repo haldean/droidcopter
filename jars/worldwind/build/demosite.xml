@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--$Id: demosite.xml 9813 2009-03-30 23:56:06Z rkim $-->
+<project name="demosite">
+   <!--
+    ====================================================================================================
+    DemoSite targets
+    Builds the World Wind DemoSite release package.
+    WARNING: these targets does not work with the World Wind public release.
+    -->
+    <target name="demosite.release" depends="clean.worldwind.jarfile,
+                                             clean.applet.jarfile,
+                                             clean.appletminimal.jarfile,
+                                             clean.demosite.release,
+                                             worldwind.jarfile,
+                                             applet.jarfile,
+                                             appletminimal.jarfile"
+            description="Create the World Wind DemoSite release">
+        <mkdir dir="${demosite.release.dir}"/>
+        <copy todir="${demosite.release.dir}">
+            <fileset dir="${demosite.dir}">
+                <include name="**"/>
+                <type type="file"/>
+            </fileset>
+            <fileset dir="${applet.dir}">
+                <include name="**/*.html"/>
+                <include name="**/*.jnlp"/>
+                <exclude name="package.html"/>
+                <type type="file"/>
+            </fileset>
+            <fileset dir="${basedir}">
+                <include name="${worldwind.jarfile}"/>
+                <include name="${applet.jarfile}"/>
+                <include name="${appletminimal.jarfile}"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        <get src="${appletlauncher.url}" dest="${demosite.release.dir}/applet-launcher.jar"/>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${demosite.release.dir}/${worldwind.jarfile}"/>
+        </antcall>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${demosite.release.dir}/${applet.jarfile}"/>
+        </antcall>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${demosite.release.dir}/${appletminimal.jarfile}"/>
+        </antcall>
+    </target>
+	
+    <target name="demosite.release.zipfile" depends="demosite.release"
+            description="Package the World Wind DemoSite release">
+        <zip destfile="${demosite.release.zipfile}">
+            <fileset dir="${demosite.release.dir}"/>
+        </zip>
+    </target>
+	
+    <target name="clean.demosite.release">
+        <delete dir="${demosite.release.dir}"/>
+        <delete file="${demosite.release.zipfile}"/>
+    </target>
+ 
+    <!--
+    Applet Targets - Builds the World Wind Applet Jar packages, and builds the World Wind Applet release.
+    -->
+
+    <!-- Creates the World Wind Applet library. -->
+    <target name="applet.jarfile" depends="worldwind.jarfile"
+            description="Build the World Wind Applet library">
+        <jar jarfile="${basedir}/${applet.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="${worldwind.jarfile}"/>
+                <attribute name="Main-Class" value="gov.nasa.worldwind.examples.applet.WWJApplet"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/worldwind/examples/applet/WWJApplet.class"/>
+                <include name="gov/nasa/worldwind/examples/applet/WWJApplet$*.class"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+    </target>
+    <!-- Creates the World Wind Minimal-Applet library. -->                            
+    <target name="appletminimal.jarfile" depends="worldwind.jarfile"
+            description="Build the World Wind Minimal-Applet library">
+        <jar jarfile="${basedir}/${appletminimal.jarfile}">
+            <manifest>
+                <attribute name="Class-Path" value="${worldwind.jarfile}"/>
+                <attribute name="Main-Class" value="gov.nasa.worldwind.examples.applet.WWJAppletMinimal"/>
+            </manifest>
+            <fileset dir="${worldwind.classes.dir}">
+                <include name="gov/nasa/worldwind/examples/applet/WWJAppletMinimal.class"/>
+                <include name="gov/nasa/worldwind/examples/applet/WWJAppletMinimal$*.class"/>
+                <type type="file"/>
+            </fileset>
+        </jar>
+    </target>
+    <!--
+    Creates the World Wind Applet release directory. 
+    Before creating a release, create a keystore as follows:
+        keytool -genkey -Keystore ./wwKeystore -alias deployer  (Use NASAWorldWind as the password)
+        keytool -selfcert -Keystore ./wwKeystore -alias deployer
+    Then, create a file with the title "keystore.properties" in the same
+    directory as this build file. Its contents should be as follows:
+        keystore.file=wwKeystore
+        keystore.alias=deployer
+        keystore.storepass=NASAWorldWind
+    -->
+    <target name="applet.release" depends="clean.worldwind.jarfile,
+                                           clean.applet,
+                                           worldwind.jarfile,
+                                           applet.jarfile,
+                                           appletminimal.jarfile"
+            description="Create the World Wind Applet release">
+        <mkdir dir="${applet.release.dir}"/>
+        <copy todir="${applet.release.dir}">
+            <fileset dir="${applet.dir}">
+                <include name="**/*.html"/>
+                <include name="**/*.jnlp"/>
+                <exclude name="package.html"/>
+                <type type="file"/>
+            </fileset>
+            <fileset dir="${basedir}">
+                <include name="${worldwind.jarfile}"/>
+                <include name="${applet.jarfile}"/>
+                <include name="${appletminimal.jarfile}"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        <get src="${appletlauncher.url}" dest="${applet.release.dir}/applet-launcher.jar"/>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${applet.release.dir}/${worldwind.jarfile}"/>
+        </antcall>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${applet.release.dir}/${applet.jarfile}"/>
+        </antcall>
+        <antcall target="jarsigner">
+            <param name="jarfile" value="${applet.release.dir}/${appletminimal.jarfile}"/>
+        </antcall>
+    </target>
+    <!-- Packages the World Wind Applet release components into a zip file. -->
+    <target name="applet.release.zipfile"
+            description="Package the World Wind Applet release">
+        <zip destfile="${applet.release.zipfile}">
+            <fileset dir="${applet.release.dir}"/>
+        </zip>
+    </target>
+    <!-- Deletes the World Wind Applet files and directories. -->                 
+    <target name="clean.applet.jarfile">
+        <delete file="${applet.jarfile}"/>
+    </target>
+    <target name="clean.appletminimal.jarfile">
+        <delete file="${appletminimal.jarfile}"/>
+    </target>
+    <target name="clean.applet.release">
+        <delete dir="${applet.release.dir}"/>
+        <delete file="${applet.release.zipfile}"/>
+    </target>
+    <target name="clean.applet" depends="clean.applet.jarfile,
+                                         clean.appletminimal.jarfile,
+                                         clean.applet.release"/>
+								 
+</project>

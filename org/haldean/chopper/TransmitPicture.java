@@ -16,12 +16,11 @@ public final class TransmitPicture extends Thread implements Constants
 	private static byte[] lastpic = new byte[0];
 	private static ByteArrayOutputStream baos;
 	public static Handler mHandler;
-	
+	public static int PREVQUALITY = INITIALPREVQ;
 	public TransmitPicture(ObjectOutputStream mydata)
 	{
-		super();
+		super("Transmit Telemetry");
 		baos = new ByteArrayOutputStream();
-		setName("TransmitPicture");
 		dataout = mydata;
 	}
 	
@@ -34,12 +33,10 @@ public final class TransmitPicture extends Thread implements Constants
             {
                 switch (msg.what) {
                 case SENDAPIC:
-                	try
-                	{
+                	try	{
                 		transmit();
                 	}
-                	catch (IOException e)
-                	{
+                	catch (IOException e) {
                 		System.out.println("Connection failed, reconnecting in " + CONNECTIONINTERVAL);
                 		e.printStackTrace();
                 	}
@@ -75,35 +72,39 @@ public final class TransmitPicture extends Thread implements Constants
 			return;
 		}
 		
-		if (sendpic.length == 0)
-			System.out.println("FUCK");
-		else
-			System.out.println(sendpic.length);
+		if (MakePicture.nextx != MakePicture.XPREV) {//picture parameters need updating
+			if (MakePicture.updateFrameSize())
+				System.out.println("Picture updated succesfully.");
+			else
+				Comm.sendMessage("IMAGE:REQUEST:DENIED");
+		}
+		
 		if (lastpic != sendpic) //if the buffer is not still the last picture sent, and sendpic isn't null
 		{
 			long starttime = System.currentTimeMillis();
-			int[] rgb = new int[XPREV * YPREV];
-			decodeYUV420SP(rgb, sendpic, XPREV, YPREV);
-			Bitmap mBitMap = Bitmap.createBitmap(rgb, XPREV, YPREV, Bitmap.Config.RGB_565);
+			Bitmap mBitMap;
+			int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
+			decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
+			System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+			mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
 			if (mBitMap == null) {
 				System.out.println("Bitmap decode failed");
 				return;
 			}
 			if (baos == null)
 				System.out.println("bad stream");
-			mBitMap.compress(Bitmap.CompressFormat.JPEG, JPEGQUALITY, baos);
+			mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
 			byte[] temppic = baos.toByteArray();
 			baos.reset();
 			long endtime = System.currentTimeMillis();
-	    	Comm.sendMessage("Pic Processing took " + (endtime - starttime));
+	    	System.out.println("Pic Processing took " + (endtime - starttime));
 			System.out.println("Sending a pic, length " + temppic.length);
 			//Notifies the control console that the next transmission will be an image.
 			//COMMUNICATION PROTOCOL: startsWith("PREPARE.") indicates to prep for a special transmission,
 			//i.e. not a text-based one.
 			String PicPrep = "IMAGE:" + Integer.toString(temppic.length) + ":" + System.currentTimeMillis();
 			Comm.sendMessage(PicPrep);
-			try
-			{
+			try	{
 				//sends the picture
 				dataout.write(temppic);
 				dataout.flush();
@@ -111,15 +112,14 @@ public final class TransmitPicture extends Thread implements Constants
 				//stores the sent picture, to compare it to succeeding images and make sure the same image isn't sent twice (wasteful)
 				lastpic = sendpic;
 			}
-			catch (IOException e)
-			{
+			catch (IOException e) {
 				e.printStackTrace();
 				mHandler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
 			}
 		}
 		else //if the buffer is null or was identical to the last frame sent--need to wait a bit for the camera.
 		{
-			mHandler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
+			mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
 		}
 	}
 	private static void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {

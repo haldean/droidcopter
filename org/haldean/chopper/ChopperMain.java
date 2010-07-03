@@ -27,11 +27,6 @@ public final class ChopperMain extends Activity implements Constants
 		
         //Camera stuff
         SurfaceView preview = (SurfaceView) findViewById(R.id.preview);
-        if (preview == null)
-        {
-        	System.out.println("Null, damn!");
-        	System.exit(-1);
-        }
         SurfaceHolder previewHolder = preview.getHolder();
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
@@ -42,7 +37,12 @@ public final class ChopperMain extends Activity implements Constants
 		//Initialize and start sensor process
 		ChopperStatus status = new ChopperStatus(getApplicationContext());
 		status.start();
-	
+		
+		Navigation nav = new Navigation();
+		nav.start();
+		
+		Guidance guid = new Guidance();
+		guid.start();
 	}
 
 	protected void onDestroy() {
@@ -50,8 +50,9 @@ public final class ChopperMain extends Activity implements Constants
 		super.onDestroy();
 	} 
 	
-	protected void onResume() {
+	/*protected void onResume() {
 		super.onResume();
-		MakePicture.mHandler.sendEmptyMessage(STARTPREVIEW);
-	}
+		if (MakePicture.mHandler != null)
+			MakePicture.mHandler.sendEmptyMessage(STARTPREVIEW);
+	}*/
 }

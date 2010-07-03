@@ -2,6 +2,7 @@ package org.haldean.chopper;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ListIterator;
 
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
@@ -12,31 +13,59 @@ import android.os.Looper;
 import android.os.Message;
 import android.view.SurfaceHolder;
 
-public final class MakePicture extends Thread implements Constants
-{
+public final class MakePicture extends Thread implements Constants {
 	private static Camera camera;
 	public static byte[] buffer = new byte[0];
-	
+
 	//Variables used for calculating how long it takes to make a snapshot.
-	
+
 	private static Camera.PictureCallback GoodPic;
 	private static Camera.ErrorCallback error;
 	private static SurfaceHolder previewHolder;
 	
-	public static Handler mHandler;
+	public static int XPREV = 0;
+	public static int YPREV = 0;
+	public static int nextx = 0;
+	public static int nexty = 0;
 	
+	public static Handler mHandler;
+
 	public MakePicture(SurfaceHolder sh)
 	{
-		super();
+		super("Take Telemetry");
 		setPriority(Thread.MIN_PRIORITY);
-		previewHolder = sh;
-		setName("MakePicture");
+		previewHolder = sh;		
+	}
+
+	public void run()
+	{
+		Looper.prepare();
+		System.out.println("MakePicture run() thread ID " + getId());
 		
+		//Handles incoming messages
+		mHandler = new Handler() {
+            public void handleMessage(Message msg)
+            {
+                switch (msg.what) {
+                case TAKEGOODPIC:
+                	camera.takePicture(null, null, GoodPic); //takes the pic
+                	break;
+                case STARTPREVIEW:
+                	if (camera != null)
+                		camera.startPreview();
+                	break;
+                case SENDSIZES:
+                	sendSizes();
+                	break;
+                }
+            }
+        };
+        
 		//Initialize the camera, get a lock
 		if (camera == null)
 			camera = Camera.open();
 
-		//set up callbacks.  First is on error, second is on picture taken.
+		//set up callbacks.  First is on error
 		error = new ErrorCallback()
 		{
 			public void onError(int error, Camera camera)
@@ -45,7 +74,9 @@ public final class MakePicture extends Thread implements Constants
 			}
 		};
 		
-		//anonymous callback class, with instructions on what to do with the image data once available
+		camera.setErrorCallback(error);
+		
+		//callback class, with instructions on what to do with a high-quality image
 		GoodPic = new Camera.PictureCallback()
 		{
 			public void onPictureTaken(byte[] imageData, Camera c)
@@ -58,12 +89,14 @@ public final class MakePicture extends Thread implements Constants
 			}
 		};
 		
+		//handles drawing the preview to the surface.  Not algorithmically necessary, droid-required security feature.
 		SurfaceHolder.Callback surfaceCallback=new SurfaceHolder.Callback() {
 			public void surfaceCreated(SurfaceHolder holder) {
 				if (camera == null)
 					camera=Camera.open();
 
 				try {
+				Comm.sendMessage("IMAGE:REQUEST:DENIED");
 					camera.setPreviewDisplay(previewHolder);
 				}
 				catch (Throwable t) {
@@ -71,41 +104,22 @@ public final class MakePicture extends Thread implements Constants
 				}
 			}
 
-			public void surfaceChanged(SurfaceHolder holder,
-																 int format, int width,
-																 int height) {
-				Camera.Parameters parameters=camera.getParameters();
-
-				parameters.setPreviewSize(width, height);
-				parameters.setPictureFormat(PixelFormat.JPEG);
-
-				camera.setParameters(parameters);
+			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 				camera.startPreview();
 			}
 
 			public void surfaceDestroyed(SurfaceHolder holder) {
-			/*	camera.stopPreview();
+				/*camera.stopPreview();
 				camera.release();
-				camera=null;
-				*/
+				camera=null;*/
 			}
 		};
-		
-		PreviewCallback precall = new PreviewCallback (){
-
-			public void onPreviewFrame(byte[] data, Camera camera) {
-				System.out.println("preview callback");
-				synchronized (buffer) {
-					buffer = data;
-				}
-			}
-		};		
-		//Inner class defs done
-		
+		//add the callback
 		previewHolder.addCallback(surfaceCallback);
-		camera.setErrorCallback(error);
+
 		try
 		{
+			//set the display
 			camera.setPreviewDisplay(previewHolder);
 		}
 		catch (IOException e)
@@ -113,56 +127,109 @@ public final class MakePicture extends Thread implements Constants
 			e.printStackTrace();
 		}
 		
-		//get available parameters, set specific ones.  Later, may configure these to be operated remotely.
-		Camera.Parameters params = camera.getParameters();
-		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
+		//what to do with each preview frame captured
+		PreviewCallback precall = new PreviewCallback (){
+			public void onPreviewFrame(byte[] data, Camera camera) {
+				synchronized (buffer) {
+					buffer = data;
+				}
+			}
+		};
 		
-		
-		//Send list of available frame sizes to the server
-		Comm.sendMessage("IMAGE:NUMSIZES:" + sizes.size());
-		for (int i = 0; i < sizes.size(); i++) {
-			Comm.sendMessage("IMAGE:AVAILABLESIZE:" + sizes.get(i).width + ":" + sizes.get(i).height);
-		}
-		
-		List<Integer> fps = params.getSupportedPreviewFrameRates();
-		params.setPreviewFrameRate(fps.get(0)); //lowest frame rate possible
-		
-		Camera.Size previewsize = sizes.get(Math.min(1, sizes.size() - 1)); //second worst option, if available. if one option available, use it
-		
-		params.setPreviewSize(previewsize.width, previewsize.height);
 		camera.setPreviewCallback(precall);
+		//Inner class defs done
 		
+		//get available parameters, set specific ones.  Later, will configure these to be operated remotely.
+		Camera.Parameters params = camera.getParameters();
+		
+		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
+		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
+		if (sizes != null) {
+			Camera.Size previewsize = sizes.get(Math.min(1, sizes.size() - 1)); //second worst option, if available. if one option available, use it
+			params.setPreviewSize(previewsize.width, previewsize.height);
+			XPREV = previewsize.width;
+			YPREV = previewsize.height;	
+		}
+		else { //Running off the emulator
+			Camera.Size size = params.getPreviewSize();
+			XPREV = size.width;
+			YPREV = size.height;
+		}
+		nextx = XPREV;
+		nexty = YPREV;
+		
+		//Deal with FPS
+		List<Integer> fps = params.getSupportedPreviewFrameRates();
+		if (fps != null)
+			params.setPreviewFrameRate(fps.get(0)); //lowest frame rate possible
+		else //running off the emulator
+			System.out.println("One available FPS: " + params.getPreviewFrameRate());
+		
+		//Some arbitrary parameters:
 		params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-		
 		params.setPictureSize(XPIC, YPIC);
 		params.setPictureFormat(PixelFormat.JPEG);
 		params.setJpegQuality(INITIALJPEGQ);
-		
+		params.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
 		//Loads the new parameters.  Necessary!
-		camera.setParameters(params);
+		try {
+			camera.setParameters(params);
+		}
+		catch (RuntimeException e) {
+			e.printStackTrace();
+			System.out.println("Parameters won't set.  Not a significant problem; moving on.");
+		}
+		sendSizes();
+		
+        
+        //Get to work!
+        mHandler.sendEmptyMessage(STARTPREVIEW);
+		Looper.loop();
 	}
 	
-	public void run()
-	{
-		Looper.prepare();
+	public static boolean updateFrameSize() {
+		if (camera == null)
+			return false;
+		System.out.println("Updating frame size, from " + XPREV + ", " + YPREV + " to " + nextx + ", " + nexty);
+		Camera.Parameters params = camera.getParameters();
+		try {
+			params.setPreviewSize(nextx, nexty);
+			camera.stopPreview();
+			camera.setParameters(params);
+			XPREV = nextx;
+			YPREV = nexty;
+			
+		}
+		catch (Throwable t) {
+			t.printStackTrace();
+			return false;
+		}
+		finally { //if it succeeds, nothing happens.  if it doesn't, nextx/nexty are reset.
+			nextx = XPREV;
+			nexty = YPREV;
+			camera.startPreview();
+		}
+		return true;
+	}
+	
+	public static void sendSizes() {
 		
-		camera.startPreview();
-		System.out.println("MakePicture run() thread ID " + getId());
-		
-		mHandler = new Handler() {
-            public void handleMessage(Message msg)
-            {
-                switch (msg.what) {
-                case TAKEGOODPIC:
-                	camera.takePicture(null, null, GoodPic); //takes the pic
-                	break;
-                case STARTPREVIEW:
-                	if (camera != null)
-                		camera.startPreview();
-                	break;
-                }
-            }
-        };
-		Looper.loop();
+		if (camera == null)
+			return;
+		System.out.println("Sending sizes");
+		Camera.Parameters params = camera.getParameters();
+		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
+		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
+		if (sizes != null) {
+			ListIterator<Camera.Size> i1 = sizes.listIterator();
+			while (i1.hasNext()) {
+				Camera.Size mysize = i1.next();
+				Comm.sendMessage("IMAGE:AVAILABLESIZE:" + mysize.width + ":" + mysize.height);
+			}
+		}
+		else {
+			Camera.Size size = params.getPreviewSize();
+			Comm.sendMessage("IMAGE:AVAILABLESIZE:" + size.width + ":" + size.height);
+		}		
 	}
 }

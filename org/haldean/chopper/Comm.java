@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.locks.ReentrantLock;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -25,7 +26,7 @@ public final class Comm extends Thread implements Constants
 	private static Handler mHandler;
 	private static Runnable newconnarg;
 	private static Thread newconn;
-	private static TimerTask heartbeat;
+	private static ReentrantLock newconnLock = new ReentrantLock();
 	private static Timer countdown;
 	
 	private static SurfaceHolder sh;
@@ -35,12 +36,6 @@ public final class Comm extends Thread implements Constants
 		super("Comm");
 		sh = mysh;
 		countdown = new Timer();
-		heartbeat = new TimerTask() {
-			public void run() {
-				updateAll("SYS:NOCONN");
-
-			}
-		};
 		
 		newconnarg = new Runnable() {
 			public void run() {
@@ -62,7 +57,13 @@ public final class Comm extends Thread implements Constants
 					TransmitPicture transpic = new TransmitPicture(dataout);
 			        System.out.println("CommOut transpic thread ID " + transpic.getId());
 			        transpic.start();
-			        countdown.schedule(heartbeat, FIRSTPULSE);
+			        countdown.cancel();
+			        countdown = new Timer();
+			        countdown.schedule(new TimerTask() {
+							public void run() {
+								updateAll("SYS:NOCONN");
+							}
+						}, FIRSTPULSE);
 			        startReading();
 				}
 				catch (IOException e) {
@@ -74,7 +75,10 @@ public final class Comm extends Thread implements Constants
 		};
 		newconn = new Thread(newconnarg);
 	}
-	public static void sendMessage(String message) { //for when other classes want to send a message back to the control computer
+	
+	//for when other classes want to send a message back to the control computer
+	public static void sendMessage(String message) {
+		System.out.println(message);
 		if (textout == null) {
 			return;
 		}
@@ -97,10 +101,11 @@ public final class Comm extends Thread implements Constants
 			public void handleMessage(Message msg) {
                 switch (msg.what) {
                 case MAKECONNECTION:
-                	synchronized (newconn) {
+                	if (newconnLock.tryLock()) {
 	                	if (!newconn.isAlive()) {//a connection is being established
 	                		newconn = new Thread(newconnarg);
 	            			newconn.start();
+	            			newconnLock.unlock();
 	                	}
                 	}
                 	break;
@@ -166,16 +171,23 @@ public final class Comm extends Thread implements Constants
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("MANUAL")) {
 					Navigation.autoPilot(false);
+					Navigation.targetLock.lock();
 					for (int i = 0; i < 4; i++) {
 						Navigation.target[i] = new Double(parts[i + 3]);
 					}
+					Navigation.targetLock.unlock();
 				}
 				if (parts[1].equals("AUTOPILOT"))
 					Navigation.autoPilot(true);
 			}
 			if (parts[1].equals("PULSE")) {
-				countdown.purge();
-				countdown.schedule(heartbeat, PULSERATE);
+				countdown.cancel();
+		        countdown = new Timer();
+		        countdown.schedule(new TimerTask() {
+						public void run() {
+							updateAll("SYS:NOCONN");
+						}
+					}, PULSERATE);
 			}
 		}
 		if (parts[0].equals("SYS")) { //Internal message

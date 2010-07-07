@@ -27,6 +27,7 @@ public final class MakePicture extends Thread implements Constants {
 	public static int YPREV = 0;
 	public static int nextx = 0;
 	public static int nexty = 0;
+	public static int PREVFORMAT = 0;
 	
 	public static Handler mHandler;
 
@@ -92,11 +93,11 @@ public final class MakePicture extends Thread implements Constants {
 		//handles drawing the preview to the surface.  Not algorithmically necessary, droid-required security feature.
 		SurfaceHolder.Callback surfaceCallback=new SurfaceHolder.Callback() {
 			public void surfaceCreated(SurfaceHolder holder) {
+				System.out.println("Surface callback, surface created");
 				if (camera == null)
 					camera=Camera.open();
 
 				try {
-				Comm.sendMessage("IMAGE:REQUEST:DENIED");
 					camera.setPreviewDisplay(previewHolder);
 				}
 				catch (Throwable t) {
@@ -105,10 +106,11 @@ public final class MakePicture extends Thread implements Constants {
 			}
 
 			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-				camera.startPreview();
+				System.out.println("Surface callback, surface changed");
 			}
 
 			public void surfaceDestroyed(SurfaceHolder holder) {
+				System.out.println("Surface callback, surface destroyed");
 				/*camera.stopPreview();
 				camera.release();
 				camera=null;*/
@@ -164,6 +166,8 @@ public final class MakePicture extends Thread implements Constants {
 			params.setPreviewFrameRate(fps.get(0)); //lowest frame rate possible
 		else //running off the emulator
 			System.out.println("One available FPS: " + params.getPreviewFrameRate());
+		
+		PREVFORMAT = params.getPreviewFormat();
 		
 		//Some arbitrary parameters:
 		params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);

@@ -42,9 +42,18 @@ public class Guidance extends Thread implements Constants {
 			long starttime = System.currentTimeMillis();
 			stabilizing = false; //initializing value
 			//Retrieve current orientation.
-			azimuth = ChopperStatus.reading[AZIMUTH];
-			pitchdeg = -ChopperStatus.reading[PITCH];
-			rolldeg = ChopperStatus.reading[ROLL];
+			if (ChopperStatus.readingLock[AZIMUTH].tryLock()) {
+				azimuth = ChopperStatus.reading[AZIMUTH];
+				ChopperStatus.readingLock[AZIMUTH].unlock();
+			}
+			if (ChopperStatus.readingLock[PITCH].tryLock()) {
+				pitchdeg = -ChopperStatus.reading[PITCH];
+				ChopperStatus.readingLock[PITCH].unlock();
+			}
+			if (ChopperStatus.readingLock[ROLL].tryLock()) {
+				rolldeg = ChopperStatus.reading[ROLL];
+				ChopperStatus.readingLock[ROLL].unlock();
+			}
 			pitchrad = pitchdeg * Math.PI / 180.0;
 			rollrad = rolldeg * Math.PI / 180.0;
 			
@@ -75,11 +84,12 @@ public class Guidance extends Thread implements Constants {
 				//Retrieve target velocity from nav,
 				//Transform absolute target velocity to relative target velocity
 				double theta = -azimuth * Math.PI / 180.0;
-				synchronized (Navigation.target) {
+				if (Navigation.targetLock.tryLock()) {
 					target[0] = Navigation.target[0] * Math.cos(theta) - Navigation.target[1] * Math.sin(theta);
 					target[1] = Navigation.target[0] * Math.sin(theta) + Navigation.target[1] * Math.cos(theta);
 					target[2] = Navigation.target[2];
 					target[3] = Navigation.target[3];
+					Navigation.targetLock.unlock();
 				}
 				if (inSimulator)
 					System.out.println(target[0] + ", " + target[1]);
@@ -206,6 +216,11 @@ public class Guidance extends Thread implements Constants {
 			}
 		
 			//Pass filtered values to motors.
+			if (ChopperStatus.motorLock.tryLock()) {
+				for (int i = 0; i < 4; i++) {
+					ChopperStatus.motorspeed[i] = motorspeed[i];
+				}
+			}
 			
 			//Sleep a while
 			long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -17,6 +19,8 @@ public final class TransmitPicture extends Thread implements Constants
 	private static ByteArrayOutputStream baos;
 	public static Handler mHandler;
 	public static int PREVQUALITY = INITIALPREVQ;
+	private static boolean NEWCOMPRESSMETHOD = false;
+	
 	public TransmitPicture(ObjectOutputStream mydata)
 	{
 		super("Transmit Telemetry");
@@ -38,6 +42,7 @@ public final class TransmitPicture extends Thread implements Constants
                 	}
                 	catch (IOException e) {
                 		System.out.println("Connection failed, reconnecting in " + CONNECTIONINTERVAL);
+                		//Does not actually try to reconnect; it is assumed that chopperStatus will also fail and give the command to reconnect.
                 		e.printStackTrace();
                 	}
                 	break;
@@ -45,26 +50,27 @@ public final class TransmitPicture extends Thread implements Constants
             }
         };
 		
-		if (dataout == null)
+		if (dataout == null) //For debugging only; should not happen
 			System.out.println("Null dataout");
 		System.out.println("TransmitPicture run() thread ID " + getId()); //debugging
 		
-		mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL);
+		mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL);//Send first picture, after giving the camera time to warm up.
 		Looper.loop();
 	}
 	
+	//Kills the transmit picture thread, so it can be restarted
 	public static void stopLoop() {
 		if (mHandler == null)
 			return;
 		mHandler.getLooper().quit();
 	}
 	
-	private static void transmit() throws IOException
-	{
+	private static void transmit() throws IOException {
 		synchronized (MakePicture.buffer) //get a lock on the variable
 		{
 			sendpic = MakePicture.buffer; //create a new reference in case buffer is changed by another thread.
 		}
+		
 		if (sendpic.length == 0)
 		{
 			System.out.println("temppic unprocessed");
@@ -82,18 +88,44 @@ public final class TransmitPicture extends Thread implements Constants
 		if (lastpic != sendpic) //if the buffer is not still the last picture sent, and sendpic isn't null
 		{
 			long starttime = System.currentTimeMillis();
-			Bitmap mBitMap;
-			int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
-			decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
-			System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
-			mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
-			if (mBitMap == null) {
-				System.out.println("Bitmap decode failed");
-				return;
+			if (NEWCOMPRESSMETHOD)
+			{
+				YuvImage sourcePic = null;
+				try {
+					sourcePic = new YuvImage(sendpic, MakePicture.PREVFORMAT, XPIC, YPIC, null);
+				}
+				catch (Throwable t)
+				{
+					t.printStackTrace();
+				}
+				
+				//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+			
+				System.out.println("Compressing to jpeg");
+				try {
+					sourcePic.compressToJpeg(new Rect(0, 0, XPIC, YPIC), PREVQUALITY, baos);
+				}
+				catch (Throwable t) {
+					System.out.println("Compress fail");
+					t.printStackTrace();
+				}
+				System.out.println("Finished compressing");
+			}
+			else {
+				System.out.println("Bitmap compression");
+				Bitmap mBitMap;
+				int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
+				decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
+				System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+				mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
+				if (mBitMap == null) {
+					System.out.println("Bitmap decode failed");
+					return;
+				}
+				mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
 			}
 			if (baos == null)
 				System.out.println("bad stream");
-			mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
 			byte[] temppic = baos.toByteArray();
 			baos.reset();
 			long endtime = System.currentTimeMillis();
@@ -122,8 +154,9 @@ public final class TransmitPicture extends Thread implements Constants
 			mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
 		}
 	}
+	
 	private static void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
-		
+
     	final int frameSize = width * height;
     	
     	for (int j = 0, yp = 0; j < height; j++) {
@@ -148,6 +181,5 @@ public final class TransmitPicture extends Thread implements Constants
     			rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
     		}
     	}
-    	
-    }
+	}
 }

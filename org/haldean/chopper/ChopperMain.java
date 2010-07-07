@@ -14,8 +14,9 @@ public final class ChopperMain extends Activity implements Constants
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState); //call to parent class
-		setContentView(R.layout.main);
 		
+		setContentView(R.layout.main);
+
 		Thread.currentThread().setName("ChopperMain");
 		System.out.println("ChopperMain onCreate() thread ID " + Thread.currentThread().getId());
 		
@@ -30,13 +31,15 @@ public final class ChopperMain extends Activity implements Constants
         SurfaceHolder previewHolder = preview.getHolder();
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
-		//Initialize and start the processes that send data back to the control computer.
+      //Initialize and start sensor process
+		ChopperStatus status = new ChopperStatus(getApplicationContext());
+		status.start();
+		
+        //Initialize and start the processes that send data back to the control computer.
 		Comm send = new Comm(previewHolder);
 		send.start();
 		
-		//Initialize and start sensor process
-		ChopperStatus status = new ChopperStatus(getApplicationContext());
-		status.start();
+		
 		
 		Navigation nav = new Navigation();
 		nav.start();

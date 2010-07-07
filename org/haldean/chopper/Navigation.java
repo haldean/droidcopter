@@ -2,6 +2,7 @@ package org.haldean.chopper;
 
 import java.util.LinkedList;
 import java.util.Vector;
+import java.util.concurrent.locks.ReentrantLock;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -10,6 +11,10 @@ import android.os.Message;
 
 public class Navigation extends Thread implements Constants {
 	public static double[] target = new double[4];
+	public static ReentrantLock targetLock;
+	
+	private static double[] tempTarget = new double[4];
+	
 	public static boolean autopilot = false;
 	public static Handler mHandler;
 	private static int status;
@@ -29,6 +34,8 @@ public class Navigation extends Thread implements Constants {
 		travelPlans.add(lowPower);
 		travelPlans.add(flightPath);
 		travelPlans.add(onMyOwn);
+		
+		targetLock = new ReentrantLock();
 	}
 	
 	public void run() {
@@ -68,7 +75,12 @@ public class Navigation extends Thread implements Constants {
 			currentTask = myList.getFirst();
 		}
 
-		currentTask.setVelocity(target);
+		currentTask.setVelocity(tempTarget);
+		targetLock.lock();
+		for (int i = 0; i < 4; i++)
+			target[i] = tempTarget[i];
+		targetLock.unlock();
+		
 		long interval = currentTask.getInterval();
 		if (interval > 0)
 			mHandler.sendEmptyMessageDelayed(EVALNAV, interval);
@@ -76,10 +88,15 @@ public class Navigation extends Thread implements Constants {
 	}
 	
 	private static void hover() {
+		targetLock.lock();
 		for (int i = 0; i < 3; i++) {
 			target[i] = 0;
 		}
-		target[3] = ChopperStatus.reading[AZIMUTH];
+		if (ChopperStatus.readingLock[AZIMUTH].tryLock()) {
+			target[3] = ChopperStatus.reading[AZIMUTH];
+			ChopperStatus.readingLock[AZIMUTH].unlock();
+		}
+		targetLock.unlock();
 		mHandler.sendEmptyMessageDelayed(EVALNAV, HOVERPAUSE);
 	}
 	

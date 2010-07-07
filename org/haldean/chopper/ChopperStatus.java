@@ -23,18 +23,26 @@ import android.os.Message;
 public final class ChopperStatus extends Thread implements SensorEventListener, Constants, LocationListener
 {	
 	public static double[] reading = new double[NUMSENSORS]; //last known data for a given sensor
-	public static ReentrantLock[] readinglock = new ReentrantLock[NUMSENSORS];
+	public static ReentrantLock[] readingLock;
 	
-	public static int[] accuracy = new int[NUMSENSORS]; //last known accuracy for a given sensor
-	public static long[] timestamp = new long[NUMSENSORS]; //timestamp in nanos of last reading
+	//private static int[] accuracy = new int[NUMSENSORS]; //last known accuracy for a given sensor
+	private static long[] timestamp = new long[NUMSENSORS]; //timestamp in nanos of last reading
 	
 	public static double[] gps = new double[GPSFIELDS]; //last available GPS readings
-	public static float gpsaccuracy; //accuracy of said reading
-	public static long gpstimestamp; //timestamp of the reading
-	public static int gpsnumsats; //number of satellites used to collect last reading
+	public static ReentrantLock[] gpsLock;
 	
-	public static float currbattery = 0;
-	public static float maxbattery = 100;
+	public static double[] motorspeed = new double[4];
+	public static ReentrantLock motorLock;
+	
+	private static float gpsaccuracy; //accuracy of said reading
+	
+	private static long gpstimestamp; //timestamp of the reading
+	private static ReentrantLock gpsExtrasLock;
+	
+	private static int gpsnumsats; //number of satellites used to collect last reading
+	
+	public static int currbattery = 0;
+	public static int maxbattery = 100;
 	
 	private static Context context; //used to get location manager.
 	//private static LocationManager LocMan; //manages locations
@@ -45,6 +53,18 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	public ChopperStatus(Context mycontext)	{
 		super("Chopper Status");
 		context = mycontext;
+		
+		readingLock = new ReentrantLock[NUMSENSORS];
+		for (int i = 0; i < NUMSENSORS; i++)
+			readingLock[i] = new ReentrantLock();
+		
+		gpsLock = new ReentrantLock[GPSFIELDS];
+		for (int i = 0; i < GPSFIELDS; i++)
+			gpsLock[i] = new ReentrantLock();
+		
+		motorLock = new ReentrantLock();
+		
+		gpsExtrasLock = new ReentrantLock();
 	}
 	
 	private static void sendUpdate()
@@ -52,32 +72,100 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		//System.out.println("Should be sending update");
 		long starttime = System.currentTimeMillis(); //to ensure that messages are sent no faster than UPDATEINTERVAL
 		
-		Comm.sendMessage("ORIENT:" + reading[AZIMUTH] +
-						":" + reading[PITCH] + 
-						":" + reading[ROLL]);
-		Comm.sendMessage("ACCEL:" + reading[XACCEL] +
-						":" + reading[YACCEL] +
-						":" + reading[ZACCEL]);
-		Comm.sendMessage("FLUX:" + reading[MAG1] +
-						":" + reading[MAG2] +
-						":" + reading[MAG3]);
-		Comm.sendMessage("MOTORSPEED:" + Guidance.motorspeed[0] +
-				":" + Guidance.motorspeed[1] +
-				":" + Guidance.motorspeed[2] +
-				":" + Guidance.motorspeed[3]);
-		Comm.sendMessage("LIGHT:" + reading[LIGHT]);
-		Comm.sendMessage("PROXIMITY:" + reading[PROXIMITY]);
-		Comm.sendMessage("PRESSURE:" + reading[PRESSURE]);
-		Comm.sendMessage("TEMPERATURE:" + reading[TEMPERATURE]);
-		Comm.sendMessage("BATTERY:" + (float) (currbattery/maxbattery));
+		if (readingLock[AZIMUTH].tryLock()) {
+			if (readingLock[PITCH].tryLock()) {
+				if (readingLock[ROLL].tryLock()) {
+
+					Comm.sendMessage("ORIENT:" + reading[AZIMUTH] +
+									":" + reading[PITCH] + 
+									":" + reading[ROLL]);
+					
+					readingLock[ROLL].unlock();
+				}
+				readingLock[PITCH].unlock();
+			}
+			readingLock[AZIMUTH].unlock();
+		}
+		
+		if (readingLock[XACCEL].tryLock()) { 
+			if (readingLock[YACCEL].tryLock()) {
+				if (readingLock[ZACCEL].tryLock()) {
+	
+					Comm.sendMessage("ACCEL:" + reading[XACCEL] +
+									":" + reading[YACCEL] +
+									":" + reading[ZACCEL]);
+					
+					readingLock[ZACCEL].unlock();
+				}
+				readingLock[YACCEL].unlock();
+			}
+			readingLock[XACCEL].unlock();
+		}
+		
+		if (readingLock[MAG1].tryLock()) {
+			if (readingLock[MAG2].tryLock()) {
+				if (readingLock[MAG3].tryLock()) {
+			
+					Comm.sendMessage("FLUX:" + reading[MAG1] +
+							":" + reading[MAG2] +
+							":" + reading[MAG3]);
+				
+					readingLock[MAG3].unlock();
+				}
+				readingLock[MAG2].unlock();
+			}
+			readingLock[MAG1].unlock();
+		}
+		
+		if (motorLock.tryLock()) {
+	
+			Comm.sendMessage("MOTORSPEED:" + motorspeed[0] +
+					":" + motorspeed[1] +
+					":" + motorspeed[2] +
+					":" + motorspeed[3]);
+			motorLock.unlock();
+		}
+		
+		if (readingLock[LIGHT].tryLock()) {
+			Comm.sendMessage("LIGHT:" + reading[LIGHT]);
+			readingLock[LIGHT].unlock();
+		}
+		if (readingLock[PROXIMITY].tryLock()) {
+			Comm.sendMessage("PROXIMITY:" + reading[PROXIMITY]);
+			readingLock[PROXIMITY].unlock();
+		}
+		if (readingLock[PRESSURE].tryLock()) {
+			Comm.sendMessage("PRESSURE:" + reading[PRESSURE]);
+			readingLock[PRESSURE].unlock();
+		}
+		if (readingLock[TEMPERATURE].tryLock()) {
+			Comm.sendMessage("TEMPERATURE:" + reading[TEMPERATURE]);
+			readingLock[TEMPERATURE].unlock();
+		}
+		
+		//ints are atomic, no lock necessary
+		Comm.sendMessage("BATTERY:" + ((float) currbattery / (float) maxbattery));
+		
 		//Send GPS data
 		String gpsData = new String("GPS");
 		for (int i = 0; i < GPSFIELDS; i++) {
-			gpsData += ":" + ChopperStatus.gps[i];
+			if (gpsLock[i].tryLock()) {
+				gpsData += ":" + ChopperStatus.gps[i];
+				gpsLock[i].unlock();
+			}
+			else
+				gpsData += ":-0";
 		}
-		gpsData += ":" + ChopperStatus.gpsaccuracy + 
+		
+		if (gpsExtrasLock.tryLock()) {
+			gpsData += ":" + ChopperStatus.gpsaccuracy + 
 			":" + ChopperStatus.gpsnumsats +
 			":" + ChopperStatus.gpstimestamp;
+			gpsExtrasLock.unlock();
+		}
+		else
+			gpsData += ":-0:-0:-0";
+			
 		Comm.sendMessage(gpsData);
 		
 		//Ensure loop time is no faster than UPDATEINTERVAL
@@ -86,6 +174,8 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		long timetonext = UPDATEINTERVAL - (endtime - starttime);
 		if (timetonext > 0)
 			mHandler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, timetonext);
+		else
+			mHandler.sendEmptyMessage(SENDSTATUSUPDATE);
 	}
 	
 	public void run()
@@ -109,6 +199,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 				String action = intent.getAction();
 				
 				if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+					//ints are atomic; no lock needed
 					currbattery = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
 					maxbattery = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
 					if (currbattery <= LOWBATT)
@@ -143,25 +234,44 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	public void onLocationChanged(Location loc) {
 		if (loc != null && gps != null) {
 			double newalt = loc.getAltitude();
-			if (newalt != gps[ALTITUDE]) //vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0.
+			if (newalt != gps[ALTITUDE]) { //vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0.
+				gpsLock[dALT].lock();
 				gps[dALT] = (newalt - gps[ALTITUDE]) / (gpstimestamp - loc.getTime()) * 1000.0; //that last 1000 converts from m/ms to m/s
-				
-			gps[ALTITUDE] = newalt;
-			gps[BEARING] = loc.getBearing();
-			gps[LONG] = loc.getLongitude();
-			gps[LAT] = loc.getLatitude();
-			gps[SPEED] = loc.getSpeed();
+				gpsLock[dALT].unlock();
+			}
 			
+			gpsLock[ALTITUDE].lock();
+			gps[ALTITUDE] = newalt;
+			gpsLock[ALTITUDE].unlock();
+			
+			gpsLock[BEARING].lock();
+			gps[BEARING] = loc.getBearing();
+			gpsLock[BEARING].unlock();
+			
+			gpsLock[LONG].lock();
+			gps[LONG] = loc.getLongitude();
+			gpsLock[LONG].unlock();
+			
+			gpsLock[LAT].lock();
+			gps[LAT] = loc.getLatitude();
+			gpsLock[LAT].unlock();
+			
+			gpsLock[SPEED].lock();
+			gps[SPEED] = loc.getSpeed();
+			gpsLock[SPEED].unlock();
+			
+			gpsExtrasLock.lock();
 			gpsaccuracy = loc.getAccuracy();
 			gpstimestamp = loc.getTime();
 			if (loc.getExtras() != null)
 				gpsnumsats = loc.getExtras().getInt("satellites");
+			gpsExtrasLock.unlock();
 		}
 	}
 	
 	//Update datafields as required.
 	public void onAccuracyChanged(Sensor sensor, int newaccuracy) {
-		int type = sensor.getType();
+		/*int type = sensor.getType();
 		switch (type) {
 			case Sensor.TYPE_ACCELEROMETER: 
 				accuracy[XACCEL] = newaccuracy;
@@ -190,7 +300,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 			case Sensor.TYPE_TEMPERATURE:
 				accuracy[TEMPERATURE] = newaccuracy;
 				break;
-		}
+		}*/
 	}
 	
 	//Update datafields as required.
@@ -199,47 +309,11 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		int type = event.sensor.getType();
 		switch (type)
 		{
+			//Locks handled in updateField()
 			case Sensor.TYPE_ACCELEROMETER:
-				
-					
-				
-				//obtain velocity:
-				
-				//transform acceleration frame of reference into an absolute frame.
-				//build transformation matrix:
-				/*float alpha = reading[PITCH];
-				float beta = -reading[ROLL];
-				float gamma = -reading[AZIMUTH];
-				
-				Matrix.setRotateEulerM(transformation, 0, alpha, beta, gamma);
-				
-				float[] newaccel = new float[3];
-				float[] augmentedaccel = new float[4];
-				for (int i = 0; i < 3; i++) {
-					augmentedaccel[i] = event.values[i];
-				}
-				
-				for (int i = 0; i < 3; i++) {
-					for (int j = 4 * i; j < i * 4 + 4; j++) {
-						newaccel[i] += augmentedaccel[j - 4 * i] * transformation[j];
-					}
-				}
-					*/
 				updateField(XACCEL, event.accuracy, event.timestamp, event.values[0]);
 				updateField(YACCEL, event.accuracy, event.timestamp, event.values[1]);
-				updateField(ZACCEL, event.accuracy, event.timestamp, event.values[2]);
-				
-				/*if (lastaccelupdate == 0) {
-					lastaccelupdate = event.timestamp;
-				}
-				else {
-					double dt =(event.timestamp - lastaccelupdate) / 1000000000.0; //ns to s
-					lastaccelupdate = event.timestamp;
-					for (int i = 0; i < 3; i++) {
-						velocity[i] += dt * reading[XACCEL + i];
-					}
-				}*/
-				
+				updateField(ZACCEL, event.accuracy, event.timestamp, event.values[2]);				
 				break;
 			case Sensor.TYPE_LIGHT:
 				updateField(LIGHT, event.accuracy, event.timestamp, event.values[0]);
@@ -269,22 +343,25 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	//for less typing.
 	private static void updateField(int field, int myaccuracy, long mytimestamp, double value)
 	{
-		accuracy[field] = myaccuracy;
+		//accuracy[field] = myaccuracy;
 		timestamp[field] = mytimestamp;
+		
+		readingLock[field].lock();
 		reading[field] = value;
+		readingLock[field].unlock();
 	}
 	
 	//Need to find a way to turn it back on via code. Don't know that there is one.
 	public void onProviderDisabled(String provider)
 	{
 		//For now, just tells the user there's a problem.
-		Comm.sendMessage("MSG:GPS Disabled!");
+		Comm.sendMessage("MSG:GPS:Disabled!");
 	}
 	
 	//Yay.
 	public void onProviderEnabled(String provider)
 	{
-		Comm.sendMessage("MSG:GPS Enabled.");
+		Comm.sendMessage("MSG:GPS:Enabled.");
 	}
 	
 	//Forwards the status update to the user.
@@ -293,13 +370,13 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		switch (status)
 		{
 		case LocationProvider.OUT_OF_SERVICE:
-			Comm.sendMessage("MSG:GPS Out Of Service.");
+			Comm.sendMessage("MSG:GPS:Out Of Service.");
 			break;
 		case LocationProvider.TEMPORARILY_UNAVAILABLE:
-			Comm.sendMessage("MSG:GPS Temporarily Unavailable.");
+			Comm.sendMessage("MSG:GPS:Temporarily Unavailable.");
 			break;
 		case LocationProvider.AVAILABLE:
-			Comm.sendMessage("MSG:GPS Available.");
+			Comm.sendMessage("MSG:GPS:Available.");
 			break;
 		}
 	}

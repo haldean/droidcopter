@@ -23,14 +23,14 @@ public interface Constants
 	public static final int SENDSIZES = 105;
 	public static final int EVALNAV = 106;
 	
-	public static final int UPDATEINTERVAL = 200; //for sending status report, millis
+	public static final int UPDATEINTERVAL = 500; //for sending status report, millis
 	public static final int CAMERAINTERVAL = 200; //How much the camera should sleep between shots.
 	public static final int PICTUREUPDATEINTERVAL = 50;
 	public static final int CONNECTIONINTERVAL = 5000;
 	public static final int PULSERATE = 3000;
 	public static final int FIRSTPULSE = 20000;
 	public static final int HOVERPAUSE = 10000;
-	
+	public static final int LOCKPAUSE = 100;
 	public static final float gpsmindist = 0; //minimum distance upon which GPS will update itself. Lower values increase accuracy/reliability, decrease battery.
 	public static final long gpsmintime = 0; //minimum time upon which GPS will update itself. Ditto.
 	

@@ -236,6 +236,18 @@ public final class Comm extends Thread implements Constants
 				mHandler.sendEmptyMessage(MAKEDATACONN);
 			}
 		}
+		if (parts[0].equals("COMM")) {
+			if (parts[1].equals("PULSE")) {
+				//Reset the heartbeat countdown
+				countdown.cancel();
+		        countdown = new Timer();
+		        countdown.schedule(new TimerTask() {
+						public void run() {
+							updateAll("SYS:NOCONN");
+						}
+					}, PULSERATE);
+			}
+		}
 		if (parts[0].equals("NAV")) {
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("MANUAL")) {
@@ -248,16 +260,6 @@ public final class Comm extends Thread implements Constants
 				}
 				if (parts[1].equals("AUTOPILOT"))
 					Navigation.autoPilot(true);
-			}
-			if (parts[1].equals("PULSE")) {
-				//Reset the heartbeat countdown
-				countdown.cancel();
-		        countdown = new Timer();
-		        countdown.schedule(new TimerTask() {
-						public void run() {
-							updateAll("SYS:NOCONN");
-						}
-					}, PULSERATE);
 			}
 		}
 		if (parts[0].equals("SYS")) { //Internal message

@@ -66,7 +66,7 @@ public class DataReceiver implements Runnable {
 
     /* Timeout timer */
     private Timer timeout;
-    private final int timeoutLength = 4000;
+    private final int timeoutLength = 5000;
     private boolean receiving;
 
     /** Initialize this DataReceiver object, destroying all previous state.
@@ -241,7 +241,8 @@ public class DataReceiver implements Runnable {
 
     private void onReceiving() {
 	sendln("IMAGE:AVAILABLESIZES");
-	sendln("IMAGE:GET");
+	sendln("IMAGE:GETPARAMS");
+	sendln("IMAGE:SETUP");
 	Debug.log("Receiving");
     }
 

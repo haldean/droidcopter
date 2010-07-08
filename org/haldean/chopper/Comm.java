@@ -24,9 +24,15 @@ public final class Comm extends Thread implements Constants
 	private static ObjectOutputStream dataout; //outbound objects--jpeg image.
 	private static BufferedReader textin;
 	private static Handler mHandler;
-	private static Runnable newconnarg;
-	private static Thread newconn;
-	private static ReentrantLock newconnLock = new ReentrantLock();
+	
+	private static Runnable textConnArg;
+	private static Thread textConn;
+	private static ReentrantLock textConnLock = new ReentrantLock();
+	
+	private static Runnable dataConnArg;
+	private static Thread dataConn;
+	private static ReentrantLock dataConnLock = new ReentrantLock();
+	
 	private static Timer countdown;
 	
 	private static SurfaceHolder sh;
@@ -37,75 +43,131 @@ public final class Comm extends Thread implements Constants
 		sh = mysh;
 		countdown = new Timer();
 		
-		newconnarg = new Runnable() {
+		dataConnArg = new Runnable() {
 			public void run() {
 				TransmitPicture.stopLoop();
-				try	{
-					//Try to connect, set up sockets
-					System.out.println("Initializing network sockets... ");
-					textsocket = new Socket(control, textoutport);
-					textout = new PrintWriter(textsocket.getOutputStream(), true);
+				try {
 					
+					destroyDataConn();
+					
+					System.out.println("Initializing data sockets... ");
 					datasocket = new Socket(control, dataoutport);
 					dataout = new ObjectOutputStream(datasocket.getOutputStream());
-					
-					textin = new BufferedReader(new InputStreamReader(textsocket.getInputStream()));
-					
-					System.out.println("\tSockets initialized.");
-					System.out.println("Connection established");
-					
 					TransmitPicture transpic = new TransmitPicture(dataout);
 			        System.out.println("CommOut transpic thread ID " + transpic.getId());
 			        transpic.start();
+					System.out.println("\tData Sockets initialized.");
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+					System.out.println("Failed to establish data connection.  Reattempting in " + CONNECTIONINTERVAL);
+					mHandler.sendEmptyMessageDelayed(MAKEDATACONN, CONNECTIONINTERVAL);
+				}
+				
+				
+			}
+		};
+		dataConn = new Thread(dataConnArg);
+		
+		//Runnable object that handles establishing a connection
+		textConnArg = new Runnable() {
+			public void run() {
+				//Kills the transmit picture thread, will be restarted when a connection is established.
+				
+				try	{
+					//Try to connect, set up sockets
+					System.out.println("Closing text sockets...");
+					if (textout != null)
+						textout.close();
+					if (textsocket != null)
+						textsocket.close();
+					
+					System.out.println("Initializing text sockets... ");
+					textsocket = new Socket(control, textoutport);
+					textout = new PrintWriter(textsocket.getOutputStream(), true);
+					
+					if (textin != null)
+						textin.close();
+					textin = new BufferedReader(new InputStreamReader(textsocket.getInputStream()));
+					
+					System.out.println("\tText Sockets initialized.");
+					System.out.println("Connection established");
+					
+					
+			        
+			        //Initializes heartbeat protocol
 			        countdown.cancel();
 			        countdown = new Timer();
 			        countdown.schedule(new TimerTask() {
 							public void run() {
-								updateAll("SYS:NOCONN");
+								updateAll("SYS:NOCONN"); //If the timer runs down, connection lost; update the system.
 							}
 						}, FIRSTPULSE);
 			        startReading();
 				}
 				catch (IOException e) {
 					e.printStackTrace();
-					System.out.println("Failed to establish connection.  Reattempting in " + CONNECTIONINTERVAL);
-					mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);
+					System.out.println("Failed to establish text connection.  Reattempting in " + CONNECTIONINTERVAL);
+					mHandler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL);
 				}
 			}
 		};
-		newconn = new Thread(newconnarg);
+		textConn = new Thread(textConnArg);
+	}
+	
+	private static void destroyDataConn() {
+		System.out.println("Closing data sockets...");
+		try {
+			if (dataout != null)
+				dataout.close();
+			if (datasocket != null)
+				datasocket.close();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	//for when other classes want to send a message back to the control computer
 	public static void sendMessage(String message) {
-		System.out.println(message);
-		if (textout == null) {
+		//System.out.println(message);
+		if (textout == null) { //connection not yet initialized
 			return;
 		}
 		try {			
 			textout.println(message);
-			textout.flush();
+			//textout.flush();
 		}
+		//If the connection has broken
 		catch (Throwable t) {
 			t.printStackTrace();
 			System.out.println("Connection appears to be lost.  Attempting to reconnect.");
-			mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);
+			mHandler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
 		}
 	}
 	
-	//main functionality
+	//initial functionality
 	public void run() {
 		Looper.prepare();
 		
-		mHandler = new Handler() {
+		mHandler = new Handler() { //interthread, time-delayed communication
 			public void handleMessage(Message msg) {
                 switch (msg.what) {
-                case MAKECONNECTION:
-                	if (newconnLock.tryLock()) {
-	                	if (!newconn.isAlive()) {//a connection is being established
-	                		newconn = new Thread(newconnarg);
-	            			newconn.start();
-	            			newconnLock.unlock();
+                case MAKETEXTCONN:
+                	if (textConnLock.tryLock()) { //if not, the thread is in the process of being created. No action necessary
+	                	if (!textConn.isAlive()) {//a connection is being established
+	                		textConn = new Thread(textConnArg);
+	            			textConn.start(); //Try to connect
+	            			textConnLock.unlock();
+	                	}
+                	}
+                	break;
+                case MAKEDATACONN:
+                	if (dataConnLock.tryLock()) { //if not, the thread is in the process of being created. No action necessary
+	                	if (!dataConn.isAlive()) {//a connection is being established
+	                		dataConn = new Thread(dataConnArg);
+	                		dataConn.start(); //Try to connect
+	                		dataConnLock.unlock();
 	                	}
                 	}
                 	break;
@@ -118,14 +180,17 @@ public final class Comm extends Thread implements Constants
         //This object takes pictures in an infinite loop.
         MakePicture takepic = new MakePicture(sh);
         sh = null;
-
         takepic.start();
-        System.out.println("CommOut takepic thread ID " + takepic.getId());
-        mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);
+        System.out.println("CommOut takepic thread ID " + takepic.getId()); //for debugging
         
+        //Give everything a little delay, then try to connect
+        //mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);
+        mHandler.sendEmptyMessage(MAKETEXTCONN);
+        //mHandler.sendEmptyMessage(MAKEDATACONN);
         Looper.loop();
 	}
 	
+	//Start reading from the input thread
 	private static void startReading() {
 		String input;
 		try {
@@ -134,8 +199,9 @@ public final class Comm extends Thread implements Constants
 			    System.out.println("Waiting for input");
 			}
 		}
-		catch (IOException e) {
-			e.printStackTrace();
+		catch (Throwable t) {
+			mHandler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
+			t.printStackTrace();
 		}
 	}
 	
@@ -163,8 +229,11 @@ public final class Comm extends Thread implements Constants
 			if (parts[1].equals("AVAILABLESIZES")) {
 				MakePicture.sendSizes();
 			}
-			if (parts[1].equals("GET")) {
+			if (parts[1].equals("GETPARAMS")) {
 				Comm.sendMessage("IMAGE:PARAMS:" + MakePicture.XPREV + ":" + MakePicture.YPREV + ":" + TransmitPicture.PREVQUALITY);
+			}
+			if (parts[1].equals("SETUP")) {
+				mHandler.sendEmptyMessage(MAKEDATACONN);
 			}
 		}
 		if (parts[0].equals("NAV")) {
@@ -181,6 +250,7 @@ public final class Comm extends Thread implements Constants
 					Navigation.autoPilot(true);
 			}
 			if (parts[1].equals("PULSE")) {
+				//Reset the heartbeat countdown
 				countdown.cancel();
 		        countdown = new Timer();
 		        countdown.schedule(new TimerTask() {
@@ -194,6 +264,8 @@ public final class Comm extends Thread implements Constants
 			if (parts[1].equals("NOCONN")) {
 				//Navigation.updateStatus(NOCONN);
 				//Navigation.autoPilot(true);
+				//mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL); //Try to reconnect soon
+
 			}
 			if (parts[1].equals("LOWPOWER")) {
 				Navigation.updateStatus(LOWPOWER);

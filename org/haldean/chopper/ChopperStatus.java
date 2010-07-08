@@ -54,6 +54,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		super("Chopper Status");
 		context = mycontext;
 		
+		//Initialize the data locks
 		readingLock = new ReentrantLock[NUMSENSORS];
 		for (int i = 0; i < NUMSENSORS; i++)
 			readingLock[i] = new ReentrantLock();
@@ -72,6 +73,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		//System.out.println("Should be sending update");
 		long starttime = System.currentTimeMillis(); //to ensure that messages are sent no faster than UPDATEINTERVAL
 		
+		//Lock data, send it, unlock.  If the lock is unavailable (unlikely), skip this datapiece for this iteration
 		if (readingLock[AZIMUTH].tryLock()) {
 			if (readingLock[PITCH].tryLock()) {
 				if (readingLock[ROLL].tryLock()) {
@@ -171,6 +173,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		//Ensure loop time is no faster than UPDATEINTERVAL
 		long endtime = System.currentTimeMillis();
 		
+		//Schedule the next status update
 		long timetonext = UPDATEINTERVAL - (endtime - starttime);
 		if (timetonext > 0)
 			mHandler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, timetonext);
@@ -180,7 +183,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	
 	public void run()
 	{
-		System.out.println("ChopperStatus run() thread ID " + getId());
+		//System.out.println("ChopperStatus run() thread ID " + getId());
 		Looper.prepare(); //don't know what this does.
 		
 		mHandler = new Handler() {

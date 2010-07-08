@@ -56,6 +56,7 @@ public class ServerHost extends JFrame {
     /* Whether we are allowed to create a WorldWindComponent.
      * WWJ doesn't run on Linux 86-64, so Ben's high-fallutin' 
      * 64-bit Ubuntu can't have a globe */
+    //The hell it can't.
     private boolean allowGlobe = true;
 
     /** Create a new ServerHost

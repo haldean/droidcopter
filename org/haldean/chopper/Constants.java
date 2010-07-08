@@ -18,10 +18,11 @@ public interface Constants
 	public static final int TAKEGOODPIC = 100;
 	public static final int SENDSTATUSUPDATE = 101;
 	public static final int SENDAPIC = 102;
-	public static final int MAKECONNECTION = 103;
+	public static final int MAKETEXTCONN = 103;
 	public static final int STARTPREVIEW = 104;
 	public static final int SENDSIZES = 105;
 	public static final int EVALNAV = 106;
+	public static final int MAKEDATACONN = 107;
 	
 	public static final int UPDATEINTERVAL = 500; //for sending status report, millis
 	public static final int CAMERAINTERVAL = 200; //How much the camera should sleep between shots.

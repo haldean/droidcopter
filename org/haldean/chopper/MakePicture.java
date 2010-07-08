@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 
+import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.ErrorCallback;
@@ -16,8 +17,7 @@ import android.view.SurfaceHolder;
 public final class MakePicture extends Thread implements Constants {
 	private static Camera camera;
 	public static byte[] buffer = new byte[0];
-
-	//Variables used for calculating how long it takes to make a snapshot.
+	private static byte[] storeFrame;
 
 	private static Camera.PictureCallback GoodPic;
 	private static Camera.ErrorCallback error;
@@ -30,7 +30,9 @@ public final class MakePicture extends Thread implements Constants {
 	public static int PREVFORMAT = 0;
 	
 	public static Handler mHandler;
-
+	
+	public static boolean newFrame = false;
+	
 	public MakePicture(SurfaceHolder sh)
 	{
 		super("Take Telemetry");
@@ -132,17 +134,23 @@ public final class MakePicture extends Thread implements Constants {
 		//what to do with each preview frame captured
 		PreviewCallback precall = new PreviewCallback (){
 			public void onPreviewFrame(byte[] data, Camera camera) {
+				//System.out.println("PreviewFrame");
 				synchronized (buffer) {
 					buffer = data;
 				}
+				newFrame = true;
+				
+				camera.addCallbackBuffer(storeFrame);
 			}
 		};
 		
-		camera.setPreviewCallback(precall);
+		camera.setPreviewCallbackWithBuffer(precall);
 		//Inner class defs done
 		
 		//get available parameters, set specific ones.  Later, will configure these to be operated remotely.
 		Camera.Parameters params = camera.getParameters();
+		
+		PREVFORMAT = params.getPreviewFormat();
 		
 		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
 		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
@@ -150,7 +158,8 @@ public final class MakePicture extends Thread implements Constants {
 			Camera.Size previewsize = sizes.get(Math.min(1, sizes.size() - 1)); //second worst option, if available. if one option available, use it
 			params.setPreviewSize(previewsize.width, previewsize.height);
 			XPREV = previewsize.width;
-			YPREV = previewsize.height;	
+			YPREV = previewsize.height;
+			
 		}
 		else { //Running off the emulator
 			Camera.Size size = params.getPreviewSize();
@@ -159,6 +168,8 @@ public final class MakePicture extends Thread implements Constants {
 		}
 		nextx = XPREV;
 		nexty = YPREV;
+		storeFrame = new byte[XPREV * YPREV * ImageFormat.getBitsPerPixel(PREVFORMAT) / 8];
+		camera.addCallbackBuffer(storeFrame);
 		
 		//Deal with FPS
 		List<Integer> fps = params.getSupportedPreviewFrameRates();
@@ -167,7 +178,7 @@ public final class MakePicture extends Thread implements Constants {
 		else //running off the emulator
 			System.out.println("One available FPS: " + params.getPreviewFrameRate());
 		
-		PREVFORMAT = params.getPreviewFormat();
+		
 		
 		//Some arbitrary parameters:
 		params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
@@ -211,6 +222,7 @@ public final class MakePicture extends Thread implements Constants {
 		finally { //if it succeeds, nothing happens.  if it doesn't, nextx/nexty are reset.
 			nextx = XPREV;
 			nexty = YPREV;
+			storeFrame = new byte[XPREV * YPREV * ImageFormat.getBitsPerPixel(PREVFORMAT) / 8];
 			camera.startPreview();
 		}
 		return true;

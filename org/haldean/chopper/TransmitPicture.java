@@ -15,7 +15,6 @@ public final class TransmitPicture extends Thread implements Constants
 {
 	private static ObjectOutputStream dataout;
 	private static byte[] sendpic;
-	private static byte[] lastpic = new byte[0];
 	private static ByteArrayOutputStream baos;
 	public static Handler mHandler;
 	public static int PREVQUALITY = INITIALPREVQ;
@@ -66,11 +65,21 @@ public final class TransmitPicture extends Thread implements Constants
 	}
 	
 	private static void transmit() throws IOException {
+		if (!MakePicture.newFrame) {
+			mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
+			System.out.println("Same pic");
+			return;
+		}
+		long starttime = System.currentTimeMillis();
 		synchronized (MakePicture.buffer) //get a lock on the variable
 		{
-			sendpic = MakePicture.buffer; //create a new reference in case buffer is changed by another thread.
+			sendpic = MakePicture.buffer.clone(); //create a new copy.
+			System.out.println("Copytime: " + (System.currentTimeMillis() - starttime));
 		}
 		
+		MakePicture.newFrame = false;
+		
+		System.out.println("Retrieved frame");
 		if (sendpic.length == 0)
 		{
 			System.out.println("temppic unprocessed");
@@ -84,75 +93,65 @@ public final class TransmitPicture extends Thread implements Constants
 			else
 				Comm.sendMessage("IMAGE:REQUEST:DENIED");
 		}
-		
-		if (lastpic != sendpic) //if the buffer is not still the last picture sent, and sendpic isn't null
+
+		if (NEWCOMPRESSMETHOD)
 		{
-			long starttime = System.currentTimeMillis();
-			if (NEWCOMPRESSMETHOD)
+			YuvImage sourcePic = null;
+			try {
+				sourcePic = new YuvImage(sendpic, MakePicture.PREVFORMAT, XPIC, YPIC, null);
+			}
+			catch (Throwable t)
 			{
-				YuvImage sourcePic = null;
-				try {
-					sourcePic = new YuvImage(sendpic, MakePicture.PREVFORMAT, XPIC, YPIC, null);
-				}
-				catch (Throwable t)
-				{
-					t.printStackTrace();
-				}
-				
-				//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+				t.printStackTrace();
+			}
 			
-				System.out.println("Compressing to jpeg");
-				try {
-					sourcePic.compressToJpeg(new Rect(0, 0, XPIC, YPIC), PREVQUALITY, baos);
-				}
-				catch (Throwable t) {
-					System.out.println("Compress fail");
-					t.printStackTrace();
-				}
-				System.out.println("Finished compressing");
+			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+		
+			System.out.println("Compressing to jpeg");
+			try {
+				sourcePic.compressToJpeg(new Rect(0, 0, XPIC, YPIC), PREVQUALITY, baos);
 			}
-			else {
-				System.out.println("Bitmap compression");
-				Bitmap mBitMap;
-				int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
-				decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
-				System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
-				mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
-				if (mBitMap == null) {
-					System.out.println("Bitmap decode failed");
-					return;
-				}
-				mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
+			catch (Throwable t) {
+				System.out.println("Compress fail");
+				t.printStackTrace();
 			}
-			if (baos == null)
-				System.out.println("bad stream");
-			byte[] temppic = baos.toByteArray();
-			baos.reset();
-			long endtime = System.currentTimeMillis();
-	    	System.out.println("Pic Processing took " + (endtime - starttime));
-			System.out.println("Sending a pic, length " + temppic.length);
-			//Notifies the control console that the next transmission will be an image.
-			//COMMUNICATION PROTOCOL: startsWith("PREPARE.") indicates to prep for a special transmission,
-			//i.e. not a text-based one.
-			String PicPrep = "IMAGE:" + Integer.toString(temppic.length) + ":" + System.currentTimeMillis();
-			Comm.sendMessage(PicPrep);
-			try	{
-				//sends the picture
-				dataout.write(temppic);
-				dataout.flush();
-				
-				//stores the sent picture, to compare it to succeeding images and make sure the same image isn't sent twice (wasteful)
-				lastpic = sendpic;
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-				mHandler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
-			}
+			System.out.println("Finished compressing");
 		}
-		else //if the buffer is null or was identical to the last frame sent--need to wait a bit for the camera.
-		{
-			mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
+		else {
+			System.out.println("Bitmap compression");
+			Bitmap mBitMap;
+			int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
+			decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
+			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+			mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
+			if (mBitMap == null) {
+				//System.out.println("Bitmap decode failed");
+				return;
+			}
+			mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
 		}
+		if (baos == null)
+			System.out.println("bad stream");
+		byte[] temppic = baos.toByteArray();
+		baos.reset();
+		long endtime = System.currentTimeMillis();
+    	System.out.println("Pic Processing took " + (endtime - starttime));
+		System.out.println("Sending a pic, length " + temppic.length);
+		//Notifies the control console that the next transmission will be an image.
+		//i.e. not a text-based one.
+		String PicPrep = "IMAGE:" + Integer.toString(temppic.length) + ":" + System.currentTimeMillis();
+		Comm.sendMessage(PicPrep);
+		try	{
+			//sends the picture
+			dataout.write(temppic);
+			dataout.flush();
+		}
+		catch (Throwable t) {
+			t.printStackTrace();
+			System.out.println("TransmitPic throwing exception");
+			mHandler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
+		}
+		System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));
 	}
 	
 	private static void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {

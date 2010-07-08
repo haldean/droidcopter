@@ -39,8 +39,6 @@ public final class ChopperMain extends Activity implements Constants
 		Comm send = new Comm(previewHolder);
 		send.start();
 		
-		
-		
 		Navigation nav = new Navigation();
 		nav.start();
 		

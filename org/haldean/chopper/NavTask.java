@@ -3,7 +3,7 @@ package org.haldean.chopper;
 import java.io.Serializable;
 
 public interface NavTask extends Serializable {
-	public abstract long getInterval();
-	public abstract boolean isComplete();
-	public abstract void setVelocity(double[] target);
+	public long getInterval();
+	public boolean isComplete();
+	public void setVelocity(double[] target);
 }

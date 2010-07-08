@@ -10,7 +10,8 @@
       
     <application android:icon="@drawable/icon">
     			android:label="@string/app_name"
-    			android:debuggable="true">
+    			android:debuggable="true"
+    			android:persistent="true">
 	    <activity android:name="ChopperMain"
 	    	android:screenOrientation="portrait"
 	    	android:label="Chopper"> 

@@ -10,6 +10,8 @@ import android.view.SurfaceView;
 public final class ChopperMain extends Activity implements Constants
 {
 	protected PowerManager.WakeLock mWakeLock; 
+	private static boolean firstRun = true;
+	private static MakePicture takepic;
 	
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -31,19 +33,29 @@ public final class ChopperMain extends Activity implements Constants
         SurfaceHolder previewHolder = preview.getHolder();
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
-      //Initialize and start sensor process
-		ChopperStatus status = new ChopperStatus(getApplicationContext());
-		status.start();
-		
-        //Initialize and start the processes that send data back to the control computer.
-		Comm send = new Comm(previewHolder);
-		send.start();
-		
-		Navigation nav = new Navigation();
-		nav.start();
-		
-		Guidance guid = new Guidance();
-		guid.start();
+        if (firstRun) {
+	        
+	      //Initialize and start sensor process
+			ChopperStatus status = new ChopperStatus(getApplicationContext());
+			status.start();
+			
+			takepic = new MakePicture(previewHolder);
+	        takepic.start();
+	        
+	        //Initialize and start the processes that send data back to the control computer.
+			Comm send = new Comm(previewHolder);
+			send.start();
+			
+			Navigation nav = new Navigation();
+			nav.start();
+			
+			Guidance guid = new Guidance();
+			guid.start();
+        }
+        else {
+        	MakePicture.redrawPreviewHolder(previewHolder);
+        }
+        firstRun = false;
 	}
 
 	protected void onDestroy() {

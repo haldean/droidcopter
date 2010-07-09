@@ -21,7 +21,8 @@ public final class MakePicture extends Thread implements Constants {
 
 	private static Camera.PictureCallback GoodPic;
 	private static Camera.ErrorCallback error;
-	private static SurfaceHolder previewHolder;
+	private static volatile SurfaceHolder previewHolder;
+	private static SurfaceHolder.Callback surfaceCallback;
 	
 	public static int XPREV = 0;
 	public static int YPREV = 0;
@@ -39,7 +40,15 @@ public final class MakePicture extends Thread implements Constants {
 		setPriority(Thread.MIN_PRIORITY);
 		previewHolder = sh;		
 	}
-
+	
+	public static void redrawPreviewHolder(SurfaceHolder sh) {
+		//System.out.println("Redrawing");
+		//add the callback
+		previewHolder.removeCallback(surfaceCallback);
+		previewHolder = sh;
+		previewHolder.addCallback(surfaceCallback);
+	}
+	
 	public void run()
 	{
 		Looper.prepare();
@@ -93,7 +102,7 @@ public final class MakePicture extends Thread implements Constants {
 		};
 		
 		//handles drawing the preview to the surface.  Not algorithmically necessary, droid-required security feature.
-		SurfaceHolder.Callback surfaceCallback=new SurfaceHolder.Callback() {
+		surfaceCallback = new SurfaceHolder.Callback() {
 			public void surfaceCreated(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface created");
 				if (camera == null)
@@ -105,6 +114,7 @@ public final class MakePicture extends Thread implements Constants {
 				catch (Throwable t) {
 					t.printStackTrace();
 				}
+				camera.startPreview();
 			}
 
 			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -113,8 +123,8 @@ public final class MakePicture extends Thread implements Constants {
 
 			public void surfaceDestroyed(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface destroyed");
-				/*camera.stopPreview();
-				camera.release();
+				camera.stopPreview();
+				/*camera.release();
 				camera=null;*/
 			}
 		};

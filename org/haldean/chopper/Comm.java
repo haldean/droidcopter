@@ -177,11 +177,7 @@ public final class Comm extends Thread implements Constants
         
         //actual picture-taking and sending are run in separate threads, so the picture can be processed while other data is being sent.
 
-        //This object takes pictures in an infinite loop.
-        MakePicture takepic = new MakePicture(sh);
-        sh = null;
-        takepic.start();
-        System.out.println("CommOut takepic thread ID " + takepic.getId()); //for debugging
+        
         
         //Give everything a little delay, then try to connect
         //mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);

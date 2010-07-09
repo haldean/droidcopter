@@ -125,7 +125,7 @@ public final class MakePicture extends Thread implements Constants {
 
 			public void surfaceDestroyed(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface destroyed");
-				camera.stopPreview();
+				//camera.stopPreview();
 				/*camera.release();
 				camera=null;*/
 			}

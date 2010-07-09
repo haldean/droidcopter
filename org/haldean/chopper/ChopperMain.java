@@ -11,7 +11,6 @@ public final class ChopperMain extends Activity implements Constants
 {
 	protected PowerManager.WakeLock mWakeLock; 
 	private static boolean firstRun = true;
-	private static MakePicture takepic;
 	
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -36,21 +35,16 @@ public final class ChopperMain extends Activity implements Constants
         if (firstRun) {
 	        
 	      //Initialize and start sensor process
-			ChopperStatus status = new ChopperStatus(getApplicationContext());
-			status.start();
+			new ChopperStatus(getApplicationContext()).start();
 			
-			takepic = new MakePicture(previewHolder);
-	        takepic.start();
+			new MakePicture(previewHolder).start();
 	        
 	        //Initialize and start the processes that send data back to the control computer.
-			Comm send = new Comm(previewHolder);
-			send.start();
+			new Comm(previewHolder).start();
 			
-			Navigation nav = new Navigation();
-			nav.start();
+			new Navigation().start();
 			
-			Guidance guid = new Guidance();
-			guid.start();
+			new Guidance().start();
         }
         else {
         	MakePicture.redrawPreviewHolder(previewHolder);

@@ -44,6 +44,7 @@ public final class MakePicture extends Thread implements Constants {
 	public static void redrawPreviewHolder(SurfaceHolder sh) {
 		//System.out.println("Redrawing");
 		//add the callback
+		System.out.println("thread redraw, " + Thread.currentThread().getId());
 		previewHolder.removeCallback(surfaceCallback);
 		previewHolder = sh;
 		previewHolder.addCallback(surfaceCallback);
@@ -97,7 +98,7 @@ public final class MakePicture extends Thread implements Constants {
 				{
 					//TODO: store the picture
 				}
-				camera.startPreview();
+				mHandler.sendEmptyMessage(STARTPREVIEW);
 			}
 		};
 		
@@ -105,6 +106,7 @@ public final class MakePicture extends Thread implements Constants {
 		surfaceCallback = new SurfaceHolder.Callback() {
 			public void surfaceCreated(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface created");
+				System.out.println("surface callback, thread " + Thread.currentThread().getId());
 				if (camera == null)
 					camera=Camera.open();
 
@@ -114,7 +116,7 @@ public final class MakePicture extends Thread implements Constants {
 				catch (Throwable t) {
 					t.printStackTrace();
 				}
-				camera.startPreview();
+				mHandler.sendEmptyMessage(STARTPREVIEW);
 			}
 
 			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -233,7 +235,7 @@ public final class MakePicture extends Thread implements Constants {
 			nextx = XPREV;
 			nexty = YPREV;
 			storeFrame = new byte[XPREV * YPREV * ImageFormat.getBitsPerPixel(PREVFORMAT) / 8];
-			camera.startPreview();
+			mHandler.sendEmptyMessage(STARTPREVIEW);
 		}
 		return true;
 	}

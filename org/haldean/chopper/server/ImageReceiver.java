@@ -57,6 +57,7 @@ public class ImageReceiver implements Runnable {
 	    /* Call the callback once that reading is completed */
 	    callback.completed();
 	} catch (Exception e) {
+		Debug.log("imageData exception, thread ID " + Thread.currentThread().getId());
 	    e.printStackTrace();
 	}
     }

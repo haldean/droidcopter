@@ -13,7 +13,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.view.SurfaceHolder;
 
 public final class Comm extends Thread implements Constants
 {	
@@ -35,12 +34,9 @@ public final class Comm extends Thread implements Constants
 	
 	private static Timer countdown;
 	
-	private static SurfaceHolder sh;
-	
-	public Comm(SurfaceHolder mysh)
+	public Comm()
 	{
 		super("Comm");
-		sh = mysh;
 		countdown = new Timer();
 		
 		dataConnArg = new Runnable() {

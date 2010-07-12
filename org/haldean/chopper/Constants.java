@@ -11,7 +11,6 @@ public interface Constants
 	
 	public static final int FPS = 5;
 	
-	
 	public static final int INITIALJPEGQ = 50;
 	public static final int INITIALPREVQ = 45;
 	
@@ -31,7 +30,9 @@ public interface Constants
 	public static final int PULSERATE = 3000;
 	public static final int FIRSTPULSE = 20000;
 	public static final int HOVERPAUSE = 10000;
-	public static final int LOCKPAUSE = 100;
+	public static final int NAVPAUSE = 1000;
+	public static final int ARRIVINGDIST = 15; //meters
+	
 	public static final float gpsmindist = 0; //minimum distance upon which GPS will update itself. Lower values increase accuracy/reliability, decrease battery.
 	public static final long gpsmintime = 0; //minimum time upon which GPS will update itself. Ditto.
 	
@@ -78,6 +79,8 @@ public interface Constants
 	public final static int LOWPOWER = 0;
 	public final static int BASICAUTO = 1;
 	public final static int NOCONN = 2;
+	
+	public final static double MAXVEL = 2.0; //m/s
 	
 	public final static int LOWBATT = 30;//percent
 }

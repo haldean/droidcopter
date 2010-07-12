@@ -125,7 +125,7 @@ public final class MakePicture extends Thread implements Constants {
 
 			public void surfaceDestroyed(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface destroyed");
-				//camera.stopPreview();
+				camera.stopPreview();
 				/*camera.release();
 				camera=null;*/
 			}
@@ -244,7 +244,6 @@ public final class MakePicture extends Thread implements Constants {
 		
 		if (camera == null)
 			return;
-		System.out.println("Sending sizes");
 		Camera.Parameters params = camera.getParameters();
 		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
 		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);

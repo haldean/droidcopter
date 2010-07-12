@@ -1,8 +1,10 @@
 package org.haldean.chopper;
 
-import java.util.LinkedList;
 import java.util.Vector;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.haldean.chopper.nav.NavList;
+import org.haldean.chopper.nav.NavTask;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -19,18 +21,22 @@ public class Navigation extends Thread implements Constants {
 	public static Handler mHandler;
 	private static int status;
 	
-	private static Vector<LinkedList<NavTask>> travelPlans = new Vector<LinkedList<NavTask>>();
+	private static Vector<NavTask> travelPlans = new Vector<NavTask>();
 	
-	private static LinkedList<NavTask> flightPath = new LinkedList<NavTask>();
-	private static LinkedList<NavTask> lowPower = new LinkedList<NavTask>();
-	private static LinkedList<NavTask> onMyOwn = new LinkedList<NavTask>();
+	private static NavTask flightPath;
+	private static NavTask lowPower;
+	private static NavTask onMyOwn;
 	
-	private static NavTask currentTask;
+	private static NavTask myList;
 	
 	
 	
 	public Navigation() {
 		super("Navigation");
+		flightPath = new NavList();
+		lowPower = new NavList();
+		onMyOwn = new NavList();
+		
 		travelPlans.add(lowPower);
 		travelPlans.add(flightPath);
 		travelPlans.add(onMyOwn);
@@ -60,31 +66,23 @@ public class Navigation extends Thread implements Constants {
 	
 	private static void evalNextVector() {
 		//Determine what the current task should be
-		LinkedList<NavTask> myList = travelPlans.get(status);
-		if (myList.size() == 0) {
+		myList = travelPlans.get(status);
+		if (myList.isComplete()) {
 			hover();
 			return;
 		}
-		currentTask = myList.getFirst();
-		while (currentTask.isComplete()) {
-			myList.removeFirst();
-			if (myList.size() == 0) {
-				hover();
-				return;
-			}
-			currentTask = myList.getFirst();
-		}
-
-		currentTask.setVelocity(tempTarget);
+		myList.getVelocity(tempTarget);
+		
 		targetLock.lock();
 		for (int i = 0; i < 4; i++)
 			target[i] = tempTarget[i];
 		targetLock.unlock();
 		
-		long interval = currentTask.getInterval();
+		long interval = myList.getInterval();
 		if (interval > 0)
 			mHandler.sendEmptyMessageDelayed(EVALNAV, interval);
-		
+		else
+			mHandler.sendEmptyMessage(EVALNAV);
 	}
 	
 	private static void hover() {
@@ -102,5 +100,6 @@ public class Navigation extends Thread implements Constants {
 	
 	public static void autoPilot(boolean onoff) {
 		autopilot = onoff;
+		mHandler.sendEmptyMessage(EVALNAV);
 	}
 }

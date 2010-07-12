@@ -31,6 +31,9 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	public static double[] gps = new double[GPSFIELDS]; //last available GPS readings
 	public static ReentrantLock[] gpsLock;
 	
+	public static Location lastLoc;
+	public static ReentrantLock lastLocLock;
+	
 	public static double[] motorspeed = new double[4];
 	public static ReentrantLock motorLock;
 	
@@ -66,6 +69,8 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		motorLock = new ReentrantLock();
 		
 		gpsExtrasLock = new ReentrantLock();
+		
+		lastLocLock = new ReentrantLock();
 	}
 	
 	private static void sendUpdate()
@@ -236,6 +241,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	//On location changed, get new location, store in data fields
 	public void onLocationChanged(Location loc) {
 		if (loc != null && gps != null) {
+			
 			double newalt = loc.getAltitude();
 			if (newalt != gps[ALTITUDE]) { //vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0.
 				gpsLock[dALT].lock();
@@ -269,41 +275,18 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 			if (loc.getExtras() != null)
 				gpsnumsats = loc.getExtras().getInt("satellites");
 			gpsExtrasLock.unlock();
+			
+			lastLoc = loc;
+			
+			lastLocLock.lock();
+			lastLoc = loc;
+			lastLocLock.unlock();
+			
 		}
 	}
 	
 	//Update datafields as required.
 	public void onAccuracyChanged(Sensor sensor, int newaccuracy) {
-		/*int type = sensor.getType();
-		switch (type) {
-			case Sensor.TYPE_ACCELEROMETER: 
-				accuracy[XACCEL] = newaccuracy;
-				accuracy[YACCEL] = newaccuracy;
-				accuracy[ZACCEL] = newaccuracy;
-				break;
-			case Sensor.TYPE_LIGHT:
-				accuracy[LIGHT] = newaccuracy;
-				break;
-			case Sensor.TYPE_MAGNETIC_FIELD:
-				accuracy[MAG1] = newaccuracy;
-				accuracy[MAG2] = newaccuracy;
-				accuracy[MAG3] = newaccuracy;
-				break;
-			case Sensor.TYPE_ORIENTATION:
-				accuracy[AZIMUTH] = newaccuracy;
-				accuracy[PITCH] = newaccuracy;
-				accuracy[ROLL] = newaccuracy;
-				break;
-			case Sensor.TYPE_PRESSURE:
-				accuracy[PRESSURE] = newaccuracy;
-				break;
-			case Sensor.TYPE_PROXIMITY:
-				accuracy[PROXIMITY] = newaccuracy;
-				break;
-			case Sensor.TYPE_TEMPERATURE:
-				accuracy[TEMPERATURE] = newaccuracy;
-				break;
-		}*/
 	}
 	
 	//Update datafields as required.

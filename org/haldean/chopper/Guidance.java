@@ -23,13 +23,18 @@ public class Guidance extends Thread implements Constants {
 	
 	public static double[][] gain = new double[4][3];
 	public static double[] motorspeed = new double[4]; //ORDER: North, South, East, West
-	public static boolean horizontaldrift = false; //if true, does not consider dx, dy or azimuth error; makes for perfectly efficient altitude control
+	public static boolean horizontaldrift = false; //if true, does not consider dx, dy or azimuth error; makes for maximally efficient altitude control
 	
 	private static boolean inSimulator = false;
 	
 	public Guidance() {
 		super("Guidance");
 		setPriority(Thread.MAX_PRIORITY);
+		
+		//Temporary: need real tuning values at some point:
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 3; j++)
+				gain[i][j] = .05;
 	}
 	
 	public void run() {

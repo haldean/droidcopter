@@ -40,7 +40,7 @@ public final class ChopperMain extends Activity implements Constants
 			new MakePicture(previewHolder).start();
 	        
 	        //Initialize and start the processes that send data back to the control computer.
-			new Comm(previewHolder).start();
+			new Comm().start();
 			
 			new Navigation().start();
 			

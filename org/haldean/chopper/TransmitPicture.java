@@ -74,12 +74,12 @@ public final class TransmitPicture extends Thread implements Constants
 		synchronized (MakePicture.buffer) //get a lock on the variable
 		{
 			sendpic = MakePicture.buffer.clone(); //create a new copy.
-			System.out.println("Copytime: " + (System.currentTimeMillis() - starttime));
+		//	System.out.println("Copytime: " + (System.currentTimeMillis() - starttime));
 		}
 		
 		MakePicture.newFrame = false;
 		
-		System.out.println("Retrieved frame");
+		//System.out.println("Retrieved frame");
 		if (sendpic.length == 0)
 		{
 			System.out.println("temppic unprocessed");

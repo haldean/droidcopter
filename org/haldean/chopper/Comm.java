@@ -250,8 +250,20 @@ public final class Comm extends Thread implements Constants
 					}
 					Navigation.targetLock.unlock();
 				}
-				if (parts[1].equals("AUTOPILOT"))
+				if (parts[2].equals("AUTOPILOT"))
 					Navigation.autoPilot(true);
+				if (parts[2].equals("AUTOTASK")) {
+					Integer taskList = new Integer(parts[3]);
+					Navigation.setTask(taskList, parts[4]);
+				}
+			}
+			if (parts[1].equals("GET")) {
+				if (parts[2].equals("AUTOTASK")) {
+					String[] myTasks = Navigation.getTasks();
+					for (int i = 0; i < myTasks.length; i++) {
+						Comm.sendMessage("NAV:AUTOTASK:" + myTasks[i].toString());
+					}
+				}
 			}
 		}
 		if (parts[0].equals("SYS")) { //Internal message

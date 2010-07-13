@@ -1,5 +1,6 @@
 package org.haldean.chopper;
 
+import java.util.ListIterator;
 import java.util.Vector;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -21,7 +22,7 @@ public class Navigation extends Thread implements Constants {
 	public static Handler mHandler;
 	private static int status;
 	
-	private static Vector<NavTask> travelPlans = new Vector<NavTask>();
+	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already synchronized
 	
 	private static NavTask flightPath;
 	private static NavTask lowPower;
@@ -58,6 +59,20 @@ public class Navigation extends Thread implements Constants {
             } 
 		};
 		Looper.loop();
+	}
+	
+	public static String[] getTasks() {
+		ListIterator<NavTask> iterator = travelPlans.listIterator();
+		String[] myTasks = new String[travelPlans.size()];
+		while (iterator.hasNext()) {
+			myTasks[iterator.nextIndex()] = iterator.next().toString();
+		}
+		return myTasks;
+	}
+	public static void setTask(int whichPlan, String myTask) {
+		NavList myList = NavList.fromString(myTask);
+		if (myList != null)
+			travelPlans.set(whichPlan, myList);
 	}
 	
 	public static void updateStatus(int newstatus) {

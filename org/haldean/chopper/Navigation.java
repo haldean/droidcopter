@@ -19,7 +19,7 @@ public class Navigation extends Thread implements Constants {
 	private static double[] tempTarget = new double[4];
 	
 	public static boolean autopilot = false;
-	public static Handler mHandler;
+	private static Handler handler;
 	private static int status;
 	
 	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already synchronized
@@ -47,7 +47,7 @@ public class Navigation extends Thread implements Constants {
 	
 	public void run() {
 		Looper.prepare();
-		mHandler = new Handler() {
+		handler = new Handler() {
 			public void handleMessage(Message msg)
             {
                 switch (msg.what) {
@@ -94,10 +94,11 @@ public class Navigation extends Thread implements Constants {
 		targetLock.unlock();
 		
 		long interval = myList.getInterval();
+		handler.removeMessages(EVALNAV);
 		if (interval > 0)
-			mHandler.sendEmptyMessageDelayed(EVALNAV, interval);
+			handler.sendEmptyMessageDelayed(EVALNAV, interval);
 		else
-			mHandler.sendEmptyMessage(EVALNAV);
+			handler.sendEmptyMessage(EVALNAV);
 	}
 	
 	private static void hover() {
@@ -110,11 +111,13 @@ public class Navigation extends Thread implements Constants {
 			ChopperStatus.readingLock[AZIMUTH].unlock();
 		}
 		targetLock.unlock();
-		mHandler.sendEmptyMessageDelayed(EVALNAV, HOVERPAUSE);
+		handler.removeMessages(EVALNAV);
+		handler.sendEmptyMessageDelayed(EVALNAV, HOVERPAUSE);
 	}
 	
 	public static void autoPilot(boolean onoff) {
 		autopilot = onoff;
-		mHandler.sendEmptyMessage(EVALNAV);
+		handler.removeMessages(EVALNAV);
+		handler.sendEmptyMessage(EVALNAV);
 	}
 }

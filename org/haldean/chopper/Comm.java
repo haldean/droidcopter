@@ -1,13 +1,9 @@
 package org.haldean.chopper;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.os.Handler;
@@ -22,7 +18,7 @@ public final class Comm extends Thread implements Constants
 	private static PrintWriter textout; //outbound messages
 	private static ObjectOutputStream dataout; //outbound objects--jpeg image.
 	private static BufferedReader textin;
-	private static Handler mHandler;
+	private static Handler handler;
 	
 	private static Runnable textConnArg;
 	private static Thread textConn;
@@ -57,7 +53,7 @@ public final class Comm extends Thread implements Constants
 				catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("Failed to establish data connection.  Reattempting in " + CONNECTIONINTERVAL);
-					mHandler.sendEmptyMessageDelayed(MAKEDATACONN, CONNECTIONINTERVAL);
+					handler.sendEmptyMessageDelayed(MAKEDATACONN, CONNECTIONINTERVAL);
 				}
 				
 				
@@ -104,7 +100,7 @@ public final class Comm extends Thread implements Constants
 				catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("Failed to establish text connection.  Reattempting in " + CONNECTIONINTERVAL);
-					mHandler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL);
+					handler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL);
 				}
 			}
 		};
@@ -138,7 +134,7 @@ public final class Comm extends Thread implements Constants
 		catch (Throwable t) {
 			t.printStackTrace();
 			System.out.println("Connection appears to be lost.  Attempting to reconnect.");
-			mHandler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
+			handler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
 		}
 	}
 	
@@ -146,7 +142,7 @@ public final class Comm extends Thread implements Constants
 	public void run() {
 		Looper.prepare();
 		
-		mHandler = new Handler() { //interthread, time-delayed communication
+		handler = new Handler() { //interthread, time-delayed communication
 			public void handleMessage(Message msg) {
                 switch (msg.what) {
                 case MAKETEXTCONN:
@@ -177,7 +173,7 @@ public final class Comm extends Thread implements Constants
         
         //Give everything a little delay, then try to connect
         //mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);
-        mHandler.sendEmptyMessage(MAKETEXTCONN);
+        handler.sendEmptyMessage(MAKETEXTCONN);
         //mHandler.sendEmptyMessage(MAKEDATACONN);
         Looper.loop();
 	}
@@ -192,7 +188,7 @@ public final class Comm extends Thread implements Constants
 			}
 		}
 		catch (Throwable t) {
-			mHandler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
+			handler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
 			t.printStackTrace();
 		}
 	}
@@ -203,7 +199,7 @@ public final class Comm extends Thread implements Constants
 		String[] parts = msg.split(":");
 		if (parts[0].equals("IMAGE")) {
 			if (parts[1].equals("RECEIVED")) {
-				TransmitPicture.mHandler.sendEmptyMessage(SENDAPIC);
+				TransmitPicture.handler.sendEmptyMessage(SENDAPIC);
 			}
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("QUALITY")) {
@@ -225,7 +221,7 @@ public final class Comm extends Thread implements Constants
 				Comm.sendMessage("IMAGE:PARAMS:" + MakePicture.XPREV + ":" + MakePicture.YPREV + ":" + TransmitPicture.PREVQUALITY);
 			}
 			if (parts[1].equals("SETUP")) {
-				mHandler.sendEmptyMessage(MAKEDATACONN);
+				handler.sendEmptyMessage(MAKEDATACONN);
 			}
 		}
 		if (parts[0].equals("COMM")) {

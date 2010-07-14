@@ -16,8 +16,9 @@ public final class TransmitPicture extends Thread implements Constants
 	private static ObjectOutputStream dataout;
 	private static byte[] sendpic;
 	private static ByteArrayOutputStream baos;
-	public static Handler mHandler;
+	public static Handler handler;
 	public static int PREVQUALITY = INITIALPREVQ;
+	
 	private static boolean NEWCOMPRESSMETHOD = false;
 	
 	public TransmitPicture(ObjectOutputStream mydata)
@@ -31,7 +32,7 @@ public final class TransmitPicture extends Thread implements Constants
 	{
 		Looper.prepare();
 		
-		mHandler = new Handler() {
+		handler = new Handler() {
             public void handleMessage(Message msg)
             {
                 switch (msg.what) {
@@ -53,20 +54,20 @@ public final class TransmitPicture extends Thread implements Constants
 			System.out.println("Null dataout");
 		System.out.println("TransmitPicture run() thread ID " + getId()); //debugging
 		
-		mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL);//Send first picture, after giving the camera time to warm up.
+		handler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL);//Send first picture, after giving the camera time to warm up.
 		Looper.loop();
 	}
 	
 	//Kills the transmit picture thread, so it can be restarted
 	public static void stopLoop() {
-		if (mHandler == null)
+		if (handler == null)
 			return;
-		mHandler.getLooper().quit();
+		handler.getLooper().quit();
 	}
 	
 	private static void transmit() throws IOException {
 		if (!MakePicture.newFrame) {
-			mHandler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
+			handler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
 			System.out.println("Same pic");
 			return;
 		}
@@ -83,7 +84,7 @@ public final class TransmitPicture extends Thread implements Constants
 		if (sendpic.length == 0)
 		{
 			System.out.println("temppic unprocessed");
-			mHandler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
+			handler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
 			return;
 		}
 		
@@ -149,7 +150,7 @@ public final class TransmitPicture extends Thread implements Constants
 		catch (Throwable t) {
 			t.printStackTrace();
 			System.out.println("TransmitPic throwing exception");
-			mHandler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
+			handler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
 		}
 		System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));
 	}

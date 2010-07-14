@@ -30,7 +30,7 @@ public final class MakePicture extends Thread implements Constants {
 	public static int nexty = 0;
 	public static int PREVFORMAT = 0;
 	
-	public static Handler mHandler;
+	public static Handler handler;
 	
 	public static boolean newFrame = false;
 	
@@ -50,13 +50,17 @@ public final class MakePicture extends Thread implements Constants {
 		previewHolder.addCallback(surfaceCallback);
 	}
 	
+	private static void setupCallbacks() {
+		
+	}
+	
 	public void run()
 	{
 		Looper.prepare();
 		System.out.println("MakePicture run() thread ID " + getId());
 		
 		//Handles incoming messages
-		mHandler = new Handler() {
+		handler = new Handler() {
             public void handleMessage(Message msg)
             {
                 switch (msg.what) {
@@ -98,7 +102,7 @@ public final class MakePicture extends Thread implements Constants {
 				{
 					//TODO: store the picture
 				}
-				mHandler.sendEmptyMessage(STARTPREVIEW);
+				handler.sendEmptyMessage(STARTPREVIEW);
 			}
 		};
 		
@@ -116,7 +120,7 @@ public final class MakePicture extends Thread implements Constants {
 				catch (Throwable t) {
 					t.printStackTrace();
 				}
-				mHandler.sendEmptyMessage(STARTPREVIEW);
+				handler.sendEmptyMessage(STARTPREVIEW);
 			}
 
 			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -210,7 +214,7 @@ public final class MakePicture extends Thread implements Constants {
 		
         
         //Get to work!
-        mHandler.sendEmptyMessage(STARTPREVIEW);
+        handler.sendEmptyMessage(STARTPREVIEW);
 		Looper.loop();
 	}
 	
@@ -235,7 +239,7 @@ public final class MakePicture extends Thread implements Constants {
 			nextx = XPREV;
 			nexty = YPREV;
 			storeFrame = new byte[XPREV * YPREV * ImageFormat.getBitsPerPixel(PREVFORMAT) / 8];
-			mHandler.sendEmptyMessage(STARTPREVIEW);
+			handler.sendEmptyMessage(STARTPREVIEW);
 		}
 		return true;
 	}

@@ -6,7 +6,11 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-
+/**
+ * A starter class for the Chopper threads.
+ * @author Benjamin Bardin
+ *
+ */
 public final class ChopperMain extends Activity implements Constants
 {
 	protected PowerManager.WakeLock mWakeLock; 

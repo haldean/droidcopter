@@ -51,7 +51,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	//private static LocationManager LocMan; //manages locations
 	//private static BroadcastReceiver batteryInfo;
 	
-	public static Handler mHandler; //Message handler.
+	private static Handler handler; //Message handler.
 	
 	public ChopperStatus(Context mycontext)	{
 		super("Chopper Status");
@@ -181,9 +181,9 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		//Schedule the next status update
 		long timetonext = UPDATEINTERVAL - (endtime - starttime);
 		if (timetonext > 0)
-			mHandler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, timetonext);
+			handler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, timetonext);
 		else
-			mHandler.sendEmptyMessage(SENDSTATUSUPDATE);
+			handler.sendEmptyMessage(SENDSTATUSUPDATE);
 	}
 	
 	public void run()
@@ -191,7 +191,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		//System.out.println("ChopperStatus run() thread ID " + getId());
 		Looper.prepare(); //don't know what this does.
 		
-		mHandler = new Handler() {
+		handler = new Handler() {
             public void handleMessage(Message msg)
             {
                 switch (msg.what){
@@ -234,7 +234,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		
 		context.registerReceiver(batteryInfo, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 		
-		mHandler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, UPDATEINTERVAL);
+		handler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, UPDATEINTERVAL);
 		Looper.loop();
 	}
 	

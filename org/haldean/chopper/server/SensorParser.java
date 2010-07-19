@@ -64,18 +64,24 @@ public class SensorParser implements Updatable {
      *  @param msg The received message to parse */
     public void update(String msg) {
 	String parts[] = msg.split(":");
-
+	
+	
 	/* If this is a GPS signal notify the World Wind component */
 	if (parts[0].equals("GPS")) {
-	    double lat = new Double(parts[LAT]);
-	    double lon = new Double(parts[LON]);
-	    double alt = new Double(parts[ALT]);
-
-	    /* If this is true, the phone isn't receiving a GPS signal */
-	    if (! (lat == 0 || lon == 0 || alt == 0) && wwc != null)
-		wwc.addWaypoint(Position.fromDegrees(lat, lon, alt));
+		try {
+		    double lat = new Double(parts[LAT]);
+		    double lon = new Double(parts[LON]);
+		    double alt = new Double(parts[ALT]);
+	
+		    /* If this is true, the phone isn't receiving a GPS signal */
+		    if (! (lat == 0 || lon == 0 || alt == 0) && wwc != null)
+			wwc.addWaypoint(Position.fromDegrees(lat, lon, alt));
+		}
+		catch (Exception e) {
+			System.out.println("UNPARSABLE: " + msg);
+			e.printStackTrace();
+		}
 	}
-
 	/* Orientation */
 	else if (parts[0].equals("ORIENT")) {
 	    Orientation o = new Orientation(new Double(parts[ROLL]),
@@ -83,6 +89,7 @@ public class SensorParser implements Updatable {
 					    new Double(parts[PITCH]));
 	    orient.setOrientation(o);
 	}
+	
 
 	/* Acceleration */
 	else if (parts[0].equals("ACCEL")) {

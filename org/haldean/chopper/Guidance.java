@@ -1,32 +1,86 @@
 package org.haldean.chopper;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+
+/**
+ * Determines motor speeds, based on chopper's status and desired velocity vector.
+ * @author Benjamin Bardin
+ */
 public class Guidance extends Thread implements Constants {
 	
+	/**
+	 * The maximum angle guidance will permit the chopper to have
+	 */
+	public static final float MAXANGLE = 20;
+	
+	/**
+	 * The maximum change in motor speed permitted at one time.  Must be positive.
+	 */
+	public static final float MAXD = .1F;
+	
+	/* Used when a really big number is needed, still small enough to prevent overflow. */
+	private static final float REALLYBIG = 10000;
+	
+	/**
+	 * How many times per second the PID loop should run
+	 */
+	public static int PIDREPS = 10;
+	
+	/* Handles messages for the thread */
+	private static Handler handler;
+	
+	/* Stores orientation data locally */
 	private static double azimuth;
 	private static double pitchdeg;
 	private static double rolldeg;
 	private static double pitchrad;
 	private static double rollrad;
 	
+	/* Stores desired velocity */
 	private static double[] target = new double[4];
+	
+	/* Stores the current velocity, relative to the chopper */
 	private static double[] current = new double[4];
 	
+	/* Stores current PID error */
 	private static double[][] errors = new double[4][3];
+	
+	/* Manages integral error */
 	private static int integralindex = 0;
 	private static double[][] integralerrors = new double[4][PIDREPS];
+	
+	/* Timestamp of last PID evaluation */
 	private static long lastupdate = 0;
+	
+	/* Sum of errors * tuning parameter for a given PID loop */
 	private static double[] torques = new double[4];
+	
+	/* Stores motor speeds temporarily */
 	private static double[] tempmotorspeed = new double[4];
 	
+	/* Set to true if the chopper's angle is too great; set to false otherwise */
 	private static boolean stabilizing;
+	
+	/* The chopper's angle of ascent, in degrees */
 	private static double ascentdeg;
 	
-	public static double[][] gain = new double[4][3];
-	public static double[] motorspeed = new double[4]; //ORDER: North, South, East, West
-	public static boolean horizontaldrift = false; //if true, does not consider dx, dy or azimuth error; makes for maximally efficient altitude control
+	/* Tuning parameters */
+	private static double[][] gain = new double[4][3];
 	
+	/* Motor speed */
+	private static double[] motorspeed = new double[4]; //ORDER: North, South, East, West
+	
+	/* If set to true, disregards lateral velocity commands */
+	private static boolean horizontaldrift = false; //if true, does not consider dx, dy or azimuth error; makes for maximally efficient altitude control
+	
+	/* If true, prints debug messages */
 	private static boolean inSimulator = false;
 	
+	/**
+	 * Constructs the thread, assigns maximum priority
+	 */
 	public Guidance() {
 		super("Guidance");
 		setPriority(Thread.MAX_PRIORITY);
@@ -37,7 +91,25 @@ public class Guidance extends Thread implements Constants {
 				gain[i][j] = .05;
 	}
 	
+	/**
+	 * Starts the guidance thread
+	 */
 	public void run() {
+		Looper.prepare();
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				switch (msg.what) {
+				case EVALMOTORSPEED:
+					reviseMotorSpeed();
+					break;
+				}
+			}
+		};
+		handler.sendEmptyMessage(EVALMOTORSPEED);
+		Looper.loop();
+	}
+	
+	private static void reviseMotorSpeed() {
 		for (int i = 0; i < 4; i++) {
 			tempmotorspeed[i] = motorspeed[i];
 		}
@@ -95,6 +167,21 @@ public class Guidance extends Thread implements Constants {
 					target[2] = Navigation.target[2];
 					target[3] = Navigation.target[3];
 					Navigation.targetLock.unlock();
+					
+					//Calculate recorded velocity; reduce, if necessary, to MAXVEL
+					double myVel = 0;
+					for (int i = 0; i < 3; i++) {
+						myVel += Math.pow(target[i], 2);
+					}
+					myVel = Math.sqrt(myVel);
+					if (myVel > MAXVEL) {
+						if (inSimulator)
+							System.out.println("Reducing");
+						double adjustment = MAXVEL / myVel;
+						for (int i = 0; i < 3; i++) {
+							target[i] *= adjustment;
+						}
+					}
 				}
 				if (inSimulator)
 					System.out.println(target[0] + ", " + target[1]);
@@ -225,17 +312,15 @@ public class Guidance extends Thread implements Constants {
 				for (int i = 0; i < 4; i++) {
 					ChopperStatus.motorspeed[i] = motorspeed[i];
 				}
+				ChopperStatus.motorLock.unlock();
 			}
 			
 			//Sleep a while
 			long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);
 			if (timetonext > 0)
-			try {
-				sleep(timetonext);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+				handler.sendEmptyMessageDelayed(EVALMOTORSPEED, timetonext);
+			else
+				handler.sendEmptyMessage(EVALMOTORSPEED);
 		}
 	}
 }

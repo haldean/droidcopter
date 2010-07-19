@@ -2,7 +2,7 @@ package org.haldean.chopper.nav;
 
 import junit.framework.TestCase;
 
-public class NavVelTest extends TestCase {
+class NavVelTest extends TestCase {
 	private static NavVel[] vels = new NavVel[3];
 	public void testNavVel() {
 		vels[0] = new NavVel("VEL:1:2:3:4:20");

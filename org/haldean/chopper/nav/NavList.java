@@ -6,13 +6,21 @@ import java.util.Stack;
 
 import org.haldean.chopper.ChopperStatus;
 import org.haldean.chopper.Constants;
+import org.haldean.chopper.Navigation;
 
+/**
+ * Holds a list of NavTasks in ordered form.
+ * @author Benjamin Bardin
+ */
 public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 
 	private static final long serialVersionUID = 8506353357302343674L;
 
 	NavTask currentTask;
-
+	
+	/**
+	 * Get desired time until next calculation of target velocity vector.
+	 */
 	public long getInterval() {
 		if (currentTask != null)
 			return currentTask.getInterval();
@@ -20,10 +28,15 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		/* Should never happen, since currentTask is only null before the first call to getVelocity
 		 * and after if the list is empty (i.e. this NavTask is complete).
 		 */
-		else
-			return NAVPAUSE; //But just in case
+		else {
+			System.out.println("Navigation has bad manners.");
+			return Navigation.NAVPAUSE; //But just in case
+		}
 	}
-
+	
+	/**
+	 * Calculates the target velocity vector.  Length must be at least 4.
+	 */
 	public void getVelocity(double[] target) {
 		while (size() > 0) {
 			currentTask = getFirst();
@@ -39,14 +52,16 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 			currentTask.getVelocity(target);
 		
 		/* The following else should never happen, since getVelocity() should always be preceded with isComplete().
-		 * If complete, this NavTask would be removed from its parent NavList.
-		 */
+		 * If complete, this NavTask would be removed from its parent NavList. */
 		else {
 			hover(target);
 			return;
 		}
 	}
-
+	
+	/**
+	 * Returns true if each task in the NavList has been completed (in order).
+	 */
 	public boolean isComplete() {
 		ListIterator<NavTask> iterator = listIterator();
 		while (iterator.hasNext()) {
@@ -58,6 +73,10 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		return true; //if all tasks are complete, return true;
 	}
 	
+	/**
+	 * Registers a target velocity of 0, 0, 0
+	 * @param target The array in which to store the velocity.
+	 */
 	private void hover(double[] target) {
 		for (int i = 0; i < 3; i++) {
 			target[i] = 0;
@@ -68,6 +87,9 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		}
 	}
 	
+	/**
+	 * Serializes the NavList to String form.
+	 */
 	public String toString() {
 		String me = new String();
 		me = me.concat(" {");
@@ -79,6 +101,11 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		return me;
 	}
 	
+	/**
+	 * Deserializes a NavList from valid serialized String form.
+	 * @param msg Serialized form of the NavList
+	 * @return The newly-deserialized NavList
+	 */
 	public static NavList fromString(String msg) {
 		String[] tokens = msg.split(" ");
 		Stack<NavTask> myStack = new Stack<NavTask>();

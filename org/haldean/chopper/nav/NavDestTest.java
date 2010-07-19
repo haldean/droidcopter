@@ -2,7 +2,7 @@ package org.haldean.chopper.nav;
 
 import junit.framework.TestCase;
 
-public class NavDestTest extends TestCase {
+class NavDestTest extends TestCase {
 	private NavDest[] tasks = new NavDest[3];
 	
 	protected void setUp() throws Exception {

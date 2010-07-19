@@ -1,6 +1,5 @@
 package org.haldean.chopper;
 
-import java.io.BufferedReader;
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
@@ -10,64 +9,81 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-public final class Comm extends Thread implements Constants
-{	
-	private static Socket textsocket; //text communication
+/**
+ * Handles connectivity with control server
+ * @author Benjamin Bardin
+ *
+ */
+public final class Comm extends Thread implements Constants {	
+	
+	/**
+	 * How long (in ms) to wait, upon connectivity failure, before attempting to reestablish connection
+	 */
+	public static final int CONNECTIONINTERVAL = 5000;
+	
+	/**
+	 * URL of the control server
+	 */
+	public static final String control = new String("pices.dynalias.org");
+	
+	/**
+	 * Port used for text connection
+	 */
+	public static final int textoutport = 23;
+	
+	/**
+	 * Port used for data connection (telemetry)
+	 */
+	public static final int dataoutport = 24;
+	
+	/**
+	 * How long (in ms) to wait for the first PULSE signal before assuming connectivity failure
+	 */
+	public static final int FIRSTPULSE = 20000;
+	
+	/**
+	 * How long (in ms) to wait for subsequent PULSE signals before assuming connectivity failure.
+	 */
+	public static final int PULSERATE = 3000;
+	
+	/* Communication sockets */
+	private static Socket textsocket;
 	private static Socket datasocket;
 	
-	private static PrintWriter textout; //outbound messages
-	private static ObjectOutputStream dataout; //outbound objects--jpeg image.
+	/* Reading & Riting */
+	private static PrintWriter textout;
+	private static ObjectOutputStream dataout;
 	private static BufferedReader textin;
+	
+	/* Message handler*/
 	private static Handler handler;
 	
+	/* For initializing a text connection */
 	private static Runnable textConnArg;
 	private static Thread textConn;
 	private static ReentrantLock textConnLock = new ReentrantLock();
 	
+	/* For initializing a data connection */
 	private static Runnable dataConnArg;
 	private static Thread dataConn;
 	private static ReentrantLock dataConnLock = new ReentrantLock();
 	
+	/* Heartbeat Timer */
 	private static Timer countdown;
 	
+	/**
+	 * Initializes the object; instructions on how to connect to server.
+	 */
 	public Comm()
 	{
 		super("Comm");
 		countdown = new Timer();
 		
-		dataConnArg = new Runnable() {
-			public void run() {
-				TransmitPicture.stopLoop();
-				try {
-					
-					destroyDataConn();
-					
-					System.out.println("Initializing data sockets... ");
-					datasocket = new Socket(control, dataoutport);
-					dataout = new ObjectOutputStream(datasocket.getOutputStream());
-					TransmitPicture transpic = new TransmitPicture(dataout);
-			        System.out.println("CommOut transpic thread ID " + transpic.getId());
-			        transpic.start();
-					System.out.println("\tData Sockets initialized.");
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-					System.out.println("Failed to establish data connection.  Reattempting in " + CONNECTIONINTERVAL);
-					handler.sendEmptyMessageDelayed(MAKEDATACONN, CONNECTIONINTERVAL);
-				}
-				
-				
-			}
-		};
-		dataConn = new Thread(dataConnArg);
-		
-		//Runnable object that handles establishing a connection
+		/* Runnable that establishes a text connection */
 		textConnArg = new Runnable() {
 			public void run() {
-				//Kills the transmit picture thread, will be restarted when a connection is established.
 				
 				try	{
-					//Try to connect, set up sockets
 					System.out.println("Closing text sockets...");
 					if (textout != null)
 						textout.close();
@@ -87,7 +103,7 @@ public final class Comm extends Thread implements Constants
 					
 					
 			        
-			        //Initializes heartbeat protocol
+			        /* Initializes heartbeat protocol */
 			        countdown.cancel();
 			        countdown = new Timer();
 			        countdown.schedule(new TimerTask() {
@@ -97,6 +113,7 @@ public final class Comm extends Thread implements Constants
 						}, FIRSTPULSE);
 			        startReading();
 				}
+				/* Something's wrong with the internet connection.  Try again soon. */
 				catch (IOException e) {
 					e.printStackTrace();
 					System.out.println("Failed to establish text connection.  Reattempting in " + CONNECTIONINTERVAL);
@@ -105,8 +122,39 @@ public final class Comm extends Thread implements Constants
 			}
 		};
 		textConn = new Thread(textConnArg);
+		
+		/* Runnable that establishes a data connection */
+		dataConnArg = new Runnable() {
+			public void run() {
+				
+				/* Kills the transmit picture thread, will be restarted when a connection is established. */
+				TransmitPicture.stopLoop();
+				try {
+					
+					destroyDataConn();
+					
+					System.out.println("Initializing data sockets... ");
+					datasocket = new Socket(control, dataoutport);
+					dataout = new ObjectOutputStream(datasocket.getOutputStream());
+					TransmitPicture transpic = new TransmitPicture(dataout);
+			        System.out.println("CommOut transpic thread ID " + transpic.getId());
+			        transpic.start();
+					System.out.println("\tData Sockets initialized.");
+				}
+				/* Something's wrong with the internet connection.  Try again soon. */
+				catch (IOException e) {
+					e.printStackTrace();
+					System.out.println("Failed to establish data connection.  Reattempting in " + CONNECTIONINTERVAL);
+					handler.sendEmptyMessageDelayed(MAKEDATACONN, CONNECTIONINTERVAL);
+				}
+				
+				
+			}
+		};
+		dataConn = new Thread(dataConnArg);
 	}
 	
+	/* Tears down the data (telemetry) connection. */
 	private static void destroyDataConn() {
 		System.out.println("Closing data sockets...");
 		try {
@@ -115,12 +163,16 @@ public final class Comm extends Thread implements Constants
 			if (datasocket != null)
 				datasocket.close();
 		}
+		/* Sockets might already be closed */
 		catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	//for when other classes want to send a message back to the control computer
+	/**
+	 * Sends a message back to the control server.  Called from other threads/classes.
+	 * @param message The message to send.
+	 */
 	public static void sendMessage(String message) {
 		//System.out.println(message);
 		if (textout == null) { //connection not yet initialized
@@ -128,9 +180,8 @@ public final class Comm extends Thread implements Constants
 		}
 		try {			
 			textout.println(message);
-			//textout.flush();
 		}
-		//If the connection has broken
+		/* The connection might be broken */
 		catch (Throwable t) {
 			t.printStackTrace();
 			System.out.println("Connection appears to be lost.  Attempting to reconnect.");
@@ -138,11 +189,14 @@ public final class Comm extends Thread implements Constants
 		}
 	}
 	
-	//initial functionality
+	/**
+	 * Starts the communication thread.
+	 */
 	public void run() {
 		Looper.prepare();
 		
-		handler = new Handler() { //interthread, time-delayed communication
+		/* Registers actions */
+		handler = new Handler() {
 			public void handleMessage(Message msg) {
                 switch (msg.what) {
                 case MAKETEXTCONN:
@@ -167,18 +221,13 @@ public final class Comm extends Thread implements Constants
             }
 		};
         
-        //actual picture-taking and sending are run in separate threads, so the picture can be processed while other data is being sent.
-
-        
-        
-        //Give everything a little delay, then try to connect
-        //mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL);
+        /* Make a connection */
         handler.sendEmptyMessage(MAKETEXTCONN);
-        //mHandler.sendEmptyMessage(MAKEDATACONN);
+        
         Looper.loop();
 	}
 	
-	//Start reading from the input thread
+	/* Starts reading from the text socket. */
 	private static void startReading() {
 		String input;
 		try {
@@ -192,8 +241,10 @@ public final class Comm extends Thread implements Constants
 			t.printStackTrace();
 		}
 	}
-	
-	//Used to process received communications, as well as internal system messages.
+	/**
+	 * Processes communications received from the server and internal system-wide messages.
+	 * @param msg The method to process.
+	 */
 	public static void updateAll(String msg) {
 		System.out.println(msg);
 		String[] parts = msg.split(":");
@@ -262,7 +313,8 @@ public final class Comm extends Thread implements Constants
 				}
 			}
 		}
-		if (parts[0].equals("SYS")) { //Internal message
+		/* Internal Messages */
+		if (parts[0].equals("SYS")) {
 			if (parts[1].equals("NOCONN")) {
 				//Navigation.updateStatus(NOCONN);
 				//Navigation.autoPilot(true);

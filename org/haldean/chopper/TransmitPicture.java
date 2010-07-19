@@ -11,16 +11,43 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+/**
+ * Transmits telemetry frames to the control server
+ * @author Benjamin Bardin
+ */
 public final class TransmitPicture extends Thread implements Constants
-{
-	private static ObjectOutputStream dataout;
-	private static byte[] sendpic;
-	private static ByteArrayOutputStream baos;
-	public static Handler handler;
-	public static int PREVQUALITY = INITIALPREVQ;
+{	
+	/**
+	 * How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission, before trying again.
+	 */
+	public static final int CAMERAINTERVAL = 200;
 	
+	/* Output stream */
+	private static ObjectOutputStream dataout;
+	
+	/* Local copy of frame to transmit */
+	private static byte[] sendpic;
+	
+	/* For local JPEG compression */
+	private static ByteArrayOutputStream baos;
+	
+	/* Handles messages */
+	public static Handler handler;
+	
+	/**
+	 * Quality of a compressed preview frame.  Minimum is 0, maximum is 100, default is 40.
+	 */
+	public static int PREVQUALITY = 40;
+	
+	/* Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
+	 * This flags whether or not to try to use them.
+	 */
 	private static boolean NEWCOMPRESSMETHOD = false;
 	
+	/**
+	 * Constructs the TransmitPicture thread.
+	 * @param mydata The outputstream over which telemetry frames should be sent.
+	 */
 	public TransmitPicture(ObjectOutputStream mydata)
 	{
 		super("Transmit Telemetry");
@@ -28,6 +55,9 @@ public final class TransmitPicture extends Thread implements Constants
 		dataout = mydata;
 	}
 	
+	/**
+	 * Runs the thread.
+	 */
 	public void run()
 	{
 		Looper.prepare();
@@ -41,7 +71,7 @@ public final class TransmitPicture extends Thread implements Constants
                 		transmit();
                 	}
                 	catch (IOException e) {
-                		System.out.println("Connection failed, reconnecting in " + CONNECTIONINTERVAL);
+                		System.out.println("Connection failed, reconnecting in " + Comm.CONNECTIONINTERVAL);
                 		//Does not actually try to reconnect; it is assumed that chopperStatus will also fail and give the command to reconnect.
                 		e.printStackTrace();
                 	}
@@ -58,13 +88,19 @@ public final class TransmitPicture extends Thread implements Constants
 		Looper.loop();
 	}
 	
-	//Kills the transmit picture thread, so it can be restarted
+	/**
+	 * Kills the thread, either so it can be restarted or because of connectivity failure.
+	 */
 	public static void stopLoop() {
 		if (handler == null)
 			return;
 		handler.getLooper().quit();
 	}
 	
+	/**
+	 * Transmits a frame of telemetry.
+	 * @throws IOException If the connection fails
+	 */
 	private static void transmit() throws IOException {
 		if (!MakePicture.newFrame) {
 			handler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
@@ -84,7 +120,7 @@ public final class TransmitPicture extends Thread implements Constants
 		if (sendpic.length == 0)
 		{
 			System.out.println("temppic unprocessed");
-			handler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
+			handler.sendEmptyMessageDelayed(SENDAPIC, Comm.CONNECTIONINTERVAL); //wait a bit, try again later.
 			return;
 		}
 		
@@ -99,7 +135,7 @@ public final class TransmitPicture extends Thread implements Constants
 		{
 			YuvImage sourcePic = null;
 			try {
-				sourcePic = new YuvImage(sendpic, MakePicture.PREVFORMAT, XPIC, YPIC, null);
+				sourcePic = new YuvImage(sendpic, MakePicture.PREVFORMAT, MakePicture.XPREV, MakePicture.XPREV, null);
 			}
 			catch (Throwable t)
 			{
@@ -110,7 +146,7 @@ public final class TransmitPicture extends Thread implements Constants
 		
 			System.out.println("Compressing to jpeg");
 			try {
-				sourcePic.compressToJpeg(new Rect(0, 0, XPIC, YPIC), PREVQUALITY, baos);
+				sourcePic.compressToJpeg(new Rect(0, 0, MakePicture.XPREV, MakePicture.XPREV), PREVQUALITY, baos);
 			}
 			catch (Throwable t) {
 				System.out.println("Compress fail");
@@ -150,11 +186,19 @@ public final class TransmitPicture extends Thread implements Constants
 		catch (Throwable t) {
 			t.printStackTrace();
 			System.out.println("TransmitPic throwing exception");
-			handler.sendEmptyMessageDelayed(SENDAPIC, CONNECTIONINTERVAL); //wait a bit, try again later.
+			handler.sendEmptyMessageDelayed(SENDAPIC, Comm.CONNECTIONINTERVAL); //wait a bit, try again later.
 		}
 		System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));
 	}
 	
+	/**
+	 * Transcodes a YUV 4:2:0 SP frame (delivered by the camera preview) to bitmap (compressible to jpeg)
+	 * @param rgb The array in which the new bitmap will be stored.
+	 * @param yuv420sp The source image.
+	 * @param width The width of the image.
+	 * @param height The height of the image.
+	 * @author justinbonnar
+	 */
 	private static void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
 
     	final int frameSize = width * height;

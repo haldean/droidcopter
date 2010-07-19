@@ -3,10 +3,8 @@ Required libraries:
 - World Wind Java
   WWJ is included with the distribution in the jars/worldwind
   directory. It has been tested and is functioning on Mac (all
-  architectures), Windows 7 (all architectures), and Linux (32-bit
-  only). 64-bit Linux is not supported. Horizon Server automatically
-  detects when it is being run on Linux 86-64 and doesn't show the
-  World Wind Component.
+  architectures), Windows 7 (all architectures), and Linux (all
+  architectures).
 
 - Java3D Java3D is not included in the distribution. It can be
   downloaded at http://java.sun.com/javase/technologies/desktop/java3d

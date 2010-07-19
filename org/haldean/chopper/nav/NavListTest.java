@@ -2,7 +2,7 @@ package org.haldean.chopper.nav;
 
 import junit.framework.TestCase;
 
-public class NavListTest extends TestCase {
+class NavListTest extends TestCase {
 	private static NavTask[] dest;
 	private static String myString;
 	

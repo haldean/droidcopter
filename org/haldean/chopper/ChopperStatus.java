@@ -227,7 +227,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		gpsData += ":" + ChopperStatus.gpsaccuracy + 
 		":" + ChopperStatus.gpsnumsats +
 		":" + ChopperStatus.gpstimestamp;
-			
+		System.out.println("Sending GPSData: " + gpsData);
 		Comm.sendMessage(gpsData);
 		
 		/* Ensure loop time is no faster than UPDATEINTERVAL */
@@ -300,19 +300,33 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param loc New GPS fix
 	 */
 	public void onLocationChanged(Location loc) {
+		System.out.println("on Location ChangedCalled");
+		if (loc == null)
+			System.out.println("Null location");
+		if (gps == null)
+			System.out.println("Null GPS");
 		if (loc != null && gps != null) {
-			
-			double newalt = loc.getAltitude();
-			/* Vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0 */
-			if (newalt != gps[ALTITUDE]) {
-				gpsLock[dALT].lock();
-				gps[dALT] = (newalt - gps[ALTITUDE]) / (gpstimestamp - loc.getTime()) * 1000.0; //that last 1000 converts from m/ms to m/s
-				gpsLock[dALT].unlock();
+			System.out.println("In the loop");
+			if (loc.hasAltitude()) {
+				double newalt = loc.getAltitude();
+				System.out.println("new altitude: " + newalt);
+				/* Vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0 */
+				if (newalt != gps[ALTITUDE]) {
+					gpsLock[dALT].lock();
+					gps[dALT] = (newalt - gps[ALTITUDE]) / (gpstimestamp - loc.getTime()) * 1000.0; //that last 1000 converts from m/ms to m/s
+					gpsLock[dALT].unlock();
+				}
+				
+				gpsLock[ALTITUDE].lock();
+				gps[ALTITUDE] = newalt;
+				gpsLock[ALTITUDE].unlock();
 			}
-			
-			gpsLock[ALTITUDE].lock();
-			gps[ALTITUDE] = newalt;
-			gpsLock[ALTITUDE].unlock();
+			else {
+				System.out.println("No altitude fix");
+				gpsLock[ALTITUDE].lock();
+				gps[ALTITUDE] = 300.0;
+				gpsLock[ALTITUDE].unlock();
+			}
 			
 			gpsLock[BEARING].lock();
 			gps[BEARING] = loc.getBearing();
@@ -321,10 +335,12 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 			gpsLock[LONG].lock();
 			gps[LONG] = loc.getLongitude();
 			gpsLock[LONG].unlock();
+			System.out.println(gps[LONG]);
 			
 			gpsLock[LAT].lock();
 			gps[LAT] = loc.getLatitude();
 			gpsLock[LAT].unlock();
+			System.out.println(gps[LAT]);
 			
 			gpsLock[SPEED].lock();
 			gps[SPEED] = loc.getSpeed();
@@ -404,6 +420,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param provider The name of the provider that has been disabled
 	 */
 	public void onProviderDisabled(String provider)	{
+		System.out.println("GPS disabled");
 		Comm.sendMessage("GPS:DISABLED");
 	}
 	
@@ -412,6 +429,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param provider The name of the provider that has been enabled
 	 */
 	public void onProviderEnabled(String provider) {
+		System.out.println("GPS enabled");
 		Comm.sendMessage("GPS:ENABLED.");
 	}
 	
@@ -422,6 +440,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param extras Provider-specific extra data
 	 */
 	public void onStatusChanged(String provider, int status, Bundle extras)	{
+		System.out.println("GPS status changed " + status);
 		switch (status) {
 			case LocationProvider.OUT_OF_SERVICE:
 				Comm.sendMessage("GPS:OUT.OF.SERVICE");

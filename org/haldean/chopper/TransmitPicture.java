@@ -107,7 +107,7 @@ public final class TransmitPicture extends Thread implements Constants
 			System.out.println("Same pic");
 			return;
 		}
-		long starttime = System.currentTimeMillis();
+		//long starttime = System.currentTimeMillis();
 		synchronized (MakePicture.buffer) //get a lock on the variable
 		{
 			sendpic = MakePicture.buffer.clone(); //create a new copy.
@@ -124,14 +124,14 @@ public final class TransmitPicture extends Thread implements Constants
 			return;
 		}
 		
-		if (MakePicture.nextx != MakePicture.XPREV) {//picture parameters need updating
+		if ((MakePicture.nextx != MakePicture.XPREV)||(MakePicture.nexty != MakePicture.YPREV)) {//picture parameters need updating
 			if (MakePicture.updateFrameSize())
 				System.out.println("Picture updated succesfully.");
 			else
 				Comm.sendMessage("IMAGE:REQUEST:DENIED");
 		}
 
-		if (NEWCOMPRESSMETHOD)
+		/*if (NEWCOMPRESSMETHOD)
 		{
 			YuvImage sourcePic = null;
 			try {
@@ -154,25 +154,21 @@ public final class TransmitPicture extends Thread implements Constants
 			}
 			System.out.println("Finished compressing");
 		}
-		else {
-			System.out.println("Bitmap compression");
+		else {*/
+			//System.out.println("Bitmap compression");
 			Bitmap mBitMap;
 			int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
 			decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
 			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
 			mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
-			if (mBitMap == null) {
-				//System.out.println("Bitmap decode failed");
-				return;
-			}
 			mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
-		}
+		//}
 		if (baos == null)
 			System.out.println("bad stream");
 		byte[] temppic = baos.toByteArray();
 		baos.reset();
-		long endtime = System.currentTimeMillis();
-    	System.out.println("Pic Processing took " + (endtime - starttime));
+		//long endtime = System.currentTimeMillis();
+    	//System.out.println("Pic Processing took " + (endtime - starttime));
 		System.out.println("Sending a pic, length " + temppic.length);
 		//Notifies the control console that the next transmission will be an image.
 		//i.e. not a text-based one.
@@ -188,7 +184,7 @@ public final class TransmitPicture extends Thread implements Constants
 			System.out.println("TransmitPic throwing exception");
 			handler.sendEmptyMessageDelayed(SENDAPIC, Comm.CONNECTIONINTERVAL); //wait a bit, try again later.
 		}
-		System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));
+		//System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));
 	}
 	
 	/**

@@ -1,8 +1,13 @@
 package org.haldean.chopper;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.*;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.os.Handler;
@@ -233,7 +238,7 @@ public final class Comm extends Thread implements Constants {
 		try {
 			while ((input = textin.readLine()) != null) {
 			    updateAll(input);
-			    System.out.println("Waiting for input");
+			    //System.out.println("Waiting for input");
 			}
 		}
 		catch (Throwable t) {

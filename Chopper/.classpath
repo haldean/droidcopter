@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="org/haldean/chopper/server/|org/haldean/chopper/harness/" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
+	<classpathentry excluding="org/haldean/chopper/harness/|org/haldean/chopper/server/" kind="src" path="src"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

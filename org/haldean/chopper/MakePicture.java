@@ -1,7 +1,8 @@
 package org.haldean.chopper;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.ListIterator;
 
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;

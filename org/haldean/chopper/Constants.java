@@ -175,6 +175,11 @@ public interface Constants {
 	public final static int NOCONN = 2;
 	
 	/**
+	 * Number of available Nav statuses.
+	 */
+	public final static int NUMNAVSTATUSES = 3;
+	
+	/**
 	 * Maximum velocity Guidance will try to attain
 	 */
 	public final static double MAXVEL = 2.0;

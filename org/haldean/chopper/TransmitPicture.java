@@ -20,7 +20,7 @@ public final class TransmitPicture extends Thread implements Constants
 	/**
 	 * How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission, before trying again.
 	 */
-	public static final int CAMERAINTERVAL = 200;
+	public static final int CAMERAINTERVAL = 2000;
 	
 	/* Output stream */
 	private static ObjectOutputStream dataout;

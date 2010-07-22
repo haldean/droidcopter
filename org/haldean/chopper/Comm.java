@@ -323,7 +323,7 @@ public final class Comm extends Thread implements Constants {
 			if (parts[1].equals("NOCONN")) {
 				//Navigation.updateStatus(NOCONN);
 				//Navigation.autoPilot(true);
-				//mHandler.sendEmptyMessageDelayed(MAKECONNECTION, CONNECTIONINTERVAL); //Try to reconnect soon
+				handler.sendEmptyMessageDelayed(MAKETEXTCONN, CONNECTIONINTERVAL); //Try to reconnect soon
 
 			}
 			if (parts[1].equals("LOWPOWER")) {

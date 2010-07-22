@@ -67,15 +67,22 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	public static double[] gps = new double[GPSFIELDS]; //last available GPS readings
 	
 	/**
-	 * Locks for fields in gps[].  A corresponding lock must be externally obtained for each read/write to a field in gps[].
+	 * Locks for fields in gps[].  The corresponding lock must be externally obtained for each read/write to a field in gps[].
 	 * @see #gps gps[] 
 	 */
 	public static ReentrantLock[] gpsLock;
 	
 	/**
-	 * Stores the location object last returned by the GPS.  Must be externally synchronized.
+	 * Stores the location object last returned by the GPS.  The corresponding lock must be externally obtained for each read/write.
+	 * @see #lastLocLock lastLocLock
 	 */
 	public static Location lastLoc;
+	
+	/**
+	 * Lock for lastLoc.  Must be externally obtained for each read/write.
+	 * @see #lastLoc lastLoc
+	 */
+	public static ReentrantLock lastLocLock;
 	
 	/**
 	 * Stores the speeds last submitted to the motors.  Lock must be externally obtained for each read/write to motorspeed.
@@ -132,6 +139,8 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 			gpsLock[i] = new ReentrantLock();
 		
 		motorLock = new ReentrantLock();
+		
+		lastLocLock = new ReentrantLock();
 	}
 	
 	/* Sends a status report to the control server; iterates through all important fields to do it. */
@@ -306,7 +315,6 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		if (gps == null)
 			System.out.println("Null GPS");
 		if (loc != null && gps != null) {
-			System.out.println("In the loop");
 			if (loc.hasAltitude()) {
 				double newalt = loc.getAltitude();
 				System.out.println("new altitude: " + newalt);
@@ -325,6 +333,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 				System.out.println("No altitude fix");
 				gpsLock[ALTITUDE].lock();
 				gps[ALTITUDE] = 300.0;
+				loc.setAltitude(300.0);
 				gpsLock[ALTITUDE].unlock();
 			}
 			

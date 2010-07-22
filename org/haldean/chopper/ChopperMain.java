@@ -52,12 +52,12 @@ public final class ChopperMain extends Activity implements Constants
         	/* Initialize and start sensor process */
 			new ChopperStatus(getApplicationContext()).start();
 			
-			new MakePicture(previewHolder).start();
+			//new MakePicture(previewHolder).start();
 	        
 	        /* Initialize and start the processes that send data back to the control computer. */
 			new Comm().start();
 			
-			//new Navigation().start();
+			new Navigation().start();
 			
 			//new Guidance().start();
         }

@@ -47,7 +47,7 @@ public class Navigation extends Thread implements Constants {
 	private static boolean autopilot = false;
 	
 	/* Chopper's navigation status */
-	private static int status;
+	private static int status = NUMNAVSTATUSES;
 	
 	/* Holds all flight plans */
 	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already synchronized
@@ -76,6 +76,8 @@ public class Navigation extends Thread implements Constants {
 		travelPlans.add(onMyOwn);
 		
 		targetLock = new ReentrantLock();
+		
+		
 	}
 	
 	/**
@@ -94,6 +96,13 @@ public class Navigation extends Thread implements Constants {
                 }
             } 
 		};
+		
+		//FOR TESTING ONLY:
+		String taskList = "{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 DEST!587!-117.15!32.72!10!600 } }";
+		setTask(BASICAUTO, taskList);
+		updateStatus(BASICAUTO);
+		autoPilot(true);
+		
 		Looper.loop();
 	}
 	
@@ -116,6 +125,7 @@ public class Navigation extends Thread implements Constants {
 	 */
 	public static void setTask(int whichPlan, String myTask) {
 		NavList myList = NavList.fromString(myTask);
+		System.out.println("UberList, length " + myList.size());
 		if (myList != null)
 			travelPlans.set(whichPlan, myList);
 	}
@@ -130,17 +140,22 @@ public class Navigation extends Thread implements Constants {
 	
 	/* Evaluates a new navigation vector, based on current status and the relevant NavTask */
 	private static void evalNextVector() {
+		System.out.println("Evaluating next nav vector");
 		//Determine what the current task should be
 		NavTask myList = travelPlans.get(status);
 		if (myList.isComplete()) {
+			System.out.println("Hovering");
 			hover();
 			return;
 		}
 		myList.getVelocity(tempTarget);
-		
 		targetLock.lock();
-		for (int i = 0; i < 4; i++)
+		System.out.print("New vector: ");
+		for (int i = 0; i < 4; i++) {
 			target[i] = tempTarget[i];
+			System.out.print(target[i] + " ");
+		}
+		System.out.println();
 		targetLock.unlock();
 		
 		long interval = myList.getInterval();
@@ -173,6 +188,9 @@ public class Navigation extends Thread implements Constants {
 	public static void autoPilot(boolean onoff) {
 		autopilot = onoff;
 		handler.removeMessages(EVALNAV);
-		handler.sendEmptyMessage(EVALNAV);
+		if (autopilot) {
+			handler.sendEmptyMessage(EVALNAV);
+			System.out.println("Autopilot engaged");
+		}
 	}
 }

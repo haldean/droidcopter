@@ -37,10 +37,11 @@ public class NavDest implements NavTask, Constants {
 		if (myString.startsWith("DEST!"))
 			myString = myString.substring(5, myString.length());
 		String[] params = myString.split("!");
-
+		if (params.length < 5)
+			throw new IllegalArgumentException();
 		altitude = new Double(params[0]);
-		latitude = new Double(params[1]);
-		longitude = new Double(params[2]);
+		longitude = new Double(params[1]);
+		latitude = new Double(params[2]);
 		
 		myVelocity = new Double(params[3]);
 		destDist = new Double(params[4]);
@@ -67,8 +68,8 @@ public class NavDest implements NavTask, Constants {
 	public String toString() {
 		return "DEST" +
 				"!" + altitude +
-				"!" + latitude +
 				"!" + longitude +
+				"!" + latitude +
 				"!" + myVelocity +
 				"!" + destDist;
 	}
@@ -88,33 +89,45 @@ public class NavDest implements NavTask, Constants {
 	 * @param target The array in which to store the vector.  Length must be at least 4.
 	 */
 	public void getVelocity(double[] target) {
-		synchronized (ChopperStatus.lastLoc) { 
+		ChopperStatus.lastLocLock.lock();
+		if (ChopperStatus.lastLoc != null) {
 			currentLoc = new Location(ChopperStatus.lastLoc);
+			if (destination == null) {
+				destination = new Location(ChopperStatus.lastLoc);
+			
+				destination.setAltitude(altitude);
+				destination.setLongitude(longitude);
+				destination.setLatitude(latitude);
+			}
 		}
-		
-		if (currentLoc == null) {
+		else {
 			System.out.println("Nav not ready");
 			return;
 		}
+		ChopperStatus.lastLocLock.unlock();
 		
-		if (destination == null)
-			destination = new Location(ChopperStatus.lastLoc);
 		
-		destination.setAltitude(altitude);
-		destination.setLongitude(longitude);
-		destination.setLatitude(latitude);
+		//Bearing, in degrees
+		double bearingDeg = currentLoc.bearingTo(destination);
 		
-		double bearing = currentLoc.bearingTo(destination);
-		float distance = currentLoc.distanceTo(destination);
+		double horDistance = currentLoc.distanceTo(destination);
+		double verDistance = destination.getAltitude() - currentLoc.getAltitude();
+		double distance = Math.sqrt(Math.pow(horDistance, 2) +
+									Math.pow(verDistance, 2));
+		
 		if (distance < 2 * destDist)
 			reallyClose = true;
 		else
 			reallyClose = false;
+		System.out.println("Horizontal distance: " + horDistance);
+		System.out.println("Vertical distance: " + verDistance);
+		System.out.println("Total distance: " + distance);
 		
 		//Establish vector
-		target[0] = Math.cos(bearing);
-		target[1] = Math.sin(bearing);
-		target[2] = (destination.getAltitude() - currentLoc.getAltitude() / distance);
+		double bearingRad = bearingDeg / 180.0 * Math.PI;
+		target[0] = Math.cos(bearingRad);
+		target[1] = Math.sin(bearingRad);
+		target[2] = verDistance / horDistance;
 		
 		//Determine magnitude, "normalize" to myVelocity
 		double mag = Math.sqrt(Math.pow(target[0], 2) +
@@ -125,7 +138,7 @@ public class NavDest implements NavTask, Constants {
 		for (int i = 0; i < 3; i++)
 			target[i] *= adjustment;
 		
-		target[3] = bearing;
+		target[3] = bearingDeg;
 	}
 	
 	/**
@@ -134,7 +147,11 @@ public class NavDest implements NavTask, Constants {
 	public boolean isComplete() {
 		if (currentLoc == null | destination == null)
 			return false;
-		if (currentLoc.distanceTo(destination) <= destDist)
+		double horDistance = currentLoc.distanceTo(destination);
+		double verDistance = destination.getAltitude() - currentLoc.getAltitude();
+		double distance = Math.sqrt(Math.pow(horDistance, 2) +
+									Math.pow(verDistance, 2));
+		if (distance <= destDist)
 			return true;
 		else
 			return false;

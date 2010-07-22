@@ -22,26 +22,9 @@ import android.view.SurfaceHolder;
 public final class MakePicture extends Thread implements Constants {
 	
 	/**
-	 * Desired compression rate of a high-quality jpeg image
-	 */
-	public static final int HIGHQJPEG = 50;
-	
-	/**
 	 * Stores preview frames for later access by other threads.  All read/writes should be synchronized.
 	 */
 	public static byte[] buffer = new byte[0];
-	
-	/* Internal array that stores a preview frame */
-	private static byte[] storeFrame;
-	
-	/* Holds the camera object */
-	private static Camera camera;
-	
-	/* Various callbacks */
-	private static Camera.PictureCallback GoodPic;
-	private static Camera.ErrorCallback error;
-	private static volatile SurfaceHolder previewHolder;
-	private static SurfaceHolder.Callback surfaceCallback;
 	
 	/**
 	 * The current width of preview frames
@@ -80,6 +63,22 @@ public final class MakePicture extends Thread implements Constants {
 	 * @see TransmitPicture
 	 */
 	public static boolean newFrame = false;
+	
+	/* Internal array that stores a preview frame */
+	private static byte[] storeFrame;
+	
+	/* Holds the camera object */
+	private static Camera camera;
+	
+	/* Various callbacks */
+	private static Camera.PictureCallback GoodPic;
+	private static Camera.ErrorCallback error;
+	private static volatile SurfaceHolder previewHolder;
+	private static SurfaceHolder.Callback surfaceCallback;
+	
+	/* Desired compression rate of a high-quality jpeg image */
+	private static final int HIGHQJPEG = 85;
+	
 	
 	/**
 	 * Constructs the thread, stores the surface for preview rendering.

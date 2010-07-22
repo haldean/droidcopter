@@ -2,7 +2,6 @@ package org.haldean.chopper.nav;
 
 import org.haldean.chopper.ChopperStatus;
 import org.haldean.chopper.Constants;
-import org.haldean.chopper.Navigation;
 
 import android.location.Location;
 
@@ -79,9 +78,9 @@ public class NavDest implements NavTask, Constants {
 	 */
 	public long getInterval() {
 		if (reallyClose)
-			return Navigation.NAVPAUSE / 2;
+			return NAVPAUSE / 2;
 		else
-			return Navigation.NAVPAUSE;
+			return NAVPAUSE;
 	}
 	
 	/**
@@ -101,7 +100,7 @@ public class NavDest implements NavTask, Constants {
 			}
 		}
 		else {
-			System.out.println("Nav not ready");
+			System.out.println("GPS Not Initialized");
 			return;
 		}
 		ChopperStatus.lastLocLock.unlock();

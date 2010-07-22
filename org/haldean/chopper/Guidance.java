@@ -10,23 +10,17 @@ import android.os.Message;
  */
 public class Guidance extends Thread implements Constants {
 	
-	/**
-	 * The maximum angle guidance will permit the chopper to have
-	 */
-	public static final float MAXANGLE = 20;
+	/* How many times per second the PID loop should run */
+	private static int PIDREPS = 10;
 	
-	/**
-	 * The maximum change in motor speed permitted at one time.  Must be positive.
-	 */
-	public static final float MAXD = .1F;
+	/* The maximum angle guidance will permit the chopper to have */
+	private static final float MAXANGLE = 20;
+	
+	/* The maximum change in motor speed permitted at one time.  Must be positive. */
+	private static final float MAXD = .1F;
 	
 	/* Used when a really big number is needed, still small enough to prevent overflow. */
 	private static final float REALLYBIG = 10000;
-	
-	/**
-	 * How many times per second the PID loop should run
-	 */
-	public static int PIDREPS = 10;
 	
 	/* Handles messages for the thread */
 	private static Handler handler;

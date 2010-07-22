@@ -29,19 +29,19 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	/**
 	 * How often (in ms) status updates should be sent by ChopperStatus to the server
 	 */
-	public static final int UPDATEINTERVAL = 500;
+	private static final int UPDATEINTERVAL = 500;
 	
 	/**
 	 * Parameter to specify GPS minimum update distance, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy.
 	 */
-	public static final float gpsmindist = 0;
+	private static final float gpsmindist = 0;
 	
 	/**
 	 * Parameter to specify GPS minimum update time, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy.
 	 */
-	public static final long gpsmintime = 0;
+	private static final long gpsmintime = 0;
 	
 	/**
 	 * Holds data from various sensors, like gyroscope, acceleration and magnetic flux.  Each read/write must be locked with its corresponding lock in readingLock[].
@@ -99,12 +99,12 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	/**
 	 * Current battery level.
 	 */
-	public static int currbattery = 0;
+	private static int currbattery = 0;
 	
 	/**
 	 * Max battery level.
 	 */
-	public static int maxbattery = 100;
+	private static int maxbattery = 100;
 	
 	/* Accuracy of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
 	private static float gpsaccuracy; //accuracy of said reading

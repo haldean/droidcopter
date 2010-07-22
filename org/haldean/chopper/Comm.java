@@ -26,30 +26,20 @@ public final class Comm extends Thread implements Constants {
 	 */
 	public static final int CONNECTIONINTERVAL = 5000;
 	
-	/**
-	 * URL of the control server
-	 */
-	public static final String control = new String("pices.dynalias.org");
+	/* URL of the control server */
+	private static final String control = new String("pices.dynalias.org");
 	
-	/**
-	 * Port used for text connection
-	 */
-	public static final int textoutport = 23;
+	/* Port used for text connection */
+	private static final int textoutport = 23;
 	
-	/**
-	 * Port used for data connection (telemetry)
-	 */
-	public static final int dataoutport = 24;
+	/* Port used for data connection (telemetry) */
+	private static final int dataoutport = 24;
 	
-	/**
-	 * How long (in ms) to wait for the first PULSE signal before assuming connectivity failure
-	 */
-	public static final int FIRSTPULSE = 20000;
+	/* How long (in ms) to wait for the first PULSE signal before assuming connectivity failure */
+	private static final int FIRSTPULSE = 20000;
 	
-	/**
-	 * How long (in ms) to wait for subsequent PULSE signals before assuming connectivity failure.
-	 */
-	public static final int PULSERATE = 3000;
+	/* How long (in ms) to wait for subsequent PULSE signals before assuming connectivity failure. */
+	private static final int PULSERATE = 3000;
 	
 	/* Communication sockets */
 	private static Socket textsocket;
@@ -310,10 +300,10 @@ public final class Comm extends Thread implements Constants {
 				}
 			}
 			if (parts[1].equals("GET")) {
-				if (parts[2].equals("AUTOTASK")) {
+				if (parts[2].equals("AUTOTASKS")) {
 					String[] myTasks = Navigation.getTasks();
 					for (int i = 0; i < myTasks.length; i++) {
-						Comm.sendMessage("NAV:AUTOTASK:" + myTasks[i].toString());
+						Comm.sendMessage("NAV:AUTOTASK:" + i + ":" + myTasks[i]);
 					}
 				}
 			}

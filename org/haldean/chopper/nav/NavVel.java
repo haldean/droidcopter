@@ -8,7 +8,7 @@ import org.haldean.chopper.Constants;
 public class NavVel implements NavTask, Constants {
 	private double[] velocity = new double[4];
 	private long timeToExecute;
-	private long firstCall = 0;
+	private long firstCall = -1;
 	
 	/**
 	 * Constructs/deserializes a NavVel from a String.
@@ -20,7 +20,7 @@ public class NavVel implements NavTask, Constants {
 		String[] tokens = myString.split("!");
 		for (int i = 0; i < 4; i++)
 			velocity[i] = new Double(tokens[i]);
-		timeToExecute = new Long(tokens[4]);
+		timeToExecute = 1000 * new Long(tokens[4]);
 	}
 	
 	/**
@@ -42,10 +42,10 @@ public class NavVel implements NavTask, Constants {
 	 * Get desired time until next calculation of target velocity vector.
 	 */
 	public long getInterval() {
-		if (firstCall == 0)
+		if (firstCall == -1)
 			return timeToExecute;
 		else
-			return Math.max(0, timeToExecute - (System.currentTimeMillis() - firstCall));
+			return Math.max(NAVPAUSE, timeToExecute - (System.currentTimeMillis() - firstCall));
 	}
 	
 	/**
@@ -53,7 +53,7 @@ public class NavVel implements NavTask, Constants {
 	 * @param target The array in which to store the vector.  Length must be at least 4.
 	 */
 	public void getVelocity(double[] target) {
-		if (firstCall != 0)
+		if (firstCall == -1)
 			firstCall = System.currentTimeMillis();
 		
 		for (int i = 0; i < 4; i++)
@@ -65,7 +65,7 @@ public class NavVel implements NavTask, Constants {
 	 * Calculate whether the NavTask's goal has been achieved.
 	 */
 	public boolean isComplete() {
-		if ((firstCall != 0) && //The task has been called at least once
+		if ((firstCall != -1) && //The task has been called at least once
 				(System.currentTimeMillis() - firstCall >= timeToExecute)) //the task has been running long enough
 			return true;
 		else

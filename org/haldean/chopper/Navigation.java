@@ -18,17 +18,6 @@ import android.os.Message;
 public class Navigation extends Thread implements Constants {
 	
 	/**
-	 * How long (in ms) Navigation should instruct the chopper to hover when autopilot has run out of NavTasks
-	 */
-	public static final int HOVERPAUSE = 10000;
-	
-	/**
-	 * Arbitrary value used by some NavTasks in deciding when next to evaluate the next navigation vector.
-	 * Smaller values mean more accurate navigation vectors at the expense of CPU time.
-	 */
-	public static final int NAVPAUSE = 1000;
-	
-	/**
 	 * Velocity to achieve.  Must be externally locked on each read/write.
 	 * @see #targetLock targetLock
 	 */
@@ -39,6 +28,10 @@ public class Navigation extends Thread implements Constants {
 	 * @see #target target[]
 	 */
 	public static ReentrantLock targetLock;
+	
+	/* How long (in ms) Navigation should instruct the chopper to hover
+	 * when autopilot has run out of NavTasks */
+	private static final int HOVERPAUSE = 10000;
 	
 	/* Stores local variable*/
 	private static double[] tempTarget = new double[4];
@@ -76,8 +69,6 @@ public class Navigation extends Thread implements Constants {
 		travelPlans.add(onMyOwn);
 		
 		targetLock = new ReentrantLock();
-		
-		
 	}
 	
 	/**
@@ -98,11 +89,13 @@ public class Navigation extends Thread implements Constants {
 		};
 		
 		//FOR TESTING ONLY:
-		String taskList = "{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 DEST!587!-117.15!32.72!10!600 } }";
+		/*String taskList = "{ { VEL!10!20!30!40!30 VEL!5!10!5!10!15 } " + 
+			"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
+				" DEST!587!-117.15!32.72!10!600 } } }";
 		setTask(BASICAUTO, taskList);
 		updateStatus(BASICAUTO);
 		autoPilot(true);
-		
+		*/
 		Looper.loop();
 	}
 	
@@ -141,8 +134,11 @@ public class Navigation extends Thread implements Constants {
 	/* Evaluates a new navigation vector, based on current status and the relevant NavTask */
 	private static void evalNextVector() {
 		System.out.println("Evaluating next nav vector");
-		//Determine what the current task should be
-		NavTask myList = travelPlans.get(status);
+		/*Determine what the current task should be.  Copies to a local variable in case
+		 * 'status'	changes during execution of the method */
+		int thisStatus = status;
+		
+		NavTask myList = travelPlans.get(thisStatus);
 		if (myList.isComplete()) {
 			System.out.println("Hovering");
 			hover();
@@ -159,6 +155,10 @@ public class Navigation extends Thread implements Constants {
 		targetLock.unlock();
 		
 		long interval = myList.getInterval();
+		
+		//Send the current NavList to the server, in case any tasks have been completed
+		Comm.sendMessage("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
+		
 		handler.removeMessages(EVALNAV);
 		if (interval > 0)
 			handler.sendEmptyMessageDelayed(EVALNAV, interval);

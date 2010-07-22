@@ -6,6 +6,12 @@ package org.haldean.chopper.nav;
  */
 public interface NavTask {
 	/**
+	 * Arbitrary value used by some NavTasks in deciding when next to evaluate the next navigation vector.
+	 * Smaller values mean more accurate navigation vectors at the expense of CPU time.
+	 */
+	static final int NAVPAUSE = 1000;
+	
+	/**
 	 * Calculates how long to wait before recalculating the target velocity vector.
 	 * @return The time in ms.
 	 */

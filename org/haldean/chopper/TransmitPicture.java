@@ -18,9 +18,13 @@ import android.os.Message;
 public final class TransmitPicture extends Thread implements Constants
 {	
 	/**
-	 * How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission, before trying again.
+	 * Quality of a compressed preview frame.  Minimum is 0, maximum is 100, default is 40.
 	 */
-	public static final int CAMERAINTERVAL = 2000;
+	public static int PREVQUALITY = 40;
+	
+	/* How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission,
+	 * before trying again. */
+	private static final int CAMERAINTERVAL = 2000;
 	
 	/* Output stream */
 	private static ObjectOutputStream dataout;
@@ -33,11 +37,6 @@ public final class TransmitPicture extends Thread implements Constants
 	
 	/* Handles messages */
 	public static Handler handler;
-	
-	/**
-	 * Quality of a compressed preview frame.  Minimum is 0, maximum is 100, default is 40.
-	 */
-	public static int PREVQUALITY = 40;
 	
 	/* Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
 	 * This flags whether or not to try to use them.

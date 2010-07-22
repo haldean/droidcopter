@@ -6,7 +6,6 @@ import java.util.Stack;
 
 import org.haldean.chopper.ChopperStatus;
 import org.haldean.chopper.Constants;
-import org.haldean.chopper.Navigation;
 
 /**
  * Holds a list of NavTasks in ordered form.
@@ -30,7 +29,7 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		 */
 		else {
 			System.out.println("Navigation has bad manners.");
-			return Navigation.NAVPAUSE; //But just in case
+			return NAVPAUSE; //But just in case
 		}
 	}
 	

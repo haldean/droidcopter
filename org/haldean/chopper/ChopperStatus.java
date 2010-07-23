@@ -236,7 +236,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		gpsData += ":" + ChopperStatus.gpsaccuracy + 
 		":" + ChopperStatus.gpsnumsats +
 		":" + ChopperStatus.gpstimestamp;
-		System.out.println("Sending GPSData: " + gpsData);
+		//System.out.println("Sending GPSData: " + gpsData);
 		Comm.sendMessage(gpsData);
 		
 		/* Ensure loop time is no faster than UPDATEINTERVAL */

@@ -180,11 +180,6 @@ public interface Constants {
 	public final static int NUMNAVSTATUSES = 3;
 	
 	/**
-	 * Maximum velocity Guidance will try to attain
-	 */
-	public final static double MAXVEL = 2.0;
-	
-	/**
 	 * Maximum battery level considered "low"
 	 */
 	public final static int LOWBATT = 30;

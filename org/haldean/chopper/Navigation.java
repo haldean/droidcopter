@@ -133,7 +133,7 @@ public class Navigation extends Thread implements Constants {
 	
 	/* Evaluates a new navigation vector, based on current status and the relevant NavTask */
 	private static void evalNextVector() {
-		System.out.println("Evaluating next nav vector");
+		//System.out.println("Evaluating next nav vector");
 		/*Determine what the current task should be.  Copies to a local variable in case
 		 * 'status'	changes during execution of the method */
 		int thisStatus = status;
@@ -146,7 +146,7 @@ public class Navigation extends Thread implements Constants {
 		}
 		myList.getVelocity(tempTarget);
 		targetLock.lock();
-		System.out.print("New vector: ");
+		System.out.print("New NAV Vector: ");
 		for (int i = 0; i < 4; i++) {
 			target[i] = tempTarget[i];
 			System.out.print(target[i] + " ");

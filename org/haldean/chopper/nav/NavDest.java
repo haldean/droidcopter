@@ -118,9 +118,9 @@ public class NavDest implements NavTask, Constants {
 			reallyClose = true;
 		else
 			reallyClose = false;
-		System.out.println("Horizontal distance: " + horDistance);
-		System.out.println("Vertical distance: " + verDistance);
-		System.out.println("Total distance: " + distance);
+		//System.out.println("Horizontal distance: " + horDistance);
+		//System.out.println("Vertical distance: " + verDistance);
+		//System.out.println("Total distance: " + distance);
 		
 		//Establish vector
 		double bearingRad = bearingDeg / 180.0 * Math.PI;

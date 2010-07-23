@@ -13,14 +13,17 @@ public class Guidance extends Thread implements Constants {
 	/* How many times per second the PID loop should run */
 	private static int PIDREPS = 10;
 	
+	/* Maximum permissible target velocity; larger vectors will be resized */
+	private static final double MAXVEL = 2.0;
+	
 	/* The maximum angle guidance will permit the chopper to have */
-	private static final float MAXANGLE = 20;
+	private static final double MAXANGLE = 20;
 	
 	/* The maximum change in motor speed permitted at one time.  Must be positive. */
-	private static final float MAXD = .1F;
+	private static final double MAXD = .1F;
 	
 	/* Used when a really big number is needed, still small enough to prevent overflow. */
-	private static final float REALLYBIG = 10000;
+	private static final double REALLYBIG = 10000;
 	
 	/* Handles messages for the thread */
 	private static Handler handler;

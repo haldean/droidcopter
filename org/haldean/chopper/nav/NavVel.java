@@ -3,7 +3,7 @@ package org.haldean.chopper.nav;
 import org.haldean.chopper.Constants;
 
 /**
- * A navtask that returns a specific velocity for a specific amount of time.
+ * A NavTask that returns a specific velocity for a specific amount of time.
  */
 public class NavVel implements NavTask, Constants {
 	private double[] velocity = new double[4];
@@ -12,15 +12,24 @@ public class NavVel implements NavTask, Constants {
 	
 	/**
 	 * Constructs/deserializes a NavVel from a String.
-	 * @param myString String to deserialize.
+	 * @param myString The string to deserialize.
+	 * @throws IllegalArgumentException If the supplied String is not valid.
 	 */
-	public NavVel(String myString) {
+	public NavVel(String myString) throws IllegalArgumentException {
 		if (myString.startsWith("VEL!"))
 			myString = myString.substring(4, myString.length());
 		String[] tokens = myString.split("!");
-		for (int i = 0; i < 4; i++)
-			velocity[i] = new Double(tokens[i]);
-		timeToExecute = 1000 * new Long(tokens[4]);
+		if (tokens.length < 5)
+			throw new IllegalArgumentException();
+		try {
+			for (int i = 0; i < 4; i++)
+				velocity[i] = new Double(tokens[i]);
+		
+			timeToExecute = 1000 * new Long(tokens[4]);
+		}
+		catch (NumberFormatException e) {
+			throw new IllegalArgumentException();
+		}
 	}
 	
 	/**
@@ -51,8 +60,12 @@ public class NavVel implements NavTask, Constants {
 	/**
 	 * Calculates the target velocity vector.
 	 * @param target The array in which to store the vector.  Length must be at least 4.
+	 * @throws IllegalArgumentException If the supplied array's length is less than 4.
 	 */
-	public void getVelocity(double[] target) {
+	public void getVelocity(double[] target) throws IllegalArgumentException {
+		if (target.length < 4)
+			throw new IllegalArgumentException();
+		
 		if (firstCall == -1)
 			firstCall = System.currentTimeMillis();
 		

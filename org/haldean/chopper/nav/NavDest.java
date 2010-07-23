@@ -6,7 +6,7 @@ import org.haldean.chopper.Constants;
 import android.location.Location;
 
 /**
- * A navtask that determines target velocity based on a desired destination.
+ * A NavTask that determines target velocity based on a desired destination.
  */
 public class NavDest implements NavTask, Constants {
 	/* Used to access Android location methods */
@@ -28,22 +28,28 @@ public class NavDest implements NavTask, Constants {
 	private double destDist;
 	
 	/**
-	 *  Creates/deserializes a NavDest from a String
+	 *  Creates/deserializes a NavDest from a String.  The String should be of the format DEST!altitude!longitude!latitude!velocity!minimumDistance
 	 * @param myString String to deserialize
+	 * @throws IllegalArgumentException If the supplied String is not valid.
 	 */
-	public NavDest(String myString) {
+	public NavDest(String myString) throws IllegalArgumentException {
 		//altitude, longitude, latitude, travelspeed, destDist
 		if (myString.startsWith("DEST!"))
 			myString = myString.substring(5, myString.length());
 		String[] params = myString.split("!");
 		if (params.length < 5)
 			throw new IllegalArgumentException();
-		altitude = new Double(params[0]);
-		longitude = new Double(params[1]);
-		latitude = new Double(params[2]);
-		
-		myVelocity = new Double(params[3]);
-		destDist = new Double(params[4]);
+		try {
+			altitude = new Double(params[0]);
+			longitude = new Double(params[1]);
+			latitude = new Double(params[2]);
+			
+			myVelocity = new Double(params[3]);
+			destDist = new Double(params[4]);
+		}
+		catch (NumberFormatException e) {
+			throw new IllegalArgumentException();
+		}
 		reallyClose = false;
 	}
 	
@@ -86,8 +92,11 @@ public class NavDest implements NavTask, Constants {
 	/**
 	 * Calculates the target velocity vector.
 	 * @param target The array in which to store the vector.  Length must be at least 4.
+	 * @throws IllegalArgumentException If the supplied array's length is less than 4.
 	 */
-	public void getVelocity(double[] target) {
+	public void getVelocity(double[] target) throws IllegalArgumentException {
+		if (target.length < 4)
+			throw new IllegalArgumentException();
 		ChopperStatus.lastLocLock.lock();
 		if (ChopperStatus.lastLoc != null) {
 			currentLoc = new Location(ChopperStatus.lastLoc);

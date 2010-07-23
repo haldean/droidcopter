@@ -43,7 +43,7 @@ public class Navigation extends Thread implements Constants {
 	private static int status = NUMNAVSTATUSES;
 	
 	/* Holds all flight plans */
-	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already synchronized
+	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
 	
 	/* Different flight plans depending on Nav status */
 	private static NavTask lowPower;
@@ -118,9 +118,13 @@ public class Navigation extends Thread implements Constants {
 	 */
 	public static void setTask(int whichPlan, String myTask) {
 		NavList myList = NavList.fromString(myTask);
-		System.out.println("UberList, length " + myList.size());
-		if (myList != null)
+		if (myList != null) {
+			//Make change:
 			travelPlans.set(whichPlan, myList);
+			
+			//Confirm change to server:
+			Comm.sendMessage("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+		}
 	}
 	
 	/**

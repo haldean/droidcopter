@@ -25,8 +25,7 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 			return currentTask.getInterval();
 		
 		/* Should never happen, since currentTask is only null before the first call to getVelocity
-		 * and after if the list is empty (i.e. this NavTask is complete).
-		 */
+		 * and after if the list is empty (i.e. this NavTask is complete). */
 		else {
 			System.out.println("Navigation has bad manners.");
 			return NAVPAUSE; //But just in case

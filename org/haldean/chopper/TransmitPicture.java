@@ -22,6 +22,11 @@ public final class TransmitPicture extends Thread implements Constants
 	 */
 	public static int PREVQUALITY = 40;
 	
+	/**
+	 * Handles thread scheduling, instructions from other threads
+	 */
+	public static Handler handler;
+	
 	/* How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission,
 	 * before trying again. */
 	private static final int CAMERAINTERVAL = 2000;
@@ -34,9 +39,6 @@ public final class TransmitPicture extends Thread implements Constants
 	
 	/* For local JPEG compression */
 	private static ByteArrayOutputStream baos;
-	
-	/* Handles messages */
-	public static Handler handler;
 	
 	/* Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
 	 * This flags whether or not to try to use them.
@@ -130,7 +132,7 @@ public final class TransmitPicture extends Thread implements Constants
 				Comm.sendMessage("IMAGE:REQUEST:DENIED");
 		}
 
-		/*if (NEWCOMPRESSMETHOD)
+		if (NEWCOMPRESSMETHOD)
 		{
 			YuvImage sourcePic = null;
 			try {
@@ -153,7 +155,7 @@ public final class TransmitPicture extends Thread implements Constants
 			}
 			System.out.println("Finished compressing");
 		}
-		else {*/
+		else {
 			//System.out.println("Bitmap compression");
 			Bitmap mBitMap;
 			int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
@@ -161,7 +163,7 @@ public final class TransmitPicture extends Thread implements Constants
 			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
 			mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
 			mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
-		//}
+		}
 		if (baos == null)
 			System.out.println("bad stream");
 		byte[] temppic = baos.toByteArray();

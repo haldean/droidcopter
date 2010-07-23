@@ -68,7 +68,7 @@ public final class ChopperMain extends Activity implements Constants
 	}
 	
 	/**
-	 * Destroys activity.
+	 * Releases the wakelock, destroys activity.
 	 */
 	protected void onDestroy() {
 		mWakeLock.release();

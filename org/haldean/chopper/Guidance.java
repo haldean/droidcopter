@@ -11,7 +11,7 @@ import android.os.Message;
 public class Guidance extends Thread implements Constants {
 	
 	/* How many times per second the PID loop should run */
-	private static int PIDREPS = 10;
+	private static int PIDREPS = 20;
 	
 	/* Maximum permissible target velocity; larger vectors will be resized */
 	private static final double MAXVEL = 2.0;
@@ -108,9 +108,6 @@ public class Guidance extends Thread implements Constants {
 	
 	/* Core of the class; calculates new motor speeds based on status */
 	private static void reviseMotorSpeed() {
-		for (int i = 0; i < 4; i++) {
-			tempmotorspeed[i] = motorspeed[i];
-		}
 		if (inSimulator)
 			System.out.println();
 		long starttime = System.currentTimeMillis();
@@ -149,18 +146,18 @@ public class Guidance extends Thread implements Constants {
 			target[1] = REALLYBIG * Math.cos(gradangle);
 			
 			//Make sure the velocity vector components point in the right directions.
-			target[0] *= -Math.signum(target[0]) * Math.signum(rolldeg);
+			target[0] *= Math.signum(target[0]) * Math.signum(rolldeg);
 			target[1] *= Math.signum(target[1]) * Math.signum(pitchdeg);
 			target[2] = 0;
 			target[3] = azimuth;
-		}
-		else {
+			//System.out.println(target[0] + ", " + target[1]);
+		} else {
 			//Retrieve target velocity from nav,
 			//Transform absolute target velocity to relative target velocity
 			double theta = -azimuth * Math.PI / 180.0;
 			if (Navigation.targetLock.tryLock()) {
-				target[0] = Navigation.target[0] * Math.cos(theta) - Navigation.target[1] * Math.sin(theta);
-				target[1] = Navigation.target[0] * Math.sin(theta) + Navigation.target[1] * Math.cos(theta);
+				target[0] = Navigation.target[0] * Math.sin(theta) + Navigation.target[1] * Math.cos(theta);
+				target[1] = Navigation.target[0] * Math.cos(theta) - Navigation.target[1] * Math.sin(theta);
 				target[2] = Navigation.target[2];
 				target[3] = Navigation.target[3];
 				Navigation.targetLock.unlock();
@@ -180,8 +177,7 @@ public class Guidance extends Thread implements Constants {
 					}
 				}
 			}
-			if (inSimulator)
-				System.out.println(target[0] + ", " + target[1]);
+			System.out.println(target[0] + ", " + target[1]);
 		}
 		
 		
@@ -269,19 +265,19 @@ public class Guidance extends Thread implements Constants {
 		if ((!horizontaldrift) || (stabilizing)) { //if horizontal drift is on, motor speeds give full efficiency to altitude control
 		//but if the chopper is stabilizing, under no circumstances ignore torques 0, 1
 			//changes torques to motor values
-			tempmotorspeed[0] -= torques[0] / 2F;
-			tempmotorspeed[1] += torques[0] / 2F;
+			tempmotorspeed[0] -= torques[1] / 2F;
+			tempmotorspeed[1] += torques[1] / 2F;
 			
-			tempmotorspeed[2] -= torques[1] / 2F;
-			tempmotorspeed[3] += torques[1] / 2F;
+			tempmotorspeed[2] -= torques[0] / 2F;
+			tempmotorspeed[3] += torques[0] / 2F;
 			
 			
 			
-			double spintorque = torques[3] / 4F;
+			/*double spintorque = torques[3] / 4F;
 			tempmotorspeed[0] += spintorque;
 			tempmotorspeed[1] += spintorque;
 			tempmotorspeed[2] -= spintorque;
-			tempmotorspeed[3] -= spintorque;
+			tempmotorspeed[3] -= spintorque;*/
 		}
 		
 		double dalttorque = torques[2] / 4F;
@@ -306,9 +302,13 @@ public class Guidance extends Thread implements Constants {
 	
 		//Pass filtered values to motors.
 		if (ChopperStatus.motorLock.tryLock()) {
+			System.out.print("Motorspeed: " );
 			for (int i = 0; i < 4; i++) {
 				ChopperStatus.motorspeed[i] = motorspeed[i];
+				System.out.print(motorspeed[i] + " ");
+				
 			}
+			System.out.println();
 			ChopperStatus.motorLock.unlock();
 		}
 		

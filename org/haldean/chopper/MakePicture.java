@@ -3,6 +3,8 @@ package org.haldean.chopper;
 import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
@@ -12,6 +14,7 @@ import android.hardware.Camera.PreviewCallback;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 /**
@@ -22,50 +25,37 @@ import android.view.SurfaceHolder;
 public final class MakePicture extends Thread implements Constants {
 	
 	/**
-	 * Stores preview frames for later access by other threads.  All read/writes should be synchronized.
+	 * Stores preview frames for later access by other threads.  All read/writes should be externally synchronized.
 	 */
 	public static byte[] buffer = new byte[0];
-	
-	/**
-	 * The current width of preview frames
-	 */
-	public static int XPREV = 0;
-	
-	/**
-	 * The current height of preview frames
-	 */
-	public static int YPREV = 0;
-	
-	/**
-	 * Used to attempt to change frame size--represents desired new width of preview frames
-	 */
-	public static int nextx = 0;
-	
-	/**
-	 * Used to attempt to change frame size--represents desired new height of preview frames
-	 */
-	public static int nexty = 0;
-	
-	/**
-	 * Holds the value representing the format in which preview frames are stored
-	 * @see android.graphics.ImageFormat
-	 */
-	public static int PREVFORMAT = 0;
 	
 	/**
 	 * Used to send messages to the thread
 	 */
 	public static Handler handler;
 	
-	/**
-	 * Flag indicating whether or not new frame has been captured.
-	 * TransmitPicture thread sets this to false when it copies the stored frame.
-	 * @see TransmitPicture
-	 */
-	public static boolean newFrame = false;
+	/* The current width of preview frames */
+	private static AtomicInteger XPREV = new AtomicInteger(0);
+	
+	/* The current height of preview frames */
+	private static AtomicInteger YPREV = new AtomicInteger(0);
+	
+	/* Used to attempt to change frame size--represents desired new width of preview frames */
+	private static AtomicInteger nextx = new AtomicInteger(0);
+	
+	/* Used to attempt to change frame size--represents desired new height of preview frames */
+	private static AtomicInteger nexty = new AtomicInteger(0);
+	
+	/* Holds the value representing the format in which preview frames are stored
+	 * @see android.graphics.ImageFormat */
+	private static AtomicInteger PREVFORMAT = new AtomicInteger(0);
+	
+	/* Flag indicating whether or not new frame has been captured.
+	 * TransmitPicture thread sets this to false when it copies the stored frame. */
+	private static AtomicBoolean newFrame = new AtomicBoolean(false);
 	
 	/* Internal array that stores a preview frame */
-	private static byte[] storeFrame;
+	private static byte[] storeFrame = new byte[0];
 	
 	/* Holds the camera object */
 	private static Camera camera;
@@ -79,13 +69,15 @@ public final class MakePicture extends Thread implements Constants {
 	/* Desired compression rate of a high-quality jpeg image */
 	private static final int HIGHQJPEG = 85;
 	
+	/* Tag for logging */
+	private static final String TAG = "chopper.MakePicture";
 	
 	/**
 	 * Constructs the thread, stores the surface for preview rendering.
 	 * @param sh The SurfaceHolder to which the preview will be rendered
 	 */
 	public MakePicture(SurfaceHolder sh) {
-		super("Take Telemetry");
+		super("MakePicture");
 		setPriority(Thread.MIN_PRIORITY);
 		previewHolder = sh;		
 	}
@@ -128,26 +120,27 @@ public final class MakePicture extends Thread implements Constants {
 		//get available parameters, set specific ones.  Later, will configure these to be operated remotely.
 		Camera.Parameters params = camera.getParameters();
 		
-		PREVFORMAT = params.getPreviewFormat();
+		PREVFORMAT.set((params.getPreviewFormat()));
 		
 		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
 		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
 		if (sizes != null) {
-			Camera.Size previewsize = sizes.get(Math.min(1, sizes.size() - 1)); //second worst option, if available. if one option available, use it
+			Camera.Size previewsize = sizes.get(0); //start with lowest resolution.
 			params.setPreviewSize(previewsize.width, previewsize.height);
-			XPREV = previewsize.width;
-			YPREV = previewsize.height;
-			
+			XPREV.set(previewsize.width);
+			YPREV.set(previewsize.height);
 		}
 		else { //Running off the emulator
 			Camera.Size size = params.getPreviewSize();
-			XPREV = size.width;
-			YPREV = size.height;
+			XPREV.set(size.width);
+			YPREV.set(size.height);
 		}
-		nextx = XPREV;
-		nexty = YPREV;
-		storeFrame = new byte[XPREV * YPREV * ImageFormat.getBitsPerPixel(PREVFORMAT) / 8];
-		camera.addCallbackBuffer(storeFrame);
+		nextx.set(XPREV.get());
+		nexty.set(YPREV.get());
+		synchronized (storeFrame) {
+			storeFrame = new byte[XPREV.get() * YPREV.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+			camera.addCallbackBuffer(storeFrame);
+		}
 		
 		//Deal with FPS
 		List<Integer> fps = params.getSupportedPreviewFrameRates();
@@ -176,18 +169,7 @@ public final class MakePicture extends Thread implements Constants {
 		Looper.loop();
 	}
 	
-	/**
-	 * Sets a new SurfaceHolder to which preview frames should be rendered.
-	 * @param sh The new SurfaceHolder
-	 */
-	public static void redrawPreviewHolder(SurfaceHolder sh) {
-		//System.out.println("Redrawing");
-		//add the callback
-		System.out.println("thread redraw, " + Thread.currentThread().getId());
-		previewHolder.removeCallback(surfaceCallback);
-		previewHolder = sh;
-		previewHolder.addCallback(surfaceCallback);
-	}
+	
 	
 	/**
 	 * Initializes the camera object and associated callbacks.
@@ -255,19 +237,80 @@ public final class MakePicture extends Thread implements Constants {
 		//what to do with each preview frame captured
 		PreviewCallback precall = new PreviewCallback (){
 			public void onPreviewFrame(byte[] data, Camera camera) {
-				//System.out.println("PreviewFrame");
-				synchronized (buffer) {
-					buffer = data;
+				synchronized (data) {
+					synchronized (buffer) {
+						buffer = data;
+					}
 				}
-				newFrame = true;
-				
-				camera.addCallbackBuffer(storeFrame);
+				setNewFrameTo(true);
+				synchronized (storeFrame) {
+					camera.addCallbackBuffer(storeFrame);
+				}
 			}
 		};
 		
 		camera.setPreviewCallbackWithBuffer(precall);
 		//Inner class defs done
 		
+	}
+	
+	/**
+	 * Determines whether or not the most recent preview frame is a "new" one.
+	 * @return The new-ness of the frame.
+	 */
+	public static boolean isFrameNew() {
+		return newFrame.get();
+	}
+	
+	/**
+	 * Sets whether or not the most recent preview frame is a "new" one.
+	 * @param newNess The new-ness of the frame.
+	 */
+	public static void setNewFrameTo(boolean newNess) {
+		newFrame.set(newNess);
+	}
+	
+	/**
+	 * Registers a desired preview frame size, to which the camera will try to switch when updateFrameSize() is called.
+	 * @param newx The desired new frame width. 
+	 * @param newy The desired new frame height.
+	 * @see #updateFrameSize() updateFrameSize()
+	 */
+	public static void tryNextFrameSize(int newx, int newy) {
+		nextx.set(newx);
+		nexty.set(newy);
+	}
+	
+	/**
+	 * Obtains the image format used for preview frames.
+	 * @return The format.
+	 * @see android.graphics.ImageFormat ImageFormat
+	 */
+	public static int getPreviewFormat() {
+		return PREVFORMAT.get();
+	}
+	
+	/**
+	 * Obtains the current preview frame size.
+	 * @return An array containing the size.  Index '0' is the current width, index '1' is the current height.
+	 */
+	public static int[] getFrameSize() {
+		int[] myNums = {XPREV.get(), YPREV.get()};
+		return myNums;
+	}
+
+	/**
+	 * Sets a new SurfaceHolder to which preview frames should be rendered.
+	 * @param sh The new SurfaceHolder
+	 */
+	public static void redrawPreviewHolder(SurfaceHolder sh) {
+		Log.v(TAG, "Redrawing PrScreeneview Holder");
+		
+		//add the callback
+		System.out.println("thread redraw, " + Thread.currentThread().getId());
+		previewHolder.removeCallback(surfaceCallback);
+		previewHolder = sh;
+		previewHolder.addCallback(surfaceCallback);
 	}
 	
 	/**
@@ -279,25 +322,32 @@ public final class MakePicture extends Thread implements Constants {
 	public static boolean updateFrameSize() {
 		if (camera == null)
 			return false;
-		System.out.println("Updating frame size, from " + XPREV + ", " + YPREV + " to " + nextx + ", " + nexty);
+		/*synchronized (frameSizeLock) {
+			synchronized (nextFrameSizeLock) {
+				System.out.println("Updating frame size, from " + XPREV + ", " + YPREV + " to " + nextx + ", " + nexty);
+			}
+		}
+		*/
 		Camera.Parameters params = camera.getParameters();
+		if (!(nextx.get() != XPREV.get() | nexty.get() != YPREV.get()))
+			return false;
 		try {
-			params.setPreviewSize(nextx, nexty);
+			params.setPreviewSize(nextx.get(), nexty.get());
 			camera.stopPreview();
 			camera.setParameters(params);
-			XPREV = nextx;
-			YPREV = nexty;
-			
+			XPREV.set(nextx.get());
+			YPREV.set(nexty.get());
+			synchronized (storeFrame) {
+				storeFrame = new byte[XPREV.get() * YPREV.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+			}
+			handler.sendEmptyMessage(STARTPREVIEW);
 		}
 		catch (Throwable t) {
-			t.printStackTrace();
-			return false;
-		}
-		finally { //if it succeeds, nothing happens.  if it doesn't, nextx/nexty are reset.
-			nextx = XPREV;
-			nexty = YPREV;
-			storeFrame = new byte[XPREV * YPREV * ImageFormat.getBitsPerPixel(PREVFORMAT) / 8];
+			nextx.set(XPREV.get());
+			nexty.set(YPREV.get());
+			Log.i(TAG, "Preview size not changed.");
 			handler.sendEmptyMessage(STARTPREVIEW);
+			return false;
 		}
 		return true;
 	}

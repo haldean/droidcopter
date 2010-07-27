@@ -85,17 +85,17 @@ public interface Constants {
 	/**
 	 * Used by internal data structures as an index for the chopper's magnetic flux in the X direction, related data and objects
 	 */
-	public final static int MAG1 = 6; //microT
+	public final static int XFLUX = 6; //microT
 	
 	/**
 	 * Used by internal data structures as an index for the chopper's magnetic flux in the Y direction, related data and objects
 	 */
-	public final static int MAG2 = 7;
+	public final static int YFLUX = 7;
 	
 	/**
 	 * Used by internal data structures as an index for the chopper's magnetic flux in the Z direction, related data and objects
 	 */
-	public final static int MAG3 = 8;
+	public final static int ZFLUX = 8;
 	
 	/**
 	 * Used by internal data structures as an index for the chopper's pressure, related data and objects

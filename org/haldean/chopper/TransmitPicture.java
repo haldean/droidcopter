@@ -3,6 +3,7 @@ package org.haldean.chopper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.graphics.Bitmap;
 import android.graphics.Rect;
@@ -18,14 +19,12 @@ import android.os.Message;
 public final class TransmitPicture extends Thread implements Constants
 {	
 	/**
-	 * Quality of a compressed preview frame.  Minimum is 0, maximum is 100, default is 40.
-	 */
-	public static int PREVQUALITY = 40;
-	
-	/**
 	 * Handles thread scheduling, instructions from other threads
 	 */
 	public static Handler handler;
+	
+	/* Quality of a compressed preview frame.  Minimum is 0, maximum is 100, default is 25. */
+	private static AtomicInteger prevQuality = new AtomicInteger(25);
 	
 	/* How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission,
 	 * before trying again. */
@@ -51,7 +50,7 @@ public final class TransmitPicture extends Thread implements Constants
 	 */
 	public TransmitPicture(ObjectOutputStream mydata)
 	{
-		super("Transmit Telemetry");
+		super("TransmitPicture");
 		baos = new ByteArrayOutputStream();
 		dataout = mydata;
 	}
@@ -90,6 +89,22 @@ public final class TransmitPicture extends Thread implements Constants
 	}
 	
 	/**
+	 * Obtains the JPEG compression quality of each transmitted frame.
+	 * @return The quality.
+	 */
+	public static int getPreviewQuality() {
+		return prevQuality.get();
+	}
+	
+	/**
+	 * Sets the JPEG compression quality of each transmitted frame.
+	 * @param newQ The new quality.
+	 */
+	public static void setPreviewQuality(int newQ) {
+		prevQuality.set(newQ);
+	}
+	
+	/**
 	 * Kills the thread, either so it can be restarted or because of connectivity failure.
 	 */
 	public static void stopLoop() {
@@ -103,7 +118,7 @@ public final class TransmitPicture extends Thread implements Constants
 	 * @throws IOException If the connection fails
 	 */
 	private static void transmit() throws IOException {
-		if (!MakePicture.newFrame) {
+		if (!MakePicture.isFrameNew()) {
 			handler.sendEmptyMessageDelayed(SENDAPIC, CAMERAINTERVAL); //wait a bit, try again later.
 			System.out.println("Same pic");
 			return;
@@ -115,7 +130,7 @@ public final class TransmitPicture extends Thread implements Constants
 		//	System.out.println("Copytime: " + (System.currentTimeMillis() - starttime));
 		}
 		
-		MakePicture.newFrame = false;
+		MakePicture.setNewFrameTo(false);
 		
 		//System.out.println("Retrieved frame");
 		if (sendpic.length == 0)
@@ -125,18 +140,17 @@ public final class TransmitPicture extends Thread implements Constants
 			return;
 		}
 		
-		if ((MakePicture.nextx != MakePicture.XPREV)||(MakePicture.nexty != MakePicture.YPREV)) {//picture parameters need updating
-			if (MakePicture.updateFrameSize())
-				System.out.println("Picture updated succesfully.");
-			else
-				Comm.sendMessage("IMAGE:REQUEST:DENIED");
-		}
-
+		if (MakePicture.updateFrameSize())
+			System.out.println("Picture updated succesfully.");
+		else
+			Comm.sendMessage("IMAGE:REQUEST:DENIED");
+		int[] frameSize = MakePicture.getFrameSize();
 		if (NEWCOMPRESSMETHOD)
 		{
 			YuvImage sourcePic = null;
 			try {
-				sourcePic = new YuvImage(sendpic, MakePicture.PREVFORMAT, MakePicture.XPREV, MakePicture.XPREV, null);
+				
+				sourcePic = new YuvImage(sendpic, MakePicture.getPreviewFormat(), frameSize[0], frameSize[1], null);
 			}
 			catch (Throwable t)
 			{
@@ -147,7 +161,7 @@ public final class TransmitPicture extends Thread implements Constants
 		
 			System.out.println("Compressing to jpeg");
 			try {
-				sourcePic.compressToJpeg(new Rect(0, 0, MakePicture.XPREV, MakePicture.XPREV), PREVQUALITY, baos);
+				sourcePic.compressToJpeg(new Rect(0, 0, frameSize[0], frameSize[1]), prevQuality.get(), baos);
 			}
 			catch (Throwable t) {
 				System.out.println("Compress fail");
@@ -158,11 +172,11 @@ public final class TransmitPicture extends Thread implements Constants
 		else {
 			//System.out.println("Bitmap compression");
 			Bitmap mBitMap;
-			int[] rgb = new int[MakePicture.XPREV * MakePicture.YPREV];
-			decodeYUV420SP(rgb, sendpic, MakePicture.XPREV, MakePicture.YPREV);
+			int[] rgb = new int[frameSize[0] * frameSize[1]];
+			decodeYUV420SP(rgb, sendpic, frameSize[0], frameSize[1]);
 			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
-			mBitMap = Bitmap.createBitmap(rgb, MakePicture.XPREV, MakePicture.YPREV, Bitmap.Config.RGB_565);
-			mBitMap.compress(Bitmap.CompressFormat.JPEG, PREVQUALITY, baos);
+			mBitMap = Bitmap.createBitmap(rgb, frameSize[0], frameSize[1], Bitmap.Config.RGB_565);
+			mBitMap.compress(Bitmap.CompressFormat.JPEG, prevQuality.get(), baos);
 		}
 		if (baos == null)
 			System.out.println("bad stream");

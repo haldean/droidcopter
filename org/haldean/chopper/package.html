@@ -21,16 +21,6 @@ at a time.
 <p>
 Task scheduling and inter-thread communication is handled with the Handler class.
 <p>
-Many fields/objects are shared between threads.  In almost every case, only a single thread will ever
-write to a shared field/object, though many may read from that data.  Furthermore, many threads are
-time-sensitive: a delay in execution may result in catastrophic hardware failure.  Consequently, a
-collection of ReentrantLocks is used to ensure that all read/writes of shared data either are uncorrupted and
-immediate or do not take place at all.  Shared data that cannot be interrupted mid-read or write (i.e. the 
-actual reads or write is ultimately accomplished in a single step) usually have no associated lock; shared
-data that can be interrupted usually do.  As a rule, time-sensitive threads that only read from shared data use the
-tryLock() method; it is often better to use old data than to suspend execution to wait for a lock.  Threads
-that write to a shared field, however, usually use the lock() method to ensure that accurate data is ultimately
-recorded.
 
 <h2>Package Specification</h2>
 

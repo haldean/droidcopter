@@ -2,6 +2,8 @@ package org.haldean.chopper;
 
 import java.util.ListIterator;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.haldean.chopper.nav.NavList;
@@ -10,24 +12,19 @@ import org.haldean.chopper.nav.NavTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 /**
- * Handles Navigation routines; calculates next target velocity vector
+ * Handles Navigation routines; calculates next target velocity vector.
  * @author Benjamin Bardin
  */
 public class Navigation extends Thread implements Constants {
 	
-	/**
-	 * Velocity to achieve.  Must be externally locked on each read/write.
-	 * @see #targetLock targetLock
-	 */
-	public static double[] target = new double[4];
+	/* Velocity to achieve.  Must be externally locked on each read/write. */
+	private static double[] target = new double[4];
 	
-	/**
-	 * Lock for target[]
-	 * @see #target target[]
-	 */
-	public static ReentrantLock targetLock;
+	/* Lock for target[] */
+	private static ReentrantLock targetLock;
 	
 	/* How long (in ms) Navigation should instruct the chopper to hover
 	 * when autopilot has run out of NavTasks */
@@ -37,10 +34,10 @@ public class Navigation extends Thread implements Constants {
 	private static double[] tempTarget = new double[4];
 	
 	/* True if autopilot is engaged */
-	private static boolean autopilot = false;
+	private static AtomicBoolean autopilot = new AtomicBoolean(false);
 	
 	/* Chopper's navigation status */
-	private static int status = NUMNAVSTATUSES;
+	private static AtomicInteger status = new AtomicInteger(NUMNAVSTATUSES);
 	
 	/* Holds all flight plans */
 	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
@@ -50,7 +47,8 @@ public class Navigation extends Thread implements Constants {
 	private static NavTask flightPath;
 	private static NavTask onMyOwn;
 	
-	
+	/* Tag for logging */
+	private static String TAG = "chopper.Navigation";
 	
 	/* Handles messages */
 	private static Handler handler;
@@ -72,6 +70,64 @@ public class Navigation extends Thread implements Constants {
 	}
 	
 	/**
+	 * Writes current navigation target vector into supplied array.  If the data is locked, immediately returns with neither data update nor warning.
+	 * @param expectedValues  The array in which to write the vector--must be at least of length 4.
+	 */
+	public static void getTarget(double[] expectedValues) {
+		if (expectedValues.length < 4)
+			return;
+		if (targetLock.tryLock()) {
+			for (int i = 0; i < 4; i++) {
+				expectedValues[i] = target[i];
+			}
+			targetLock.unlock();
+		}
+		else {
+			Log.w(TAG, "Target vector is locked.");
+		}
+	}
+	
+	/**
+	 * Obtains current navigation target vector.  If the data is locked, immediately throws an exception.
+	 * @return A new array containing the navigation target vector.
+	 * @throws IllegalAccessException If the data is currently locked.
+	 */
+	public static double[] getTarget() throws IllegalAccessException {
+		double[] myTarget = new double[4];
+		if (targetLock.tryLock()) {
+			for (int i = 0; i < 4; i++) {
+				myTarget[i] = target[i];
+			}
+			targetLock.unlock();
+		}
+		else {
+			Log.w(TAG, "Target vector is locked.");
+			throw new IllegalAccessException();
+		}
+		return target;
+	}
+	
+	/**
+	 * Sets the navigation target vector to the values contained by the supplied array (length must be at least 4).
+	 * @param newTarget The new target vector.
+	 */
+	protected static void setTarget(double[] newTarget) {
+		if (newTarget.length < 4) {
+			return;
+		}
+		final double[] myCopy = newTarget.clone();
+		new Thread() {
+			public void run() {
+			targetLock.lock();
+			for (int i = 0; i < 4; i++) {
+				target[i] = myCopy[i];
+			}
+			targetLock.unlock();
+			}
+		}.start();
+	}
+	
+	/**
 	 * Starts the navigation thread
 	 */
 	public void run() {
@@ -81,7 +137,7 @@ public class Navigation extends Thread implements Constants {
             {
                 switch (msg.what) {
                 case EVALNAV:
-                	if (autopilot)
+                	if (autopilot.get())
                 		evalNextVector();
                 	break;
                 }
@@ -112,7 +168,8 @@ public class Navigation extends Thread implements Constants {
 	}
 	
 	/** 
-	 * @param whichPlan The index at which to set the new flight plan
+	 * Sets a supplied NavList as flight plan for the specified Nav status.
+	 * @param whichPlan The Nav status for which to set the new flight plan
 	 * @param myTask The new flight plan
 	 */
 	public static void setTask(int whichPlan, String myTask) {
@@ -131,7 +188,7 @@ public class Navigation extends Thread implements Constants {
 	 * @param newstatus The new (potential) status
 	 */
 	public static void updateStatus(int newstatus) {
-		status = Math.min(status, newstatus);
+		status.set(Math.min(status.get(), newstatus));
 	}
 	
 	/* Evaluates a new navigation vector, based on current status and the relevant NavTask */
@@ -139,7 +196,7 @@ public class Navigation extends Thread implements Constants {
 		//System.out.println("Evaluating next nav vector");
 		/*Determine what the current task should be.  Copies to a local variable in case
 		 * 'status'	changes during execution of the method */
-		int thisStatus = status;
+		int thisStatus = status.get();
 		
 		NavTask myList = travelPlans.get(thisStatus);
 		if (myList.isComplete()) {
@@ -148,14 +205,13 @@ public class Navigation extends Thread implements Constants {
 			return;
 		}
 		myList.getVelocity(tempTarget);
-		targetLock.lock();
+		setTarget(tempTarget);
+		
 		System.out.print("New NAV Vector: ");
 		for (int i = 0; i < 4; i++) {
-			target[i] = tempTarget[i];
-			System.out.print(target[i] + " ");
+			System.out.print(tempTarget[i] + " ");
 		}
 		System.out.println();
-		targetLock.unlock();
 		
 		long interval = myList.getInterval();
 		
@@ -171,15 +227,12 @@ public class Navigation extends Thread implements Constants {
 	
 	/* Orders the chopper to remain in place */
 	private static void hover() {
-		targetLock.lock();
+		
 		for (int i = 0; i < 3; i++) {
-			target[i] = 0;
+			tempTarget[i] = 0;
 		}
-		if (ChopperStatus.readingLock[AZIMUTH].tryLock()) {
-			target[3] = ChopperStatus.reading[AZIMUTH];
-			ChopperStatus.readingLock[AZIMUTH].unlock();
-		}
-		targetLock.unlock();
+		tempTarget[3] = ChopperStatus.getReadingFieldNow(AZIMUTH, tempTarget[3]);
+		setTarget(tempTarget);
 		handler.removeMessages(EVALNAV);
 		handler.sendEmptyMessageDelayed(EVALNAV, HOVERPAUSE);
 	}
@@ -189,9 +242,9 @@ public class Navigation extends Thread implements Constants {
 	 * @param onoff The new autopilot status
 	 */
 	public static void autoPilot(boolean onoff) {
-		autopilot = onoff;
+		autopilot.set(onoff);
 		handler.removeMessages(EVALNAV);
-		if (autopilot) {
+		if (autopilot.get()) {
 			handler.sendEmptyMessage(EVALNAV);
 			System.out.println("Autopilot engaged");
 		}

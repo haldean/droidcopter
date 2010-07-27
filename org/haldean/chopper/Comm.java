@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * Handles connectivity with control server
@@ -40,6 +41,9 @@ public final class Comm extends Thread implements Constants {
 	
 	/* How long (in ms) to wait for subsequent PULSE signals before assuming connectivity failure. */
 	private static final int PULSERATE = 3000;
+	
+	/* Tag for logging */
+	private static final String TAG = "chopper.Comm";
 	
 	/* Communication sockets */
 	private static Socket textsocket;
@@ -79,11 +83,7 @@ public final class Comm extends Thread implements Constants {
 			public void run() {
 				
 				try	{
-					System.out.println("Closing text sockets...");
-					if (textout != null)
-						textout.close();
-					if (textsocket != null)
-						textsocket.close();
+					destroyTextConn();
 					
 					System.out.println("Initializing text sockets... ");
 					textsocket = new Socket(control, textoutport);
@@ -151,7 +151,7 @@ public final class Comm extends Thread implements Constants {
 	
 	/* Tears down the data (telemetry) connection. */
 	private static void destroyDataConn() {
-		System.out.println("Closing data sockets...");
+		Log.i(TAG, "Closing data sockets...");
 		try {
 			if (dataout != null)
 				dataout.close();
@@ -160,7 +160,21 @@ public final class Comm extends Thread implements Constants {
 		}
 		/* Sockets might already be closed */
 		catch (IOException e) {
-			e.printStackTrace();
+			Log.i(TAG, "Data sockets already closed.");
+		}
+	}
+	
+	/* Tears down the text connection. */
+	private static void destroyTextConn() {
+		Log.i(TAG, "Closing text sockets...");
+		try {
+			if (textout != null)
+				textout.close();
+			if (textsocket != null)
+				textsocket.close();
+		}
+		catch (IOException e) {
+			Log.i(TAG, "Text sockets already closed.");
 		}
 	}
 	
@@ -251,20 +265,20 @@ public final class Comm extends Thread implements Constants {
 				if (parts[2].equals("QUALITY")) {
 					Integer newq = new Integer(parts[3]);
 					if (Math.abs(newq) <= 100)
-						TransmitPicture.PREVQUALITY = newq;
+						TransmitPicture.setPreviewQuality(newq);
 					else
 						Comm.sendMessage("IMAGE:REQUEST:DENIED");
 				}
 				if (parts[2].equals("SIZE")) {
-					MakePicture.nextx = new Integer(parts[3]);
-					MakePicture.nexty = new Integer(parts[4]);
+					MakePicture.tryNextFrameSize(new Integer(parts[3]), new Integer(parts[4]));
 				}
 			}
 			if (parts[1].equals("AVAILABLESIZES")) {
 				MakePicture.sendSizes();
 			}
 			if (parts[1].equals("GETPARAMS")) {
-				Comm.sendMessage("IMAGE:PARAMS:" + MakePicture.XPREV + ":" + MakePicture.YPREV + ":" + TransmitPicture.PREVQUALITY);
+				int[] mySize = MakePicture.getFrameSize();
+				Comm.sendMessage("IMAGE:PARAMS:" + mySize[0] + ":" + mySize[1] + ":" + TransmitPicture.getPreviewQuality());
 			}
 			if (parts[1].equals("SETUP")) {
 				handler.sendEmptyMessage(MAKEDATACONN);
@@ -286,11 +300,11 @@ public final class Comm extends Thread implements Constants {
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("MANUAL")) {
 					Navigation.autoPilot(false);
-					Navigation.targetLock.lock();
+					double[] newTarget = new double[4];
 					for (int i = 0; i < 4; i++) {
-						Navigation.target[i] = new Double(parts[i + 3]);
+						newTarget[i] = new Double(parts[i] + 3);
 					}
-					Navigation.targetLock.unlock();
+					Navigation.setTarget(newTarget);
 				}
 				if (parts[2].equals("AUTOPILOT"))
 					Navigation.autoPilot(true);

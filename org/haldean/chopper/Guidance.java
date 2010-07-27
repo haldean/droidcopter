@@ -3,6 +3,7 @@ package org.haldean.chopper;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * Determines motor speeds, based on chopper's status and desired velocity vector.
@@ -11,7 +12,7 @@ import android.os.Message;
 public class Guidance extends Thread implements Constants {
 	
 	/* How many times per second the PID loop should run */
-	private static int PIDREPS = 20;
+	private static int PIDREPS = 5;
 	
 	/* Maximum permissible target velocity; larger vectors will be resized */
 	private static final double MAXVEL = 2.0;
@@ -34,6 +35,9 @@ public class Guidance extends Thread implements Constants {
 	private static double rolldeg;
 	private static double pitchrad;
 	private static double rollrad;
+	private static double gpsBearing;
+	private static double gpsSpeed;
+	private static double gpsDalt;
 	
 	/* Stores desired velocity */
 	private static double[] target = new double[4];
@@ -75,6 +79,9 @@ public class Guidance extends Thread implements Constants {
 	/* If true, prints debug messages */
 	private static boolean inSimulator = false;
 	
+	/* Tag for logging */
+	private static final String TAG = new String("chopper.Guidance");
+	
 	/**
 	 * Constructs the thread, assigns maximum priority
 	 */
@@ -113,18 +120,11 @@ public class Guidance extends Thread implements Constants {
 		long starttime = System.currentTimeMillis();
 		stabilizing = false; //initializing value
 		//Retrieve current orientation.
-		if (ChopperStatus.readingLock[AZIMUTH].tryLock()) {
-			azimuth = ChopperStatus.reading[AZIMUTH];
-			ChopperStatus.readingLock[AZIMUTH].unlock();
-		}
-		if (ChopperStatus.readingLock[PITCH].tryLock()) {
-			pitchdeg = -ChopperStatus.reading[PITCH];
-			ChopperStatus.readingLock[PITCH].unlock();
-		}
-		if (ChopperStatus.readingLock[ROLL].tryLock()) {
-			rolldeg = ChopperStatus.reading[ROLL];
-			ChopperStatus.readingLock[ROLL].unlock();
-		}
+
+		azimuth = ChopperStatus.getReadingFieldNow(AZIMUTH, azimuth);
+		pitchdeg = -ChopperStatus.getReadingFieldNow(PITCH, -pitchdeg);
+		rolldeg = ChopperStatus.getReadingFieldNow(ROLL, rolldeg);
+		
 		pitchrad = pitchdeg * Math.PI / 180.0;
 		rollrad = rolldeg * Math.PI / 180.0;
 		
@@ -151,16 +151,18 @@ public class Guidance extends Thread implements Constants {
 			target[2] = 0;
 			target[3] = azimuth;
 			//System.out.println(target[0] + ", " + target[1]);
-		} else {
+		}
+		else {
 			//Retrieve target velocity from nav,
 			//Transform absolute target velocity to relative target velocity
 			double theta = -azimuth * Math.PI / 180.0;
-			if (Navigation.targetLock.tryLock()) {
-				target[0] = Navigation.target[0] * Math.sin(theta) + Navigation.target[1] * Math.cos(theta);
-				target[1] = Navigation.target[0] * Math.cos(theta) - Navigation.target[1] * Math.sin(theta);
-				target[2] = Navigation.target[2];
-				target[3] = Navigation.target[3];
-				Navigation.targetLock.unlock();
+			
+			try {
+				double[] absTarget = Navigation.getTarget();
+				target[0] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
+				target[1] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
+				target[2] = absTarget[2];
+				target[3] = absTarget[3];
 				
 				//Calculate recorded velocity; reduce, if necessary, to MAXVEL
 				double myVel = 0;
@@ -177,7 +179,10 @@ public class Guidance extends Thread implements Constants {
 					}
 				}
 			}
-			System.out.println(target[0] + ", " + target[1]);
+			catch (IllegalAccessException e) {
+				Log.w(TAG, "Nav Target lock not available.");
+			}
+			Log.v(TAG, "Relative target: " + target[0] + ", " + target[1]);
 		}
 		
 		
@@ -188,10 +193,15 @@ public class Guidance extends Thread implements Constants {
 		//Transform current velocity from absolute to relative
 		
 		//CHECK SIGN HERE:
-		double theta = (ChopperStatus.gps[BEARING] - azimuth) * Math.PI / 180.0;
-		current[0] = ChopperStatus.gps[SPEED] * Math.cos(theta);
-		current[1] = ChopperStatus.gps[SPEED] * Math.sin(theta);
-		current[2] = ChopperStatus.gps[dALT];
+		gpsBearing = ChopperStatus.getGpsFieldNow(BEARING, gpsBearing); 
+		double theta = (gpsBearing - azimuth) * Math.PI / 180.0;
+		
+		gpsSpeed = ChopperStatus.getGpsFieldNow(SPEED, gpsSpeed);
+		current[0] = gpsSpeed * Math.cos(theta);
+		current[1] = gpsSpeed * Math.sin(theta);
+		
+		gpsDalt = ChopperStatus.getGpsFieldNow(dALT, gpsDalt);
+		current[2] = gpsDalt;
 		current[3] = azimuth;
 		
 		
@@ -273,11 +283,11 @@ public class Guidance extends Thread implements Constants {
 			
 			
 			
-			/*double spintorque = torques[3] / 4F;
+			double spintorque = torques[3] / 4F;
 			tempmotorspeed[0] += spintorque;
 			tempmotorspeed[1] += spintorque;
 			tempmotorspeed[2] -= spintorque;
-			tempmotorspeed[3] -= spintorque;*/
+			tempmotorspeed[3] -= spintorque;
 		}
 		
 		double dalttorque = torques[2] / 4F;
@@ -301,17 +311,8 @@ public class Guidance extends Thread implements Constants {
 		}
 	
 		//Pass filtered values to motors.
-		if (ChopperStatus.motorLock.tryLock()) {
-			System.out.print("Motorspeed: " );
-			for (int i = 0; i < 4; i++) {
-				ChopperStatus.motorspeed[i] = motorspeed[i];
-				System.out.print(motorspeed[i] + " ");
-				
-			}
-			System.out.println();
-			ChopperStatus.motorLock.unlock();
-		}
-		
+		ChopperStatus.setMotorFields(motorspeed);
+		Log.v(TAG, "motors: " + motorspeed[0] + ", " + motorspeed[1] + ", " + motorspeed[2] + ", " + motorspeed[3]);
 		//Sleep a while
 		long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);
 		if (timetonext > 0)

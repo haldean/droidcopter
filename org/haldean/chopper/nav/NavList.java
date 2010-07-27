@@ -79,10 +79,7 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		for (int i = 0; i < 3; i++) {
 			target[i] = 0;
 		}
-		if (ChopperStatus.readingLock[AZIMUTH].tryLock()) {
-			target[3] = ChopperStatus.reading[AZIMUTH];
-			ChopperStatus.readingLock[AZIMUTH].unlock();
-		}
+		target[3] = ChopperStatus.getReadingFieldNow(AZIMUTH, target[3]);
 	}
 	
 	/**

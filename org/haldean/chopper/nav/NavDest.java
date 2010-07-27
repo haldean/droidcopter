@@ -4,6 +4,7 @@ import org.haldean.chopper.ChopperStatus;
 import org.haldean.chopper.Constants;
 
 import android.location.Location;
+import android.util.Log;
 
 /**
  * A NavTask that determines target velocity based on a desired destination.
@@ -26,6 +27,8 @@ public class NavDest implements NavTask, Constants {
 	
 	/* Maximum tolerable distance from destination to declare task complete */
 	private double destDist;
+	
+	private static String TAG = "nav.NavDest";
 	
 	/**
 	 *  Creates/deserializes a NavDest from a String.  The String should be of the format DEST!altitude!longitude!latitude!velocity!minimumDistance
@@ -97,11 +100,11 @@ public class NavDest implements NavTask, Constants {
 	public void getVelocity(double[] target) throws IllegalArgumentException {
 		if (target.length < 4)
 			throw new IllegalArgumentException();
-		ChopperStatus.lastLocLock.lock();
-		if (ChopperStatus.lastLoc != null) {
-			currentLoc = new Location(ChopperStatus.lastLoc);
+		Location myLoc = ChopperStatus.getLastLocation();
+		if (myLoc != null) {
+			currentLoc = myLoc;
 			if (destination == null) {
-				destination = new Location(ChopperStatus.lastLoc);
+				destination = new Location(currentLoc);
 			
 				destination.setAltitude(altitude);
 				destination.setLongitude(longitude);
@@ -109,10 +112,9 @@ public class NavDest implements NavTask, Constants {
 			}
 		}
 		else {
-			System.out.println("GPS Not Initialized");
+			Log.w(TAG, "GPS Not Initialized");
 			return;
 		}
-		ChopperStatus.lastLocLock.unlock();
 		
 		
 		//Bearing, in degrees

@@ -138,7 +138,7 @@ public final class TransmitPicture extends Thread implements Constants
 		//	System.out.println("Copytime: " + (System.currentTimeMillis() - starttime));
 		}
 		
-		MakePicture.setNewFrameTo(false);
+		MakePicture.setFrameNewnessTo(false);
 		
 		//System.out.println("Retrieved frame");
 		if (sendpic.length == 0)

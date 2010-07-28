@@ -52,16 +52,16 @@ public final class ChopperMain extends Activity implements Constants
         if (firstRun) {
 	        
         	/* Initialize and start sensor process */
-			new Thread(new ChopperStatus(getApplicationContext())).start();
+			new PersistentThread(new ChopperStatus(getApplicationContext())).start();
 			
-			new Thread(new MakePicture(previewHolder)).start();
+			new PersistentThread(new MakePicture(previewHolder)).start();
 	        
 	        /* Initialize and start the processes that send data back to the control computer. */
-			new Thread(new Comm()).start();
+			new PersistentThread(new Comm()).start();
 			
-			new Thread(new Navigation()).start();
+			new PersistentThread(new Navigation()).start();
 			
-			new Thread(new Guidance()).start();
+			new PersistentThread(new Guidance()).start();
         }
         else {
         	Log.i(TAG, "Restarting Activity");

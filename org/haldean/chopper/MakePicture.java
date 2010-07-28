@@ -238,10 +238,15 @@ public final class MakePicture implements Runnable, Constants {
 			public void onPreviewFrame(byte[] data, Camera camera) {
 				synchronized (data) {
 					synchronized (buffer) {
-						buffer = data;
+						if (buffer.length != data.length) {
+							buffer = new byte[data.length];
+						}
+						for (int i = 0; i < buffer.length; i++) {
+							buffer[i] = data[i];
+						}
 					}
 				}
-				setNewFrameTo(true);
+				setFrameNewnessTo(true);
 				synchronized (storeFrame) {
 					camera.addCallbackBuffer(storeFrame);
 				}
@@ -265,7 +270,7 @@ public final class MakePicture implements Runnable, Constants {
 	 * Sets whether or not the most recent preview frame is a "new" one.
 	 * @param newNess The new-ness of the frame.
 	 */
-	public static void setNewFrameTo(boolean newNess) {
+	public static void setFrameNewnessTo(boolean newNess) {
 		newFrame.set(newNess);
 	}
 	

@@ -20,7 +20,7 @@ import android.util.Log;
  * @author Benjamin Bardin
  *
  */
-public final class Comm extends Thread implements Constants {	
+public final class Comm implements Runnable, Constants {	
 	
 	/**
 	 * How long (in ms) to wait, upon connectivity failure, before attempting to reestablish connection
@@ -75,13 +75,12 @@ public final class Comm extends Thread implements Constants {
 	 */
 	public Comm()
 	{
-		super("Comm");
 		countdown = new Timer();
 		
 		/* Runnable that establishes a text connection */
 		textConnArg = new Runnable() {
 			public void run() {
-				
+				Thread.currentThread().setName("MakeTextConn");
 				try	{
 					destroyTextConn();
 					
@@ -99,8 +98,9 @@ public final class Comm extends Thread implements Constants {
 					
 			        
 			        /* Initializes heartbeat protocol */
-			        countdown.cancel();
-			        countdown = new Timer();
+					countdown.purge();
+			        //countdown.cancel();
+			        //countdown = new Timer();
 			        countdown.schedule(new TimerTask() {
 							public void run() {
 								updateAll("SYS:NOCONN"); //If the timer runs down, connection lost; update the system.
@@ -121,7 +121,7 @@ public final class Comm extends Thread implements Constants {
 		/* Runnable that establishes a data connection */
 		dataConnArg = new Runnable() {
 			public void run() {
-				
+				Thread.currentThread().setName("MakeDataConn");
 				/* Kills the transmit picture thread, will be restarted when a connection is established. */
 				TransmitPicture.stopLoop();
 				try {
@@ -203,7 +203,7 @@ public final class Comm extends Thread implements Constants {
 	 */
 	public void run() {
 		Looper.prepare();
-		
+		Thread.currentThread().setName("Comm");
 		/* Registers actions */
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
@@ -242,7 +242,6 @@ public final class Comm extends Thread implements Constants {
 		try {
 			while ((input = textin.readLine()) != null) {
 			    updateAll(input);
-			    //System.out.println("Waiting for input");
 			}
 		}
 		catch (Throwable t) {
@@ -255,7 +254,7 @@ public final class Comm extends Thread implements Constants {
 	 * @param msg The method to process.
 	 */
 	public static void updateAll(String msg) {
-		System.out.println(msg);
+		Log.i(TAG, msg);
 		String[] parts = msg.split(":");
 		if (parts[0].equals("IMAGE")) {
 			if (parts[1].equals("RECEIVED")) {
@@ -287,8 +286,9 @@ public final class Comm extends Thread implements Constants {
 		if (parts[0].equals("COMM")) {
 			if (parts[1].equals("PULSE")) {
 				//Reset the heartbeat countdown
-				countdown.cancel();
-		        countdown = new Timer();
+				countdown.purge();
+				//countdown.cancel();
+		        //countdown = new Timer();
 		        countdown.schedule(new TimerTask() {
 						public void run() {
 							updateAll("SYS:NOCONN");

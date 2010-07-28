@@ -22,7 +22,7 @@ import android.view.SurfaceHolder;
  * @author Benjamin Bardin
  *
  */
-public final class MakePicture extends Thread implements Constants {
+public final class MakePicture implements Runnable, Constants {
 	
 	/**
 	 * Stores preview frames for later access by other threads.  All read/writes should be externally synchronized.
@@ -35,24 +35,24 @@ public final class MakePicture extends Thread implements Constants {
 	public static Handler handler;
 	
 	/* The current width of preview frames */
-	private static AtomicInteger XPREV = new AtomicInteger(0);
+	private static final AtomicInteger XPREV = new AtomicInteger(0);
 	
 	/* The current height of preview frames */
-	private static AtomicInteger YPREV = new AtomicInteger(0);
+	private static final AtomicInteger YPREV = new AtomicInteger(0);
 	
 	/* Used to attempt to change frame size--represents desired new width of preview frames */
-	private static AtomicInteger nextx = new AtomicInteger(0);
+	private static final AtomicInteger nextx = new AtomicInteger(0);
 	
 	/* Used to attempt to change frame size--represents desired new height of preview frames */
-	private static AtomicInteger nexty = new AtomicInteger(0);
+	private static final AtomicInteger nexty = new AtomicInteger(0);
 	
 	/* Holds the value representing the format in which preview frames are stored
 	 * @see android.graphics.ImageFormat */
-	private static AtomicInteger PREVFORMAT = new AtomicInteger(0);
+	private static final AtomicInteger PREVFORMAT = new AtomicInteger(0);
 	
 	/* Flag indicating whether or not new frame has been captured.
 	 * TransmitPicture thread sets this to false when it copies the stored frame. */
-	private static AtomicBoolean newFrame = new AtomicBoolean(false);
+	private static final AtomicBoolean newFrame = new AtomicBoolean(false);
 	
 	/* Internal array that stores a preview frame */
 	private static byte[] storeFrame = new byte[0];
@@ -77,8 +77,6 @@ public final class MakePicture extends Thread implements Constants {
 	 * @param sh The SurfaceHolder to which the preview will be rendered
 	 */
 	public MakePicture(SurfaceHolder sh) {
-		super("MakePicture");
-		setPriority(Thread.MIN_PRIORITY);
 		previewHolder = sh;		
 	}
 	
@@ -86,8 +84,9 @@ public final class MakePicture extends Thread implements Constants {
 	 * Starts the thread--specifically, initializes camera callbacks and starts capturing camera preview.
 	 */
 	public void run() {
+		Thread.currentThread().setName("MakePicture");
 		Looper.prepare();
-		System.out.println("MakePicture run() thread ID " + getId());
+		System.out.println("MakePicture run() thread ID " + Thread.currentThread().getId());
 		
 		setupCallbacks();
 		//Handles incoming messages

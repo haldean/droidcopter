@@ -1,5 +1,7 @@
 package org.haldean.chopper;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.BroadcastReceiver;
@@ -26,7 +28,7 @@ import android.util.Log;
  * @author Benjamin Bardin
  * @author Will Brown
  */
-public final class ChopperStatus extends Thread implements SensorEventListener, Constants, LocationListener
+public final class ChopperStatus implements Runnable, SensorEventListener, Constants, LocationListener
 {	
 	/* How often (in ms) status updates should be sent by ChopperStatus to the server */
 	private static final int UPDATEINTERVAL = 500;
@@ -93,12 +95,17 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	/* Tag for logging */
 	private static String TAG = "Chopper.ChopperStatus";
 	
+	/* Thread pool for mutator methods */
+	private static ExecutorService mutatorPool;
+	
+	/* Number of threads in the mutator pool */
+	private static final int numMutatorThreads = 3;
+	
 	/**
 	 * Initializes the locks
 	 * @param mycontext Application context
 	 */
 	public ChopperStatus(Context mycontext)	{
-		super("Chopper Status");
 		context = mycontext;
 		
 		//Initialize the data locks
@@ -115,6 +122,8 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 		motorLock = new ReentrantLock();
 		gpsExtrasLock = new ReentrantLock();
 		batteryLock = new ReentrantLock();
+		
+		mutatorPool = Executors.newFixedThreadPool(numMutatorThreads);
 	}
 	
 	/* Sends a status report to the control server; iterates through all important fields to do it. */
@@ -365,9 +374,13 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param value The GPS data.
 	 */
 	private static void setGpsField(final int whichField, final double value) {
-		gpsLock[whichField].lock();
-		gps[whichField] = value;
-		gpsLock[whichField].unlock();
+		mutatorPool.submit(new Runnable() {
+			public void run() {
+				gpsLock[whichField].lock();
+				gps[whichField] = value;
+				gpsLock[whichField].unlock();
+			}
+		});
 	}
 	
 	/**
@@ -376,9 +389,13 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param value The reading.
 	 */
 	private static void setReadingField(final int whichField, final double value) {
-		readingLock[whichField].lock();
-		reading[whichField] = value;
-		readingLock[whichField].unlock();
+		mutatorPool.submit(new Runnable() {
+			public void run() {
+				readingLock[whichField].lock();
+				reading[whichField] = value;
+				readingLock[whichField].unlock();
+			}
+		});
 	}
 	
 	/**
@@ -387,19 +404,18 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	 * @param mySpeeds The data to which the motor speeds should be set.
 	 */
 	protected static void setMotorFields(double[] mySpeeds) {
+		if (mySpeeds.length < 4)
+			return;
 		final double[] speeds = mySpeeds.clone();
-		new Thread() {
+		mutatorPool.submit(new Runnable() {
 			public void run() {
-				if (speeds.length < 4) {
-					return;
-				}
 				motorLock.lock();
 				for (int i = 0; i < 4; i++) {
 					motorspeed[i] = speeds[i];
 				}
 				motorLock.unlock();
 			}
-		}.start();
+		});
 	}
 	
 	/**
@@ -409,7 +425,7 @@ public final class ChopperStatus extends Thread implements SensorEventListener, 
 	{
 		//System.out.println("ChopperStatus run() thread ID " + getId());
 		Looper.prepare();
-		
+		Thread.currentThread().setName("ChopperStatus");
 		handler = new Handler() {
             public void handleMessage(Message msg)
             {

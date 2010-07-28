@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 /**
@@ -18,11 +19,12 @@ public final class ChopperMain extends Activity implements Constants
 	 */
 	protected PowerManager.WakeLock mWakeLock;
 	
-	/**
-	 * The Activity is destroyed and restarted whenever the phone rotates--
-	 * the threads it starts, however, persist and need only be started on the first run. 
-	 */
+	/* The Activity is destroyed and restarted whenever the phone rotates--
+	 * the threads it starts, however, persist and need only be started on the first run. */
 	private static boolean firstRun = true;
+	
+	/* Tag for logging */
+	private static final String TAG = "chopper.ChopperMain";
 	
 	/**
 	 * Initializes program.
@@ -50,18 +52,19 @@ public final class ChopperMain extends Activity implements Constants
         if (firstRun) {
 	        
         	/* Initialize and start sensor process */
-			new ChopperStatus(getApplicationContext()).start();
+			new Thread(new ChopperStatus(getApplicationContext())).start();
 			
-			new MakePicture(previewHolder).start();
+			new Thread(new MakePicture(previewHolder)).start();
 	        
 	        /* Initialize and start the processes that send data back to the control computer. */
-			new Comm().start();
+			new Thread(new Comm()).start();
 			
-			new Navigation().start();
+			new Thread(new Navigation()).start();
 			
-			new Guidance().start();
+			new Thread(new Guidance()).start();
         }
         else {
+        	Log.i(TAG, "Restarting Activity");
         	MakePicture.redrawPreviewHolder(previewHolder);
         }
         firstRun = false;

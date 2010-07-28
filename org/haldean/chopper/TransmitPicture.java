@@ -11,6 +11,7 @@ import android.graphics.YuvImage;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * Transmits telemetry frames to the control server
@@ -24,7 +25,7 @@ public final class TransmitPicture extends Thread implements Constants
 	public static Handler handler;
 	
 	/* Quality of a compressed preview frame.  Minimum is 0, maximum is 100, default is 25. */
-	private static AtomicInteger prevQuality = new AtomicInteger(25);
+	private static final AtomicInteger prevQuality = new AtomicInteger(25);
 	
 	/* How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission,
 	 * before trying again. */
@@ -42,7 +43,13 @@ public final class TransmitPicture extends Thread implements Constants
 	/* Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
 	 * This flags whether or not to try to use them.
 	 */
-	private static boolean NEWCOMPRESSMETHOD = false;
+	private static final boolean NEWCOMPRESSMETHOD = false;
+	
+	/* Used as part of the YUV --> JPEG coding process if NEWCOMPRESSMETHOD is false */
+	private static int[] rgb = new int[0];
+	
+	/* Tag for logging */
+	private static final String TAG = "chopper.TransmitPicture";
 	
 	/**
 	 * Constructs the TransmitPicture thread.
@@ -61,7 +68,7 @@ public final class TransmitPicture extends Thread implements Constants
 	public void run()
 	{
 		Looper.prepare();
-		
+		Thread.currentThread().setName("TransmitPicture");
 		handler = new Handler() {
             public void handleMessage(Message msg)
             {
@@ -123,7 +130,8 @@ public final class TransmitPicture extends Thread implements Constants
 			System.out.println("Same pic");
 			return;
 		}
-		//long starttime = System.currentTimeMillis();
+		
+		long starttime = System.currentTimeMillis();
 		synchronized (MakePicture.buffer) //get a lock on the variable
 		{
 			sendpic = MakePicture.buffer.clone(); //create a new copy.
@@ -171,20 +179,20 @@ public final class TransmitPicture extends Thread implements Constants
 		}
 		else {
 			//System.out.println("Bitmap compression");
-			Bitmap mBitMap;
-			int[] rgb = new int[frameSize[0] * frameSize[1]];
+			if (frameSize[0] * frameSize[1] != rgb.length)
+				rgb = new int[frameSize[0] * frameSize[1]];
 			decodeYUV420SP(rgb, sendpic, frameSize[0], frameSize[1]);
 			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
-			mBitMap = Bitmap.createBitmap(rgb, frameSize[0], frameSize[1], Bitmap.Config.RGB_565);
+			Bitmap mBitMap = Bitmap.createBitmap(rgb, frameSize[0], frameSize[1], Bitmap.Config.RGB_565);
 			mBitMap.compress(Bitmap.CompressFormat.JPEG, prevQuality.get(), baos);
 		}
 		if (baos == null)
 			System.out.println("bad stream");
 		byte[] temppic = baos.toByteArray();
 		baos.reset();
-		//long endtime = System.currentTimeMillis();
-    	//System.out.println("Pic Processing took " + (endtime - starttime));
-		System.out.println("Sending a pic, length " + temppic.length);
+		long endtime = System.currentTimeMillis();
+    	Log.v(TAG, "Pic Processing took " + (endtime - starttime));
+		Log.i(TAG, "Sending a pic, length " + temppic.length);
 		//Notifies the control console that the next transmission will be an image.
 		//i.e. not a text-based one.
 		String PicPrep = "IMAGE:" + Integer.toString(temppic.length) + ":" + System.currentTimeMillis();
@@ -195,8 +203,8 @@ public final class TransmitPicture extends Thread implements Constants
 			dataout.flush();
 		}
 		catch (Throwable t) {
+			Log.w(TAG, "Exception thrown in telemetry transmission.");
 			t.printStackTrace();
-			System.out.println("TransmitPic throwing exception");
 			handler.sendEmptyMessageDelayed(SENDAPIC, Comm.CONNECTIONINTERVAL); //wait a bit, try again later.
 		}
 		//System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));

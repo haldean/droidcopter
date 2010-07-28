@@ -9,7 +9,7 @@ import android.util.Log;
  * Determines motor speeds, based on chopper's status and desired velocity vector.
  * @author Benjamin Bardin
  */
-public class Guidance extends Thread implements Constants {
+public class Guidance implements Runnable, Constants {
 	
 	/* How many times per second the PID loop should run */
 	private static int PIDREPS = 5;
@@ -86,9 +86,6 @@ public class Guidance extends Thread implements Constants {
 	 * Constructs the thread, assigns maximum priority
 	 */
 	public Guidance() {
-		super("Guidance");
-		setPriority(Thread.MAX_PRIORITY);
-		
 		//Temporary: need real tuning values at some point:
 		for (int i = 0; i < 4; i++)
 			for (int j = 0; j < 3; j++)
@@ -100,6 +97,8 @@ public class Guidance extends Thread implements Constants {
 	 */
 	public void run() {
 		Looper.prepare();
+		Thread.currentThread().setName("Guidance");
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		handler = new Handler() {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {

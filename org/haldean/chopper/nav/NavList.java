@@ -18,6 +18,13 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 	NavTask currentTask;
 	
 	/**
+	 * Creates a NavList.
+	 */
+	public NavList() {
+		super();
+	}
+	
+	/**
 	 * Get desired time until next calculation of target velocity vector.
 	 */
 	public long getInterval() {

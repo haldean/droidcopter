@@ -34,10 +34,10 @@ public class Navigation extends Thread implements Constants {
 	private static double[] tempTarget = new double[4];
 	
 	/* True if autopilot is engaged */
-	private static AtomicBoolean autopilot = new AtomicBoolean(false);
+	private static final AtomicBoolean autopilot = new AtomicBoolean(false);
 	
 	/* Chopper's navigation status */
-	private static AtomicInteger status = new AtomicInteger(NUMNAVSTATUSES);
+	private static final AtomicInteger status = new AtomicInteger(NUMNAVSTATUSES);
 	
 	/* Holds all flight plans */
 	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
@@ -132,6 +132,7 @@ public class Navigation extends Thread implements Constants {
 	 */
 	public void run() {
 		Looper.prepare();
+		Thread.currentThread().setName("Navigation");
 		handler = new Handler() {
 			public void handleMessage(Message msg)
             {

@@ -178,9 +178,9 @@ public final class Comm implements Runnable, Receivable, Constants {
 		};
 		mDataConn = new Thread(mDataConnArg);
 		
-		registerReceiver(COMM, this);
+		/*registerReceiver(COMM, this);
 		registerReceiver(IMAGE, this);
-		registerReceiver(SYS, this);
+		registerReceiver(SYS, this);*/
 	}
 	
 	/* Tears down the data (telemetry) connection. */
@@ -215,9 +215,6 @@ public final class Comm implements Runnable, Receivable, Constants {
 	}
 	
 	public void receiveMessage(String msg, Receivable source) {
-		if (isItForMe(msg)) {
-			return;
-		}
 		sendMessage(msg);
 	}
 	
@@ -226,7 +223,6 @@ public final class Comm implements Runnable, Receivable, Constants {
 	 * @param message The message to send.
 	 */
 	public boolean sendMessage(String message) {
-		Log.v(TAG, "Sending message: " + message);
 		if (mTextOut == null) { //connection not yet initialized
 			return false;
 		}
@@ -239,7 +235,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 		/* The connection might be broken */
 		catch (Throwable t) {
 			t.printStackTrace();
-			System.out.println("Connection appears to be lost.  Attempting to reconnect.");
+			Log.w(TAG, "Connection appears to be lost.  Attempting to reconnect.");
 			mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
 			return false;
 		}
@@ -289,7 +285,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 		if (!mAcceptMsgs) {
 			return;
 		}
-		new Thread() {
+		new Thread(new Runnable() {
 			public void run() {
 				Thread.currentThread().setName("TextConn");
 				String input;
@@ -304,24 +300,31 @@ public final class Comm implements Runnable, Receivable, Constants {
 					t.printStackTrace();
 				}
 			}
-		}.start();
+		}).start();
 	}
 	
-	public synchronized void registerReceiver(int msgType, Receivable receiver) {
+	public void registerReceiver(int msgType, Receivable receiver) {
 		LinkedList<Receivable> myList = mMsgTypes.get(msgType);
 		synchronized (myList) {
 			myList.add(receiver);
 		}
 	}
 	
-	public synchronized void registerReceiver(Receivable receiver) {
+	public void registerReceiver(Receivable receiver) {
 		for (int i = 0; i < MSG_TYPES; i++) {
 			registerReceiver(i, receiver);
 		}
 	}
 	
-	public synchronized void setTelemetrySource(MakePicture mP) {
-		mTelemSrc = mP;
+	public void setTelemetrySource(MakePicture mP) {
+		if (mTelemSrc == null) {
+			mTelemSrc = mP;
+		}
+		else {
+			synchronized (mTelemSrc) {
+				mTelemSrc = mP;
+			}
+		}
 	}
 	
 	private boolean isItForMe(String msg) {
@@ -354,9 +357,10 @@ public final class Comm implements Runnable, Receivable, Constants {
 	 * Processes communications received from the server and internal system-wide messages.
 	 * @param msg The method to process.
 	 */
-	private synchronized void updateReceivers(String msg) {
+	private void updateReceivers(String msg) {
 		Log.i(TAG, msg);
 		
+		isItForMe(msg);
 		
 		ListIterator<Receivable> myList = null;
 		
@@ -373,7 +377,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 		}
 		
 		if (msg.startsWith("SYS:")) {
-			myList = mMsgTypes.get(COMM).listIterator();
+			myList = mMsgTypes.get(SYS).listIterator();
 		}
 		
 		if (myList != null) {

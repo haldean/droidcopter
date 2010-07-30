@@ -10,38 +10,68 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 public class PersistentThread extends Thread {
-	AtomicBoolean stillAlive = new AtomicBoolean(false);
-	Throwable myBad = null;
+	AtomicBoolean mStillAlive = new AtomicBoolean(false);
+	Throwable mBad = null;
+	Runnable mCallback;
 	
 	public void run() {
-		super.run();
-	}
-	/*
-		while (stillAlive.get()) {
+		do {
 			try {
 				super.run();
 			}
 			catch (Throwable t) {
 				t.printStackTrace();
+				if (mBad != null) {
+					synchronized (mBad) {
+						mBad = t;
+					}
+				}
+				else {
+					mBad = t;
+				}
 			}
-		}
-	}*/
+			try {
+				if (mCallback != null) {
+					synchronized (mCallback) {
+						mCallback.run();
+					}
+				}
+			}
+			catch (Throwable t) {
+				t.printStackTrace();
+				synchronized (mBad) {
+					mBad = t;
+				}
+			}
+		} while (mStillAlive.get());
+	}
 	
 	public Throwable getLastThrowable() {
-		synchronized (myBad) {
-			if (myBad == null) {
+		synchronized (mBad) {
+			if (mBad == null) {
 				return null;
 			}
 			else {
-				Throwable myCopy = new Throwable(myBad);
-				myCopy.setStackTrace(myBad.getStackTrace());
-				return myCopy;
+				Throwable mCopy = new Throwable(mBad);
+				mCopy.setStackTrace(mBad.getStackTrace());
+				return mCopy;
 			}
 		}
 	}
 	
+	public void setOnResetCallback(Runnable onReset) {
+		if (mCallback != null) {
+			synchronized (mCallback) {
+				mCallback = onReset;
+			}
+		}
+		else {
+			mCallback = onReset;
+		}
+	}
+	
 	public void setPersistent(boolean isPersistent) {
-		stillAlive.set(isPersistent);
+		mStillAlive.set(isPersistent);
 	}
 	
 	/**

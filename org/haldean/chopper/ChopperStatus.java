@@ -426,11 +426,14 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 			if (loc.getExtras() != null)
 				mGpsNumSats = loc.getExtras().getInt("satellites");
 			mGpsExtrasLock.unlock();
-			
-			synchronized (mLastLoc) {
+			if (mLastLoc != null) {
+				synchronized (mLastLoc) {
+					mLastLoc = loc;
+				}
+			}
+			else {
 				mLastLoc = loc;
 			}
-			
 		}
 	}
 	

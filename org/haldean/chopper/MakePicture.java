@@ -102,6 +102,7 @@ public final class MakePicture implements Constants, Receivable {
 	}
 	
 	public void receiveMessage(String msg, Receivable source) {
+		Log.i(TAG, "Receiving msg: " + msg);
 		String[] parts = msg.split(":");
 		if (parts[0].equals("IMAGE")) {
 			if (parts[1].equals("SET")) {
@@ -154,7 +155,7 @@ public final class MakePicture implements Constants, Receivable {
 	            }
 	        };
 	        //mComm.registerReceiver(IMAGE, mMpic);
-	        initCamera();
+	        initParams();
 			initCallbacks();
 			
 			//Get to work!
@@ -163,7 +164,7 @@ public final class MakePicture implements Constants, Receivable {
 		}
 	}
 	
-	private void initCamera() {
+	private void initParams() {
 		Log.i(TAG, "Initializing camera");
 		if (mCamera == null) {
 			mCamera = Camera.open();
@@ -222,7 +223,7 @@ public final class MakePicture implements Constants, Receivable {
 			e.printStackTrace();
 			Log.w(TAG, "Camera parameters rejected.");
 		}
-		sendSizes();
+		//sendSizes();
 	}
 	
 	

@@ -143,7 +143,7 @@ public class Guidance implements Constants {
 	
 	/* Core of the class; calculates new motor speeds based on status */
 	private void reviseMotorSpeed() {
-		Log.v(TAG, "START MOTOR REVISION");
+		//Log.v(TAG, "START MOTOR REVISION");
 		long starttime = System.currentTimeMillis();
 		boolean mStabilizing = false; //initializing value
 		//Retrieve current orientation.
@@ -292,8 +292,8 @@ public class Guidance implements Constants {
 				break;
 			}				
 			mTorques[i] = dmotor;
-			Log.v(TAG, "phi: " + phi);
-			Log.v(TAG, "dmotor: " + dmotor);	
+			//Log.v(TAG, "phi: " + phi);
+			//Log.v(TAG, "dmotor: " + dmotor);	
 		}
 		mLastUpdate = thistime;
 		

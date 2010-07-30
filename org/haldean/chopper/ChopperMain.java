@@ -66,22 +66,20 @@ public final class ChopperMain extends Activity implements Constants
 	        comm.setTelemetrySource(pic);
 	        comm.registerReceiver(IMAGE, pic);
 	        comm.registerReceiver(NAV, nav);
+	        
 	        status.registerReceiver(comm);
 	        status.registerReceiver(nav);
+	        
 	        reporter.registerReceiver(comm);
 	        pic.registerReceiver(comm);
 	        
-	        PersistentThread commThread = new PersistentThread(comm);
-	        commThread.start();
-	        
+	        new PersistentThread(comm).start();
 	        status.getPersistentThreadInstance().start();
-	        
-	        PersistentThread reportThread = new PersistentThread(reporter);
-	        reportThread.start();
-	        
-	    	//mNav.getPersistentThreadInstance().start();
-	    	//mGuid.getPersistentThreadInstance().start();
-	    	pic.getPersistentThreadInstance().start();
+	        new PersistentThread(reporter).start();
+	        pic.getPersistentThreadInstance().start();
+	    	nav.getPersistentThreadInstance().start();
+	    	guid.getPersistentThreadInstance().start();
+	    	
         }
         catch (Throwable e) {
         	e.printStackTrace();

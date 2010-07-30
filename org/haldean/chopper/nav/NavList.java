@@ -7,14 +7,14 @@ import java.util.Stack;
 import org.haldean.chopper.ChopperStatus;
 import org.haldean.chopper.Constants;
 
+import android.util.Log;
+
 /**
  * Holds a list of NavTasks in ordered form.
  * @author Benjamin Bardin
  */
 public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
-
-	private static final long serialVersionUID = 8506353357302343674L;
-
+	private static final String TAG = "nav.NavList";
 	NavTask currentTask;
 	
 	/**
@@ -59,8 +59,7 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		/* The following else should never happen, since getVelocity() should always be preceded with isComplete().
 		 * If complete, this NavTask would be removed from its parent NavList. */
 		else {
-			hover(target);
-			return;
+			Log.wtf(TAG, "Completed task not removed from NavList");
 		}
 	}
 	
@@ -76,17 +75,6 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 				iterator.remove();
 		}
 		return true; //if all tasks are complete, return true;
-	}
-	
-	/**
-	 * Registers a target velocity of 0, 0, 0
-	 * @param target The array in which to store the velocity.
-	 */
-	private void hover(double[] target) {
-		for (int i = 0; i < 3; i++) {
-			target[i] = 0;
-		}
-		target[3] = ChopperStatus.getReadingFieldNow(AZIMUTH, target[3]);
 	}
 	
 	/**
@@ -108,14 +96,14 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 	 * @param msg Serialized form of the NavList
 	 * @return The newly-deserialized NavList
 	 */
-	public static NavList fromString(String msg) {
+	public static NavList fromString(String msg, ChopperStatus cs) {
 		String[] tokens = msg.split(" ");
 		Stack<NavTask> myStack = new Stack<NavTask>();
 		for (int i = 0; i < tokens.length; i++){
 			if (!tokens[i].endsWith("}")) {
 				NavTask myTask = null;
 				if (tokens[i].startsWith("DEST")) {
-					myTask = new NavDest(tokens[i]);
+					myTask = new NavDest(tokens[i], cs);
 					myStack.push(myTask);
 				}
 				if (tokens[i].startsWith("VEL")) {

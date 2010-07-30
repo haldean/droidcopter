@@ -121,12 +121,13 @@ public class ImagePanel extends JPanel implements Updatable {
 	    ImageSizeEntry size = new ImageSizeEntry(msgParts[2], msgParts[3]);
 	    imageSizes.addItem(size);
 	    sizes.put(size.area(), size);
-	} else if (msg.startsWith("IMAGE:PARAMS")) {
+	} else if (msg.startsWith("IMAGE:FRAMESIZE")) {
 	    String msgParts[] = msg.split(":");
-	    imageQuality.setValue(new Integer(msgParts[4]));
 	    imageSizes.setSelectedItem(sizes.get(new Integer(msgParts[2]) * 
 						 new Integer(msgParts[3])));
-	}
+	} else if (msg.startsWith("IMAGE:FRAMEQUALITY")) {
+		String msgParts[] = msg.split(":");
+		imageQuality.setValue(new Integer(msgParts[2]));
     }
 
     /** A class used to represent image sizes in the combo box */
@@ -147,7 +148,7 @@ public class ImagePanel extends JPanel implements Updatable {
 	public ImageSizeEntry(int _w, int _h) {
 	    width = _w;
 	    height = _h;
-	}
+	}String msgParts[] = msg.split(":");
 
 	/** Get the string to send to the device to tell it to
 	 *  switch image sizes 

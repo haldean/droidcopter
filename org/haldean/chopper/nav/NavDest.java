@@ -30,12 +30,13 @@ public class NavDest implements NavTask, Constants {
 	
 	private static String TAG = "nav.NavDest";
 	
+	private ChopperStatus myCs;
 	/**
 	 *  Creates/deserializes a NavDest from a String.  The String should be of the format DEST!altitude!longitude!latitude!velocity!minimumDistance
 	 * @param myString String to deserialize
 	 * @throws IllegalArgumentException If the supplied String is not valid.
 	 */
-	public NavDest(String myString) throws IllegalArgumentException {
+	public NavDest(String myString, ChopperStatus Cs) throws IllegalArgumentException {
 		//altitude, longitude, latitude, travelspeed, destDist
 		if (myString.startsWith("DEST!"))
 			myString = myString.substring(5, myString.length());
@@ -54,19 +55,7 @@ public class NavDest implements NavTask, Constants {
 			throw new IllegalArgumentException();
 		}
 		reallyClose = false;
-	}
-	
-	/**
-	 * Creates a NavDest.
-	 * @param loc Desired destination.
-	 * @param velocity Desired travel velocity.
-	 * @param acceptableDistance How close to the destination to get.
-	 */
-	public NavDest (Location loc, double velocity, double acceptableDistance) {
-		destination = loc;
-		myVelocity = velocity;
-		destDist = acceptableDistance;
-		reallyClose = false;
+		myCs = Cs;
 	}
 	
 	/**
@@ -100,7 +89,7 @@ public class NavDest implements NavTask, Constants {
 	public void getVelocity(double[] target) throws IllegalArgumentException {
 		if (target.length < 4)
 			throw new IllegalArgumentException();
-		Location myLoc = ChopperStatus.getLastLocation();
+		Location myLoc = myCs.getLastLocation();
 		if (myLoc != null) {
 			currentLoc = myLoc;
 			if (destination == null) {

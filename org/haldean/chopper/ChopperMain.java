@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 /**
@@ -21,10 +20,16 @@ public final class ChopperMain extends Activity implements Constants
 	
 	/* The Activity is destroyed and restarted whenever the phone rotates--
 	 * the threads it starts, however, persist and need only be started on the first run. */
-	private static boolean firstRun = true;
 	
-	/* Tag for logging */
-	private static final String TAG = "chopper.ChopperMain";
+	/** Tag for logging */
+	public static final String TAG = "chopper.ChopperMain";
+	
+	/**
+	 * Constructs the Chopper activity.
+	 */
+	public ChopperMain() {
+		super();
+	}
 	
 	/**
 	 * Initializes program.
@@ -49,25 +54,38 @@ public final class ChopperMain extends Activity implements Constants
         SurfaceHolder previewHolder = preview.getHolder();
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
-        if (firstRun) {
+        try {
+	        Comm comm = new Comm(true);
+	        ChopperStatus status = new ChopperStatus(getApplicationContext());
+	        StatusReporter reporter = new StatusReporter(status);
+	        MakePicture pic = new MakePicture(previewHolder);
 	        
-        	/* Initialize and start sensor process */
-			new PersistentThread(new ChopperStatus(getApplicationContext())).start();
-			
-			new PersistentThread(new MakePicture(previewHolder)).start();
+	        Navigation nav = new Navigation(status);
+	        Guidance guid = new Guidance(status, nav);
 	        
-	        /* Initialize and start the processes that send data back to the control computer. */
-			new PersistentThread(new Comm()).start();
-			
-			new PersistentThread(new Navigation()).start();
-			
-			new PersistentThread(new Guidance()).start();
+	        comm.setTelemetrySource(pic);
+	        comm.registerReceiver(IMAGE, pic);
+	        comm.registerReceiver(NAV, nav);
+	        status.registerReceiver(comm);
+	        status.registerReceiver(nav);
+	        reporter.registerReceiver(comm);
+	        pic.registerReceiver(comm);
+	        
+	        PersistentThread commThread = new PersistentThread(comm);
+	        commThread.start();
+	        
+	        status.getPersistentThreadInstance().start();
+	        
+	        PersistentThread reportThread = new PersistentThread(reporter);
+	        reportThread.start();
+	        
+	    	//mNav.getPersistentThreadInstance().start();
+	    	//mGuid.getPersistentThreadInstance().start();
+	    	pic.getPersistentThreadInstance().start();
         }
-        else {
-        	Log.i(TAG, "Restarting Activity");
-        	MakePicture.redrawPreviewHolder(previewHolder);
+        catch (Throwable e) {
+        	e.printStackTrace();
         }
-        firstRun = false;
 	}
 	
 	/**

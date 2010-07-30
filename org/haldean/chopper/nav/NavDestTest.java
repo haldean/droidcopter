@@ -11,9 +11,9 @@ class NavDestTest extends TestCase {
 	}
 
 	public void testNavDestString() {
-		tasks[0] = new NavDest("DEST:300:40.78:-73.97:2:10");
-		tasks[1] = new NavDest("DEST:120:38.98:-77.07:1.8:15");
-		tasks[2] = new NavDest("DEST:1000:32.72:-117.15:2.34:3");
+		tasks[0] = new NavDest("DEST:300:40.78:-73.97:2:10", null);
+		tasks[1] = new NavDest("DEST:120:38.98:-77.07:1.8:15", null);
+		tasks[2] = new NavDest("DEST:1000:32.72:-117.15:2.34:3", null);
 	}
 
 	public void testToString() {

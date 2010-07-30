@@ -1,5 +1,6 @@
 package org.haldean.chopper;
 
+import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,150 +19,226 @@ import android.util.Log;
  * Handles Navigation routines; calculates next target velocity vector.
  * @author Benjamin Bardin
  */
-public class Navigation extends Thread implements Constants {
+public class Navigation implements Constants, Receivable {
 	
-	/* Velocity to achieve.  Must be externally locked on each read/write. */
-	private static double[] target = new double[4];
+	/* Velocity to achieve.  Must be locked on each read/write. */
+	private double[] mTarget = new double[4];
 	
 	/* Lock for target[] */
-	private static ReentrantLock targetLock;
+	private ReentrantLock mTargetLock;
 	
 	/* How long (in ms) Navigation should instruct the chopper to hover
 	 * when autopilot has run out of NavTasks */
-	private static final int HOVERPAUSE = 10000;
+	public static final int HOVER_PAUSE = 10000;
 	
-	/* Stores local variable*/
-	private static double[] tempTarget = new double[4];
+	/* Used to calculate next nav vector; prevents the thread
+	 * from holding a lock on mTarget itself for too long */
+	private double[] mTempTarget = new double[4];
 	
 	/* True if autopilot is engaged */
-	private static final AtomicBoolean autopilot = new AtomicBoolean(false);
+	private final AtomicBoolean mAutoPilot = new AtomicBoolean(false);
 	
 	/* Chopper's navigation status */
-	private static final AtomicInteger status = new AtomicInteger(NUMNAVSTATUSES);
+	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES);
 	
 	/* Holds all flight plans */
-	private static Vector<NavTask> travelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
+	private Vector<NavTask> mTravelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
 	
 	/* Different flight plans depending on Nav status */
-	private static NavTask lowPower;
-	private static NavTask flightPath;
-	private static NavTask onMyOwn;
+	private NavTask mLowPower;
+	private NavTask mFlightPath;
+	private NavTask mOnMyOwn;
 	
 	/* Tag for logging */
-	private static String TAG = "chopper.Navigation";
+	public static final String TAG = "chopper.Navigation";
+	
+	/* Handle for other chopper components */
+	private ChopperStatus mStatus;
 	
 	/* Handles messages */
-	private static Handler handler;
+	private Handler mHandler;
+	
+	/* Hides Runnability, ensures singleton-ness */
+	private Runner mRunner;
+	private static PersistentThread sThread;
+	
+	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
 	
 	/**
 	 * Constructs a navigation object, initializes NavLists
 	 */
-	public Navigation() {
-		super("Navigation");
-		lowPower = new NavList();
-		flightPath = new NavList();
-		onMyOwn = new NavList();
+	public Navigation(ChopperStatus status) {
+		if (status == null) {
+			throw new NullPointerException();
+		}
 		
-		travelPlans.add(lowPower);
-		travelPlans.add(flightPath);
-		travelPlans.add(onMyOwn);
+		mLowPower = new NavList();
+		mFlightPath = new NavList();
+		mOnMyOwn = new NavList();
 		
-		targetLock = new ReentrantLock();
+		mTravelPlans.add(mLowPower);
+		mTravelPlans.add(mFlightPath);
+		mTravelPlans.add(mOnMyOwn);
+		
+		mTargetLock = new ReentrantLock();
+
+		mStatus = status;
+	}
+	
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
+		}
+	}
+	
+	public PersistentThread getPersistentThreadInstance() {
+		if (mRunner == null) {
+			mRunner = new Runner(this);
+		}
+		if (sThread == null) {
+			sThread = new PersistentThread(mRunner);
+		}
+		return sThread;
 	}
 	
 	/**
 	 * Writes current navigation target vector into supplied array.  If the data is locked, immediately returns with neither data update nor warning.
 	 * @param expectedValues  The array in which to write the vector--must be at least of length 4.
 	 */
-	public static void getTarget(double[] expectedValues) {
+	public void getTarget(double[] expectedValues) {
 		if (expectedValues.length < 4)
 			return;
-		if (targetLock.tryLock()) {
+		if (mTargetLock.tryLock()) {
 			for (int i = 0; i < 4; i++) {
-				expectedValues[i] = target[i];
+				expectedValues[i] = mTarget[i];
 			}
-			targetLock.unlock();
+			mTargetLock.unlock();
 		}
 		else {
 			Log.w(TAG, "Target vector is locked.");
 		}
 	}
 	
+	public void receiveMessage(String msg, Receivable source) {
+		String[] parts = msg.split(":");
+		if (parts[0].equals("NAV")) {
+			if (parts[1].equals("SET")) {
+				if (parts[2].equals("MANUAL")) {
+					autoPilot(false);
+					double[] newTarget = new double[4];
+					for (int i = 0; i < 4; i++) {
+						newTarget[i] = new Double(parts[i] + 3);
+					}
+					setTarget(newTarget);
+				}
+				if (parts[2].equals("AUTOPILOT"))
+					autoPilot(true);
+				if (parts[2].equals("AUTOTASK")) {
+					Integer taskList = new Integer(parts[3]);
+					setTask(taskList, parts[4]);
+				}
+			}
+			if (parts[1].equals("GET")) {
+				if (parts[2].equals("AUTOTASKS")) {
+					String[] myTasks = getTasks();
+					for (int i = 0; i < myTasks.length; i++) {
+						if (source != null) {
+							source.receiveMessage("NAV:AUTOTASK:" + i + ":" + myTasks[i], this);
+						}
+					}
+				}
+			}
+		}
+		if (parts[0].equals("SYS")) {
+			if (parts[1].equals("NOCONN")) {
+				//updateStatus(NOCONN);
+				//autoPilot(true);
+			}
+			if (parts[1].equals("LOWPOWER")) {
+				updateStatus(LOW_POWER);
+			}
+		}
+	}
 	/**
 	 * Obtains current navigation target vector.  If the data is locked, immediately throws an exception.
 	 * @return A new array containing the navigation target vector.
 	 * @throws IllegalAccessException If the data is currently locked.
 	 */
-	public static double[] getTarget() throws IllegalAccessException {
+	public double[] getTarget() throws IllegalAccessException {
 		double[] myTarget = new double[4];
-		if (targetLock.tryLock()) {
+		if (mTargetLock.tryLock()) {
 			for (int i = 0; i < 4; i++) {
-				myTarget[i] = target[i];
+				myTarget[i] = mTarget[i];
 			}
-			targetLock.unlock();
+			mTargetLock.unlock();
 		}
 		else {
 			Log.w(TAG, "Target vector is locked.");
 			throw new IllegalAccessException();
 		}
-		return target;
+		return mTarget;
 	}
 	
 	/**
 	 * Sets the navigation target vector to the values contained by the supplied array (length must be at least 4).
 	 * @param newTarget The new target vector.
 	 */
-	protected static void setTarget(double[] newTarget) {
+	protected void setTarget(double[] newTarget) {
 		if (newTarget.length < 4) {
 			return;
 		}
 		final double[] myCopy = newTarget.clone();
 		new Thread() {
 			public void run() {
-			targetLock.lock();
+			mTargetLock.lock();
 			for (int i = 0; i < 4; i++) {
-				target[i] = myCopy[i];
+				mTarget[i] = myCopy[i];
 			}
-			targetLock.unlock();
+			mTargetLock.unlock();
 			}
 		}.start();
 	}
 	
-	/**
-	 * Starts the navigation thread
-	 */
-	public void run() {
-		Looper.prepare();
-		Thread.currentThread().setName("Navigation");
-		handler = new Handler() {
-			public void handleMessage(Message msg)
-            {
-                switch (msg.what) {
-                case EVALNAV:
-                	if (autopilot.get())
-                		evalNextVector();
-                	break;
-                }
-            } 
-		};
-		
-		//FOR TESTING ONLY:
-		String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
-			"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
-				" DEST!587!-117.15!32.72!10!600 } } }";
-		setTask(BASICAUTO, taskList);
-		updateStatus(BASICAUTO);
-		autoPilot(true);
-		Looper.loop();
+	private class Runner implements Runnable {
+		private Runner(Navigation nav) {
+		}
+		/**
+		 * Starts the navigation thread
+		 */
+		public void run() {
+			Looper.prepare();
+			Thread.currentThread().setName("Navigation");
+			mHandler = new Handler() {
+				public void handleMessage(Message msg)
+	            {
+	                switch (msg.what) {
+	                case EVAL_NAV:
+	                	if (mAutoPilot.get())
+	                		evalNextVector();
+	                	break;
+	                }
+	            } 
+			};
+			//mComm.registerReceiver(NAV, mNav);
+			//mComm.registerReceiver(SYS, mNav);
+			//FOR TESTING ONLY:
+			String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
+				"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
+					" DEST!587!-117.15!32.72!10!600 } } }";
+			setTask(BASIC_AUTO, taskList);
+			updateStatus(BASIC_AUTO);
+			autoPilot(true);
+			Looper.loop();
+		}
 	}
 	
 	/**
 	 * Obtains all scheduled flight plans
 	 * @return An array of strings representing all flight plans (serialized form)
 	 */
-	public static String[] getTasks() {
-		ListIterator<NavTask> iterator = travelPlans.listIterator();
-		String[] myTasks = new String[travelPlans.size()];
+	public String[] getTasks() {
+		ListIterator<NavTask> iterator = mTravelPlans.listIterator();
+		String[] myTasks = new String[mTravelPlans.size()];
 		while (iterator.hasNext()) {
 			myTasks[iterator.nextIndex()] = iterator.next().toString();
 		}
@@ -173,14 +250,23 @@ public class Navigation extends Thread implements Constants {
 	 * @param whichPlan The Nav status for which to set the new flight plan
 	 * @param myTask The new flight plan
 	 */
-	public static void setTask(int whichPlan, String myTask) {
-		NavList myList = NavList.fromString(myTask);
+	public void setTask(int whichPlan, String myTask) {
+		NavList myList = NavList.fromString(myTask, mStatus);
 		if (myList != null) {
 			//Make change:
-			travelPlans.set(whichPlan, myList);
+			mTravelPlans.set(whichPlan, myList);
 			
 			//Confirm change to server:
-			Comm.sendMessage("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+		}
+	}
+	
+	private void updateReceivers(String str) {
+		synchronized (mRec) {
+			ListIterator<Receivable> myList = mRec.listIterator();
+			while (myList.hasNext()) {
+				myList.next().receiveMessage(str, this);
+			}
 		}
 	}
 	
@@ -188,65 +274,65 @@ public class Navigation extends Thread implements Constants {
 	 * Compares the supplied status with the current status; stores the most important.
 	 * @param newstatus The new (potential) status
 	 */
-	public static void updateStatus(int newstatus) {
-		status.set(Math.min(status.get(), newstatus));
+	public void updateStatus(int newstatus) {
+		mNavStatus.set(Math.min(mNavStatus.get(), newstatus));
 	}
 	
 	/* Evaluates a new navigation vector, based on current status and the relevant NavTask */
-	private static void evalNextVector() {
+	private void evalNextVector() {
 		//System.out.println("Evaluating next nav vector");
 		/*Determine what the current task should be.  Copies to a local variable in case
 		 * 'status'	changes during execution of the method */
-		int thisStatus = status.get();
+		int thisStatus = mNavStatus.get();
 		
-		NavTask myList = travelPlans.get(thisStatus);
+		NavTask myList = mTravelPlans.get(thisStatus);
 		if (myList.isComplete()) {
 			System.out.println("Hovering");
 			hover();
 			return;
 		}
-		myList.getVelocity(tempTarget);
-		setTarget(tempTarget);
+		myList.getVelocity(mTempTarget);
+		setTarget(mTempTarget);
 		
 		System.out.print("New NAV Vector: ");
 		for (int i = 0; i < 4; i++) {
-			System.out.print(tempTarget[i] + " ");
+			System.out.print(mTempTarget[i] + " ");
 		}
 		System.out.println();
 		
 		long interval = myList.getInterval();
 		
 		//Send the current NavList to the server, in case any tasks have been completed
-		Comm.sendMessage("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
+		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
 		
-		handler.removeMessages(EVALNAV);
+		mHandler.removeMessages(EVAL_NAV);
 		if (interval > 0)
-			handler.sendEmptyMessageDelayed(EVALNAV, interval);
+			mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
 		else
-			handler.sendEmptyMessage(EVALNAV);
+			mHandler.sendEmptyMessage(EVAL_NAV);
 	}
 	
 	/* Orders the chopper to remain in place */
-	private static void hover() {
+	private void hover() {
 		
 		for (int i = 0; i < 3; i++) {
-			tempTarget[i] = 0;
+			mTempTarget[i] = 0;
 		}
-		tempTarget[3] = ChopperStatus.getReadingFieldNow(AZIMUTH, tempTarget[3]);
-		setTarget(tempTarget);
-		handler.removeMessages(EVALNAV);
-		handler.sendEmptyMessageDelayed(EVALNAV, HOVERPAUSE);
+		mTempTarget[3] = mStatus.getReadingFieldNow(AZIMUTH, mTempTarget[3]);
+		setTarget(mTempTarget);
+		mHandler.removeMessages(EVAL_NAV);
+		mHandler.sendEmptyMessageDelayed(EVAL_NAV, HOVER_PAUSE);
 	}
 	
 	/**
 	 * Changes autopilot status (on or off)
 	 * @param onoff The new autopilot status
 	 */
-	public static void autoPilot(boolean onoff) {
-		autopilot.set(onoff);
-		handler.removeMessages(EVALNAV);
-		if (autopilot.get()) {
-			handler.sendEmptyMessage(EVALNAV);
+	public void autoPilot(boolean onoff) {
+		mAutoPilot.set(onoff);
+		mHandler.removeMessages(EVAL_NAV);
+		if (mAutoPilot.get()) {
+			mHandler.sendEmptyMessage(EVAL_NAV);
 			System.out.println("Autopilot engaged");
 		}
 	}

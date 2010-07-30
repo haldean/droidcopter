@@ -1,7 +1,10 @@
 package org.haldean.chopper;
 
+import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.BroadcastReceiver;
@@ -18,9 +21,7 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.BatteryManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 
 /**
@@ -28,236 +29,148 @@ import android.util.Log;
  * @author Benjamin Bardin
  * @author Will Brown
  */
-public final class ChopperStatus implements Runnable, SensorEventListener, Constants, LocationListener
+public final class ChopperStatus implements SensorEventListener, Constants, LocationListener
 {	
-	/* How often (in ms) status updates should be sent by ChopperStatus to the server */
-	private static final int UPDATEINTERVAL = 500;
 	
 	/* Parameter to specify GPS minimum update distance, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy. */
-	private static final float gpsMinDist = 0;
+	private static final float GPS_MIN_DIST = 0;
 	
 	/* Parameter to specify GPS minimum update time, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy. */
-	private static final long gpsMinTime = 0;
+	private static final long GPS_MIN_TIME = 0;
+	
+	/** Point of "officially" low battery */
+	public final static int LOW_BATT = 30;
 	
 	/* Holds data from various sensors, like gyroscope, acceleration and magnetic flux. */
-	private static double[] reading = new double[NUMSENSORS]; //last known data for a given sensor
+	private double[] mReading = new double[SENSORS]; //last known data for a given sensor
 	
 	/* Locks for fields in reading[]. */
-	private static ReentrantLock[] readingLock;
+	private ReentrantLock[] mReadingLock;
 	
 	/* Timestamp of last write to corresponding field in reading[]. */
-	//private static long[] timestamp = new long[NUMSENSORS]; //timestamp in nanos of last reading
+	//private long[] timestamp = new long[NUMSENSORS]; //timestamp in nanos of last reading
 	
 	/* Holds GPS data. */
-	private static double[] gps = new double[GPSFIELDS]; //last available GPS readings
+	private double[] mGps = new double[GPS_FIELDS]; //last available GPS readings
 	
 	/* Locks for fields in gps[]. */
-	private static ReentrantLock[] gpsLock;
+	private ReentrantLock[] mGpsLock;
 	
 	/* Stores the location object last returned by the GPS. */
-	private static Location lastLoc;
+	private Location mLastLoc;
 	
 	/* Stores the speeds last submitted to the motors. */
-	private static double[] motorspeed = new double[4];
+	private double[] mMotorSpeed = new double[4];
 	
 	/* Lock for motorspeed[]. */
-	private static ReentrantLock motorLock;
+	private ReentrantLock mMotorLock;
 	
 	/* Current battery level. */
-	private static int currbattery = 0;
+	private final AtomicInteger mCurrBatt = new AtomicInteger(0);
 	
 	/* Max battery level. */
-	private static int maxbattery = 100;
-	
-	/* Lock for battery data */
-	private static ReentrantLock batteryLock;	
+	private final AtomicInteger mMaxBatt = new AtomicInteger(100);
 	
 	/* Accuracy of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
-	private static float gpsAccuracy; //accuracy of said reading
+	private float mGpsAccuracy; //accuracy of said reading
 
 	/* Timestamp of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
-	private static long gpsTimeStamp; //timestamp of the reading
+	private long mGpsTimeStamp; //timestamp of the reading
 	
 	/* Number of satellites used to obtain last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
-	private static int gpsnumsats; //number of satellites used to collect last reading
+	private int mGpsNumSats; //number of satellites used to collect last reading
 	
 	/* Lock for gps extras */
-	private static ReentrantLock gpsExtrasLock;
+	private ReentrantLock mGpsExtrasLock;
 	
 	/* Used to obtain location manager. */
-	private static Context context;
+	private Context mContext;
 	
-	/* Handles messages */
-	private static Handler handler;
-	
-	/* Tag for logging */
-	private static String TAG = "Chopper.ChopperStatus";
+	/** Tag for logging */
+	public static final String TAG = "chopper.ChopperStatus";
 	
 	/* Thread pool for mutator methods */
-	private static ExecutorService mutatorPool;
+	private ExecutorService mMutatorPool;
 	
 	/* Number of threads in the mutator pool */
-	private static final int numMutatorThreads = 3;
+	private static final int sNumMutatorThreads = 3;
+	
+	/* Hides Runnability, ensures singleton-ness */
+	private Runner mRunner;
+	private static PersistentThread sThread;
+	
+	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
 	
 	/**
 	 * Initializes the locks
 	 * @param mycontext Application context
 	 */
 	public ChopperStatus(Context mycontext)	{
-		context = mycontext;
+		mContext = mycontext;
 		
 		//Initialize the data locks
-		readingLock = new ReentrantLock[NUMSENSORS];
-		for (int i = 0; i < NUMSENSORS; i++) {
-			readingLock[i] = new ReentrantLock();
+		mReadingLock = new ReentrantLock[SENSORS];
+		for (int i = 0; i < SENSORS; i++) {
+			mReadingLock[i] = new ReentrantLock();
 		}
 		
-		gpsLock = new ReentrantLock[GPSFIELDS];
-		for (int i = 0; i < GPSFIELDS; i++) {
-			gpsLock[i] = new ReentrantLock();
+		mGpsLock = new ReentrantLock[GPS_FIELDS];
+		for (int i = 0; i < GPS_FIELDS; i++) {
+			mGpsLock[i] = new ReentrantLock();
 		}
 		
-		motorLock = new ReentrantLock();
-		gpsExtrasLock = new ReentrantLock();
-		batteryLock = new ReentrantLock();
+		mMotorLock = new ReentrantLock();
+		mGpsExtrasLock = new ReentrantLock();
 		
-		mutatorPool = Executors.newFixedThreadPool(numMutatorThreads);
+		mMutatorPool = Executors.newFixedThreadPool(sNumMutatorThreads);
 	}
 	
-	/* Sends a status report to the control server; iterates through all important fields to do it. */
-	private static void sendUpdate() {		
-		long starttime = System.currentTimeMillis(); //to ensure that messages are sent no faster than UPDATEINTERVAL
-		
-		/* Lock data, send it, unlock.  If the lock is unavailable (unlikely), skip this datapiece for this iteration */
-		try {
-			double myAzimuth = getReadingFieldNow(AZIMUTH);
-			double myPitch = getReadingFieldNow(PITCH);
-			double myRoll = getReadingFieldNow(ROLL);
-			Comm.sendMessage("ORIENT:" + myAzimuth + ":" + myPitch + ":" + myRoll);
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
 		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Orientation Report Unavailable");
-		}
-		
-		try {
-			double myXaccel = getReadingFieldNow(XACCEL);
-			double myYaccel = getReadingFieldNow(YACCEL);
-			double myZaccel = getReadingFieldNow(ZACCEL);
-			Comm.sendMessage("ACCEL:" + myXaccel + ":" + myYaccel + ":" + myZaccel);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Acceleration Report Unavailable");
-		}
-
-		try {
-			double myXflux = getReadingFieldNow(XFLUX);
-			double myYflux = getReadingFieldNow(YFLUX);
-			double myZflux = getReadingFieldNow(ZFLUX);
-			Comm.sendMessage("FLUX:" + myXflux + ":" + myYflux + ":" + myZflux);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Flux Report Unavailable");
-		}
-		
-		try {
-			double[] mySpeeds = getMotorFieldsNow();
-			Comm.sendMessage("MOTORSPEED:" + mySpeeds[0] +
-					":" + mySpeeds[1] +
-					":" + mySpeeds[2] +
-					":" + mySpeeds[3]);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "MotorSpeeds Report Unavailable");
-		}
-		try {
-			double myLight = getReadingFieldNow(LIGHT);
-			Comm.sendMessage("LIGHT:" + myLight);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Light Report Unavailable");
-		}
-		
-		try {
-			double myProximity = getReadingFieldNow(PROXIMITY);
-			Comm.sendMessage("PROXIMITY:" + myProximity);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Proximity Report Unavailable");
-		}
-		
-		try {
-			double myPressure = getReadingFieldNow(PRESSURE);
-			Comm.sendMessage("PRESSURE:" + myPressure);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Pressure Report Unavailable");
-		}
-		
-		try {
-			double myTemp = getReadingFieldNow(TEMPERATURE);
-			Comm.sendMessage("TEMPERATURE:" + myTemp);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Temperature Report Unavailable");
-		}
-		
-		if (batteryLock.tryLock()) {
-			try {
-				Comm.sendMessage("BATTERY:" + ((float) currbattery / (float) maxbattery));
-			}
-			finally {
-				batteryLock.unlock();
-			}
-		}
-		
-		/* Send GPS data */
-		String gpsData = new String("GPS");
-		try {
-			for (int i = 0; i < GPSFIELDS; i++) {
-				double myValue = getGpsFieldNow(i);
-				gpsData += ":" + myValue;
-			}
-			
-			if (gpsExtrasLock.tryLock()) {
-				gpsData += ":" + ChopperStatus.gpsAccuracy + 
-				":" + ChopperStatus.gpsnumsats +
-				":" + ChopperStatus.gpsTimeStamp;
-				gpsExtrasLock.unlock();
-			}
-			else {
-				throw new IllegalAccessException();
-			}
-			
-			Comm.sendMessage(gpsData);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "GPS Report Unavailable");
-		}
-		
-		/* Ensure loop time is no faster than UPDATEINTERVAL */
-		long endtime = System.currentTimeMillis();
-		
-		/* Schedule the next status update */
-		long timetonext = UPDATEINTERVAL - (endtime - starttime);
-		if (timetonext > 0)
-			handler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, timetonext);
-		else
-			handler.sendEmptyMessage(SENDSTATUSUPDATE);
 	}
 	
+	public PersistentThread getPersistentThreadInstance() {
+		if (mRunner == null) {
+			mRunner = new Runner(this);
+		}
+		if (sThread == null) {
+			sThread = new PersistentThread(mRunner);
+		}
+		return sThread;
+	}
+	
+	public float getBatteryLevel() {
+		return (float) mCurrBatt.get() / (float) mMaxBatt.get();
+	}
+	
+	public String getGpsExtrasNow() throws IllegalAccessException {
+		String gpsData = "";
+		if (mGpsExtrasLock.tryLock()) {
+			gpsData += mGpsAccuracy + 
+			":" + mGpsNumSats +
+			":" + mGpsTimeStamp;
+			mGpsExtrasLock.unlock();
+		}
+		else {
+			throw new IllegalAccessException();
+		}
+		return gpsData;
+	}
 	/**
 	 * Returns the value stored at the specified GPS index, if its lock is available.  Otherwise, returns the supplied default value.
 	 * @param whichField The index of the desired GPS data.
 	 * @param expectedValue The default to return, should its lock be unavailable.
 	 * @return Either the GPS data or the supplied default, depending on whether or not its lock is available.
 	 */
-	public static double getGpsFieldNow(int whichField, double expectedValue) {
+	public double getGpsFieldNow(int whichField, double expectedValue) {
 		double myValue;
-		if (gpsLock[whichField].tryLock()) {
-			myValue = gps[whichField];
-			gpsLock[whichField].unlock();
+		if (mGpsLock[whichField].tryLock()) {
+			myValue = mGps[whichField];
+			mGpsLock[whichField].unlock();
 		}
 		else {
 			myValue = expectedValue;
@@ -269,12 +182,12 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * Returns a copy of the most recent Location object delivered by the GPS.
 	 * @return The Location, if there is one; null if the GPS has not yet obtained a fix.
 	 */
-	public static Location getLastLocation() {
-		if (lastLoc == null)
+	public Location getLastLocation() {
+		if (mLastLoc == null)
 			return null;
 		Location myLocation;
-		synchronized (lastLoc) {
-			myLocation = new Location(lastLoc);
+		synchronized (mLastLoc) {
+			myLocation = new Location(mLastLoc);
 		}
 		return myLocation;
 	}
@@ -284,11 +197,11 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @return The desired GPS data.
 	 * @throws IllegalAccessException If the lock for the desired data is unavailable.
 	 */
-	public static double getGpsFieldNow(int whichField) throws IllegalAccessException {
+	public double getGpsFieldNow(int whichField) throws IllegalAccessException {
 		double myValue;
-		if (gpsLock[whichField].tryLock()) {
-			myValue = gps[whichField];
-			gpsLock[whichField].unlock();
+		if (mGpsLock[whichField].tryLock()) {
+			myValue = mGps[whichField];
+			mGpsLock[whichField].unlock();
 		}
 		else {
 			Log.w(TAG, "GPS Field " + whichField + " is locked.");
@@ -302,11 +215,11 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @param whichField The index of the desired GPS data.
 	 * @return The desired GPS data.
 	 */
-	public static double getGpsField(int whichField) {
+	public double getGpsField(int whichField) {
 		double myValue;
-		gpsLock[whichField].lock();
-		myValue = gps[whichField];
-		gpsLock[whichField].unlock();
+		mGpsLock[whichField].lock();
+		myValue = mGps[whichField];
+		mGpsLock[whichField].unlock();
 		return myValue;
 	}
 	
@@ -316,11 +229,11 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @param expectedValue The default to return, should its lock be unavailable.
 	 * @return Either the reading or the supplied default, depending on whether or not its lock is available.
 	 */
-	public static double getReadingFieldNow(int whichField, double expectedValue) {
+	public double getReadingFieldNow(int whichField, double expectedValue) {
 		double myValue;
-		if (readingLock[whichField].tryLock()) {
-			myValue = reading[whichField];
-			readingLock[whichField].unlock();
+		if (mReadingLock[whichField].tryLock()) {
+			myValue = mReading[whichField];
+			mReadingLock[whichField].unlock();
 		}
 		else {
 			Log.w(TAG, "Reading field " + whichField + " is locked.");
@@ -335,11 +248,11 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @return The desired reading.
 	 * @throws IllegalAccessException If the lock for the desired reading is unavailable.
 	 */
-	public static double getReadingFieldNow(int whichField) throws IllegalAccessException {
+	public double getReadingFieldNow(int whichField) throws IllegalAccessException {
 		double myValue;
-		if (readingLock[whichField].tryLock()) {
-			myValue = reading[whichField];
-			readingLock[whichField].unlock();
+		if (mReadingLock[whichField].tryLock()) {
+			myValue = mReading[whichField];
+			mReadingLock[whichField].unlock();
 		}
 		else {
 			Log.w(TAG, "Reading field " + whichField + " is locked.");
@@ -353,13 +266,13 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @return A copy of the array containing the motor speeds.
 	 * @throws IllegalAccessException If the lock is unavailable.
 	 */
-	public static double[] getMotorFieldsNow() throws IllegalAccessException {
+	public double[] getMotorFieldsNow() throws IllegalAccessException {
 		double[] myValues = new double[4];
-		if (motorLock.tryLock()) {
+		if (mMotorLock.tryLock()) {
 			for (int i = 0; i < 4; i++) {
-				myValues[i] = motorspeed[i];
+				myValues[i] = mMotorSpeed[i];
 			}
-			motorLock.unlock();
+			mMotorLock.unlock();
 		}
 		else {
 			Log.w(TAG, "motorspeed is locked.");
@@ -373,12 +286,12 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @param whichField The index of the GPS data to store.
 	 * @param value The GPS data.
 	 */
-	private static void setGpsField(final int whichField, final double value) {
-		mutatorPool.submit(new Runnable() {
+	private void setGpsField(final int whichField, final double value) {
+		mMutatorPool.submit(new Runnable() {
 			public void run() {
-				gpsLock[whichField].lock();
-				gps[whichField] = value;
-				gpsLock[whichField].unlock();
+				mGpsLock[whichField].lock();
+				mGps[whichField] = value;
+				mGpsLock[whichField].unlock();
 			}
 		});
 	}
@@ -388,12 +301,12 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * @param whichField The index of the reading to store.
 	 * @param value The reading.
 	 */
-	private static void setReadingField(final int whichField, final double value) {
-		mutatorPool.submit(new Runnable() {
+	private void setReadingField(final int whichField, final double value) {
+		mMutatorPool.submit(new Runnable() {
 			public void run() {
-				readingLock[whichField].lock();
-				reading[whichField] = value;
-				readingLock[whichField].unlock();
+				mReadingLock[whichField].lock();
+				mReading[whichField] = value;
+				mReadingLock[whichField].unlock();
 			}
 		});
 	}
@@ -403,84 +316,88 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 * Uses a new thread to permit the caller (usually Guidance) to move on to a new task immediately.
 	 * @param mySpeeds The data to which the motor speeds should be set.
 	 */
-	protected static void setMotorFields(double[] mySpeeds) {
+	protected void setMotorFields(double[] mySpeeds) {
 		if (mySpeeds.length < 4)
 			return;
 		final double[] speeds = mySpeeds.clone();
-		mutatorPool.submit(new Runnable() {
+		mMutatorPool.submit(new Runnable() {
 			public void run() {
-				motorLock.lock();
+				mMotorLock.lock();
 				for (int i = 0; i < 4; i++) {
-					motorspeed[i] = speeds[i];
+					mMotorSpeed[i] = speeds[i];
 				}
-				motorLock.unlock();
+				mMotorLock.unlock();
 			}
 		});
 	}
 	
-	/**
-	 * Registers the thread as a sensor listener for all desired sensors.
-	 */
-	public void run()
-	{
-		//System.out.println("ChopperStatus run() thread ID " + getId());
-		Looper.prepare();
-		Thread.currentThread().setName("ChopperStatus");
-		handler = new Handler() {
-            public void handleMessage(Message msg)
-            {
-                switch (msg.what){
-                case SENDSTATUSUPDATE:
-                		sendUpdate();
-                	break;
-                }
-            }
-        };
-        /* Register to receive battery status updates */
-        BroadcastReceiver batteryInfo = new BroadcastReceiver() {
-			public void onReceive(Context context, Intent intent) {
-				String action = intent.getAction();
-				if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-					/* int read/writes are uninterruptible, no lock needed */
-					batteryLock.lock();
-					currbattery = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-					maxbattery = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
-					float batteryPercent = (float) currbattery * 100F / (float) maxbattery;
-					batteryLock.unlock();
-					if (batteryPercent <= LOWBATT)
-						Comm.updateAll("SYS:LOWPOWER");
+	private class Runner implements Runnable {
+		private ChopperStatus myCsStatus;
+		
+		private Runner(ChopperStatus myCs) {
+			myCsStatus = myCs;
+		}
+		/**
+		 * Registers the thread as a sensor listener for all desired sensors.
+		 */
+		public void run()
+		{
+			//System.out.println("ChopperStatus run() thread ID " + getId());
+			Looper.prepare();
+			Thread.currentThread().setName("ChopperStatus");
+			
+	        /* Register to receive battery status updates */
+	        BroadcastReceiver batteryInfo = new BroadcastReceiver() {
+				public void onReceive(Context context, Intent intent) {
+					String action = intent.getAction();
+					if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+						/* int read/writes are uninterruptible, no lock needed */
+						mCurrBatt.set(intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0));
+						mMaxBatt.set(intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100));
+						float batteryPercent = (float) mCurrBatt.get() * 100F / (float) mMaxBatt.get();
+						if (batteryPercent <= LOW_BATT) {
+							updateReceivers("SYS:LOWPOWER");
+						}
+					}
 				}
-			}
-		};
-		
-        /* Gets a sensor manager */
-		SensorManager sensors = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-		
-		/* Registers this class as a sensor listener for every necessary sensor. */
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
-		
-		/* Initialize GPS reading: */
-		LocationManager LocMan = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-		LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	gpsMinTime,	gpsMinDist,	this);
-		
-		context.registerReceiver(batteryInfo, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-		
-		handler.sendEmptyMessageDelayed(SENDSTATUSUPDATE, UPDATEINTERVAL);
-		Looper.loop();
+			};
+			
+	        /* Gets a sensor manager */
+			SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
+			
+			/* Registers this class as a sensor listener for every necessary sensor. */
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
+			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
+			
+			/* Initialize GPS reading: */
+			LocationManager LocMan = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+			LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	GPS_MIN_TIME,	GPS_MIN_DIST,	myCsStatus);
+			
+			mContext.registerReceiver(batteryInfo, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+
+			Looper.loop();
+		}
 	}
 	
+	private void updateReceivers(String str) {
+		synchronized (mRec) {
+			ListIterator<Receivable> myList = mRec.listIterator();
+			while (myList.hasNext()) {
+				myList.next().receiveMessage(str, null);
+			}
+		}
+	}
 	/**
 	 * Changes the value of the local GPS fields based on the data contained in a new GPS fix.
 	 * @param loc New GPS fix
 	 */
 	public void onLocationChanged(Location loc) {
-		if (loc != null && gps != null) {
+		if (loc != null && mGps != null) {
 			if (!loc.hasAltitude()) {
 				loc.setAltitude(300.0);
 				Log.w(TAG, "No altitude fix");
@@ -490,9 +407,9 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 			/* Vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0 */
 			double oldAlt = getGpsField(ALTITUDE);
 			if (newalt != oldAlt) {
-				gpsExtrasLock.lock();
-				long timeElapsed = gpsTimeStamp - loc.getTime();
-				gpsExtrasLock.unlock();
+				mGpsExtrasLock.lock();
+				long timeElapsed = mGpsTimeStamp - loc.getTime();
+				mGpsExtrasLock.unlock();
 				
 				setGpsField(dALT, (newalt - oldAlt / (double) timeElapsed) * 1000.0);
 			}
@@ -503,15 +420,15 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 			setGpsField(LAT, loc.getLatitude());			
 			setGpsField(SPEED, loc.getSpeed());
 			
-			gpsExtrasLock.lock();
-			gpsAccuracy = loc.getAccuracy();
-			gpsTimeStamp = loc.getTime();
+			mGpsExtrasLock.lock();
+			mGpsAccuracy = loc.getAccuracy();
+			mGpsTimeStamp = loc.getTime();
 			if (loc.getExtras() != null)
-				gpsnumsats = loc.getExtras().getInt("satellites");
-			gpsExtrasLock.unlock();
+				mGpsNumSats = loc.getExtras().getInt("satellites");
+			mGpsExtrasLock.unlock();
 			
-			synchronized (lastLoc) {
-				lastLoc = loc;
+			synchronized (mLastLoc) {
+				mLastLoc = loc;
 			}
 			
 		}
@@ -534,17 +451,17 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 		switch (type) {
 			//Locks handled in updateField()
 			case Sensor.TYPE_ACCELEROMETER:
-				updateField(XACCEL, event.accuracy, event.timestamp, event.values[0]);
-				updateField(YACCEL, event.accuracy, event.timestamp, event.values[1]);
-				updateField(ZACCEL, event.accuracy, event.timestamp, event.values[2]);				
+				updateField(X_ACCEL, event.accuracy, event.timestamp, event.values[0]);
+				updateField(Y_ACCEL, event.accuracy, event.timestamp, event.values[1]);
+				updateField(Z_ACCEL, event.accuracy, event.timestamp, event.values[2]);				
 				break;
 			case Sensor.TYPE_LIGHT:
 				updateField(LIGHT, event.accuracy, event.timestamp, event.values[0]);
 				break;
 			case Sensor.TYPE_MAGNETIC_FIELD:
-				updateField(XFLUX, event.accuracy, event.timestamp, event.values[0]);
-				updateField(YFLUX, event.accuracy, event.timestamp, event.values[1]);
-				updateField(ZFLUX, event.accuracy, event.timestamp, event.values[2]);
+				updateField(X_FLUX, event.accuracy, event.timestamp, event.values[0]);
+				updateField(Y_FLUX, event.accuracy, event.timestamp, event.values[1]);
+				updateField(Z_FLUX, event.accuracy, event.timestamp, event.values[2]);
 				break;
 			case Sensor.TYPE_ORIENTATION:
 				updateField(AZIMUTH, event.accuracy, event.timestamp, event.values[0]);
@@ -564,7 +481,7 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	}
 	
 	/* Updates the relevant fields with the specified data. */
-	private static void updateField(int field, int myaccuracy, long mytimestamp, double value) {
+	private void updateField(int field, int myaccuracy, long mytimestamp, double value) {
 		//timestamp[field] = mytimestamp;
 		setReadingField(field, value);
 	}
@@ -575,7 +492,7 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public void onProviderDisabled(String provider)	{
 		System.out.println("GPS disabled");
-		Comm.sendMessage("GPS:STATUS:DISABLED");
+		updateReceivers("GPS:STATUS:DISABLED");
 	}
 	
 	/**
@@ -584,7 +501,7 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public void onProviderEnabled(String provider) {
 		System.out.println("GPS enabled");
-		Comm.sendMessage("GPS:STATUS:ENABLED.");
+		updateReceivers("GPS:STATUS:ENABLED.");
 	}
 	
 	/**
@@ -597,13 +514,13 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 		System.out.println("GPS status changed " + status);
 		switch (status) {
 			case LocationProvider.OUT_OF_SERVICE:
-				Comm.sendMessage("GPS:STATUS:OUT.OF.SERVICE");
+				updateReceivers("GPS:STATUS:OUT.OF.SERVICE");
 				break;
 			case LocationProvider.TEMPORARILY_UNAVAILABLE:
-				Comm.sendMessage("GPS:STATUS:TEMPORARILY.UNAVAILABLE");
+				updateReceivers("GPS:STATUS:TEMPORARILY.UNAVAILABLE");
 				break;
 			case LocationProvider.AVAILABLE:
-				Comm.sendMessage("GPS:STATUS:AVAILABLE");
+				updateReceivers("GPS:STATUS:AVAILABLE");
 				break;
 		}
 	}

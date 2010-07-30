@@ -87,7 +87,7 @@ public class Guidance implements Constants {
 	private Navigation mNav;
 	
 	/* Hides Runnability, ensures singleton-ness */
-	private Runner mRunner;
+	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
 	/**
@@ -107,7 +107,27 @@ public class Guidance implements Constants {
 	
 	public PersistentThread getPersistentThreadInstance() {
 		if (mRunner == null) {
-			mRunner = new Runner();
+			mRunner = new Runnable() {
+				/**
+				 * Starts the guidance thread
+				 */
+				public void run() {
+					Looper.prepare();
+					Thread.currentThread().setName("Guidance");
+					Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+					mHandler = new Handler() {
+						public void handleMessage(Message msg) {
+							switch (msg.what) {
+							case EVAL_MOTOR_SPEED:
+								reviseMotorSpeed();
+								break;
+							}
+						}
+					};
+					mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+					Looper.loop();
+				}
+			};
 		}
 		if (sThread == null) {
 			sThread = new PersistentThread(mRunner);
@@ -115,31 +135,7 @@ public class Guidance implements Constants {
 		return sThread;
 	}
 	
-	private class Runner implements Runnable {
-		
-		private Runner() {
-			
-		}
-		/**
-		 * Starts the guidance thread
-		 */
-		public void run() {
-			Looper.prepare();
-			Thread.currentThread().setName("Guidance");
-			Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-			mHandler = new Handler() {
-				public void handleMessage(Message msg) {
-					switch (msg.what) {
-					case EVAL_MOTOR_SPEED:
-						reviseMotorSpeed();
-						break;
-					}
-				}
-			};
-			mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
-			Looper.loop();
-		}
-	}
+	
 	
 	/* Core of the class; calculates new motor speeds based on status */
 	private void reviseMotorSpeed() {
@@ -209,7 +205,7 @@ public class Guidance implements Constants {
 					Log.w(TAG, "Nav Target lock not available.");
 				}
 			}
-			Log.v(TAG, "Relative target: " + mTarget[0] + ", " + mTarget[1]);
+			Log.v(TAG, "Relative target: " + mTarget[0] + ", " + mTarget[1] + ", " + mTarget[2]);
 		}
 		
 		

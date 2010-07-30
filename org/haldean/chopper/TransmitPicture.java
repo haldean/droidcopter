@@ -34,9 +34,6 @@ public final class TransmitPicture implements Receivable, Constants
 	/* Output stream */
 	private ObjectOutputStream dataout;
 	
-	/* Local copy of frame to transmit */
-	private byte[] sendpic;
-	
 	/* For local JPEG compression */
 	private ByteArrayOutputStream baos;
 	
@@ -54,8 +51,8 @@ public final class TransmitPicture implements Receivable, Constants
 	private MakePicture myMakePic;
 	private Comm mComm;
 	
-	private Runner myRunner;
-	private static PersistentThread myThread;
+	private Runnable mRunner;
+	private static PersistentThread sThread;
 	
 	/**
 	 * Constructs the TransmitPicture thread.
@@ -72,56 +69,48 @@ public final class TransmitPicture implements Receivable, Constants
 	}
 	
 	public PersistentThread getPersistentThreadInstance() {
-		if (myRunner == null) {
-			myRunner = new Runner(this);
+		final TransmitPicture mTp = this;
+		if (mRunner == null) {
+			mRunner = new Runnable() {
+				/**
+				 * Runs the thread.
+				 */
+				public void run()
+				{
+					Looper.prepare();
+					
+					Thread.currentThread().setName("TransmitPicture");
+					handler = new Handler() {
+			            public void handleMessage(Message msg)
+			            {
+			                switch (msg.what) {
+			                case SEND_PIC:
+			                	try	{
+			                		transmit();
+			                	}
+			                	catch (IOException e) {
+			                		System.out.println("Connection failed, reconnecting in " + Comm.CONNECTION_INTERVAL);
+			                		//Does not actually try to reconnect; it is assumed that chopperStatus will also fail and give the command to reconnect.
+			                		e.printStackTrace();
+			                	}
+			                	break;
+			                }
+			            }
+			        };
+			        Log.d(TAG, "Handler initialized");
+			        mComm.registerReceiver(IMAGE, mTp);
+					if (dataout == null) //For debugging only; should not happen
+						System.out.println("Null dataout");
+					
+					handler.sendEmptyMessageDelayed(SEND_PIC, CAMERAINTERVAL);//Send first picture, after giving the camera time to warm up.
+					Looper.loop();
+				}
+			};
 		}
-		if (myThread == null) {
-			myThread = new PersistentThread(myRunner);
+		if (sThread == null) {
+			sThread = new PersistentThread(mRunner);
 		}
-		return myThread;
-	}
-	
-	private class Runner implements Runnable {
-		private TransmitPicture mTp;
-		
-		private Runner(TransmitPicture tP) {
-			mTp = tP;
-		}
-		
-		/**
-		 * Runs the thread.
-		 */
-		public void run()
-		{
-			Looper.prepare();
-			
-			Thread.currentThread().setName("TransmitPicture");
-			handler = new Handler() {
-	            public void handleMessage(Message msg)
-	            {
-	                switch (msg.what) {
-	                case SEND_PIC:
-	                	try	{
-	                		transmit();
-	                	}
-	                	catch (IOException e) {
-	                		System.out.println("Connection failed, reconnecting in " + Comm.CONNECTION_INTERVAL);
-	                		//Does not actually try to reconnect; it is assumed that chopperStatus will also fail and give the command to reconnect.
-	                		e.printStackTrace();
-	                	}
-	                	break;
-	                }
-	            }
-	        };
-	        Log.d(TAG, "Handler initialized");
-	        mComm.registerReceiver(IMAGE, mTp);
-			if (dataout == null) //For debugging only; should not happen
-				System.out.println("Null dataout");
-			
-			
-			handler.sendEmptyMessageDelayed(SEND_PIC, CAMERAINTERVAL);//Send first picture, after giving the camera time to warm up.
-			Looper.loop();
-		}
+		return sThread;
 	}
 	
 	public void receiveMessage(String msg, Receivable source) {
@@ -172,43 +161,16 @@ public final class TransmitPicture implements Receivable, Constants
 		}
 	}
 	
-	/**
-	 * Transmits a frame of telemetry.
-	 * @throws IOException If the connection fails
-	 */
-	private void transmit() throws IOException {
-		if (!myMakePic.isFrameNew()) {
-			handler.sendEmptyMessageDelayed(SEND_PIC, CAMERAINTERVAL); //wait a bit, try again later.
-			System.out.println("Same pic");
-			return;
-		}
+	private byte[] encodePic(byte[] picFrame, int[] frameSize) {
 		
 		long starttime = System.currentTimeMillis();
-			sendpic = myMakePic.getBufferCopy(); //create a new copy.
-
-		
-		myMakePic.setFrameNewnessTo(false);
-		
-		//System.out.println("Retrieved frame");
-		if (sendpic.length == 0)
-		{
-			System.out.println("temppic unprocessed");
-			handler.sendEmptyMessageDelayed(SEND_PIC, Comm.CONNECTION_INTERVAL); //wait a bit, try again later.
-			return;
-		}
-		
-		if (myMakePic.updateFrameSize())
-			System.out.println("Picture updated succesfully.");
-		else
-			mComm.sendMessage("IMAGE:REQUEST:DENIED");
-		int[] frameSize = myMakePic.getFrameSize();
 		
 		if (NEWCOMPRESSMETHOD)
 		{
 			YuvImage sourcePic = null;
 			try {
 				
-				sourcePic = new YuvImage(sendpic, myMakePic.getPreviewFormat(), frameSize[0], frameSize[1], null);
+				sourcePic = new YuvImage(picFrame, myMakePic.getPreviewFormat(), frameSize[0], frameSize[1], null);
 			}
 			catch (Throwable t)
 			{
@@ -231,17 +193,41 @@ public final class TransmitPicture implements Receivable, Constants
 			//System.out.println("Bitmap compression");
 			if (frameSize[0] * frameSize[1] != rgb.length)
 				rgb = new int[frameSize[0] * frameSize[1]];
-			decodeYUV420SP(rgb, sendpic, frameSize[0], frameSize[1]);
+			decodeYUV420SP(rgb, picFrame, frameSize[0], frameSize[1]);
 			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
 			Bitmap mBitMap = Bitmap.createBitmap(rgb, frameSize[0], frameSize[1], Bitmap.Config.RGB_565);
 			mBitMap.compress(Bitmap.CompressFormat.JPEG, prevQuality.get(), baos);
 		}
 		if (baos == null)
 			System.out.println("bad stream");
-		byte[] temppic = baos.toByteArray();
+		byte[] sendPic = baos.toByteArray();
 		baos.reset();
 		long endtime = System.currentTimeMillis();
     	Log.v(TAG, "Pic Processing took " + (endtime - starttime));
+    	return sendPic;
+	}
+	/**
+	 * Transmits a frame of telemetry.
+	 * @throws IOException If the connection fails
+	 */
+	private void transmit() throws IOException {
+		if (!myMakePic.isFrameNew()) {
+			handler.sendEmptyMessageDelayed(SEND_PIC, CAMERAINTERVAL); //wait a bit, try again later.
+			System.out.println("Same pic");
+			return;
+		}
+		int[] frameSize = myMakePic.getFrameSize();
+		byte[] picFrame = myMakePic.getBufferCopy(); //create a new copy.
+		byte[] temppic = encodePic(picFrame, frameSize);
+		myMakePic.setFrameNewnessTo(false);
+		
+		//System.out.println("Retrieved frame");
+		if (picFrame.length == 0)
+		{
+			System.out.println("temppic unprocessed");
+			handler.sendEmptyMessageDelayed(SEND_PIC, Comm.CONNECTION_INTERVAL); //wait a bit, try again later.
+			return;
+		}
 		Log.i(TAG, "Sending a pic, length " + temppic.length);
 		//Notifies the control console that the next transmission will be an image.
 		//i.e. not a text-based one.
@@ -261,6 +247,11 @@ public final class TransmitPicture implements Receivable, Constants
 			t.printStackTrace();
 			handler.sendEmptyMessageDelayed(SEND_PIC, Comm.CONNECTION_INTERVAL); //wait a bit, try again later.
 		}
+		
+		if (myMakePic.updateFrameSize())
+			System.out.println("Picture updated succesfully.");
+		else
+			mComm.sendMessage("IMAGE:REQUEST:DENIED");
 		//System.out.println("Pic sent, ms: " + (System.currentTimeMillis() - endtime));
 	}
 	

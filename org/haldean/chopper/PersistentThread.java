@@ -39,7 +39,12 @@ public class PersistentThread extends Thread {
 			}
 			catch (Throwable t) {
 				t.printStackTrace();
-				synchronized (mBad) {
+				if (mBad != null) {
+					synchronized (mBad) {
+						mBad = t;
+					}
+				}
+				else {
 					mBad = t;
 				}
 			}

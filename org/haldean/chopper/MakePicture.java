@@ -72,7 +72,7 @@ public final class MakePicture implements Constants, Receivable {
 	private SurfaceHolder.Callback mSurfaceCallback;
 	
 	/* Hides Runnability, ensures singleton-ness */
-	private Runner myRunner;
+	private Runnable mRunner;
 	private static PersistentThread myThread;
 	
 	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
@@ -86,11 +86,49 @@ public final class MakePicture implements Constants, Receivable {
 	}
 	
 	public PersistentThread getPersistentThreadInstance() {
-		if (myRunner == null) {
-			myRunner = new Runner(this);
+		if (mRunner == null) {
+			mRunner = new Runnable() {
+				/**
+				 * Starts the thread--specifically, initializes camera callbacks and starts capturing camera preview.
+				 */
+				public void run() {
+					Thread.currentThread().setName("MakePicture");
+					
+					Looper.prepare();
+					System.out.println("MakePicture run() thread ID " + Thread.currentThread().getId());
+					
+					
+					
+					//Handles incoming messages
+					handler = new Handler() {
+			            public void handleMessage(Message msg)
+			            {
+			                switch (msg.what) {
+			                case TAKE_GOOD_PIC:
+			                	mCamera.takePicture(null, null, mGoodPic); //takes the pic
+			                	break;
+			                case START_PREVIEW:
+			                	if (mCamera != null)
+			                		mCamera.startPreview();
+			                	break;
+			                case SEND_SIZES:
+			                	sendSizes();
+			                	break;
+			                
+			                }
+			            }
+			        };
+			        initParams();
+					initCallbacks();
+					
+					//Get to work!
+			        handler.sendEmptyMessage(START_PREVIEW);
+					Looper.loop();
+				}
+			};
 		}
 		if (myThread == null) {
-			myThread = new PersistentThread(myRunner);
+			myThread = new PersistentThread(mRunner);
 		}
 		return myThread;
 	}
@@ -117,50 +155,6 @@ public final class MakePicture implements Constants, Receivable {
 				int[] mySize = getFrameSize();
 				source.receiveMessage("IMAGE:FRAMESIZE:" + mySize[0] + ":" + mySize[1], this);// + ":" + transPic.getPreviewQuality());
 			}
-		}
-	}
-	
-	private class Runner implements Runnable {
-		
-		private Runner(MakePicture mP) {
-		}
-		/**
-		 * Starts the thread--specifically, initializes camera callbacks and starts capturing camera preview.
-		 */
-		public void run() {
-			Thread.currentThread().setName("MakePicture");
-			
-			Looper.prepare();
-			System.out.println("MakePicture run() thread ID " + Thread.currentThread().getId());
-			
-			
-			
-			//Handles incoming messages
-			handler = new Handler() {
-	            public void handleMessage(Message msg)
-	            {
-	                switch (msg.what) {
-	                case TAKE_GOOD_PIC:
-	                	mCamera.takePicture(null, null, mGoodPic); //takes the pic
-	                	break;
-	                case START_PREVIEW:
-	                	if (mCamera != null)
-	                		mCamera.startPreview();
-	                	break;
-	                case SEND_SIZES:
-	                	sendSizes();
-	                	break;
-	                
-	                }
-	            }
-	        };
-	        //mComm.registerReceiver(IMAGE, mMpic);
-	        initParams();
-			initCallbacks();
-			
-			//Get to work!
-	        handler.sendEmptyMessage(START_PREVIEW);
-			Looper.loop();
 		}
 	}
 	

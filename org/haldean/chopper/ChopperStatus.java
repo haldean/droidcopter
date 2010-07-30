@@ -31,6 +31,11 @@ import android.util.Log;
  */
 public final class ChopperStatus implements SensorEventListener, Constants, LocationListener
 {	
+	/** Tag for logging */
+	public static final String TAG = "chopper.ChopperStatus";
+	
+	/** Point of "officially" low battery */
+	public final static int LOW_BATT = 30;
 	
 	/* Parameter to specify GPS minimum update distance, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy. */
@@ -40,8 +45,11 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	 * Value of '0' means maximum accuracy. */
 	private static final long GPS_MIN_TIME = 0;
 	
-	/** Point of "officially" low battery */
-	public final static int LOW_BATT = 30;
+	/* Number of threads in the mutator pool */
+	private static final int sNumMutatorThreads = 3;
+	
+	/* Thread pool for mutator methods */
+	private ExecutorService mMutatorPool;
 	
 	/* Holds data from various sensors, like gyroscope, acceleration and magnetic flux. */
 	private double[] mReading = new double[SENSORS]; //last known data for a given sensor
@@ -87,18 +95,9 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	
 	/* Used to obtain location manager. */
 	private Context mContext;
-	
-	/** Tag for logging */
-	public static final String TAG = "chopper.ChopperStatus";
-	
-	/* Thread pool for mutator methods */
-	private ExecutorService mMutatorPool;
-	
-	/* Number of threads in the mutator pool */
-	private static final int sNumMutatorThreads = 3;
-	
+
 	/* Hides Runnability, ensures singleton-ness */
-	private Runner mRunner;
+	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
 	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
@@ -127,26 +126,15 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		mMutatorPool = Executors.newFixedThreadPool(sNumMutatorThreads);
 	}
 	
-	public void registerReceiver(Receivable rec) {
-		synchronized (mRec) {
-			mRec.add(rec);
-		}
-	}
 	
-	public PersistentThread getPersistentThreadInstance() {
-		if (mRunner == null) {
-			mRunner = new Runner(this);
-		}
-		if (sThread == null) {
-			sThread = new PersistentThread(mRunner);
-		}
-		return sThread;
-	}
+	
+	
 	
 	public float getBatteryLevel() {
 		return (float) mCurrBatt.get() / (float) mMaxBatt.get();
 	}
 	
+
 	public String getGpsExtrasNow() throws IllegalAccessException {
 		String gpsData = "";
 		if (mGpsExtrasLock.tryLock()) {
@@ -281,6 +269,69 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		return myValues;
 	}
 	
+	public PersistentThread getPersistentThreadInstance() {
+		if (mRunner == null) {
+			final ChopperStatus myCsStatus = this;
+			mRunner = new Runnable() {
+				/**
+				 * Registers the thread as a sensor listener for all desired sensors.
+				 */
+				public void run()
+				{
+					//System.out.println("ChopperStatus run() thread ID " + getId());
+					Looper.prepare();
+					Thread.currentThread().setName("ChopperStatus");
+					
+			        /* Register to receive battery status updates */
+			        BroadcastReceiver batteryInfo = new BroadcastReceiver() {
+						public void onReceive(Context context, Intent intent) {
+							String action = intent.getAction();
+							if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+								/* int read/writes are uninterruptible, no lock needed */
+								mCurrBatt.set(intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0));
+								mMaxBatt.set(intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100));
+								float batteryPercent = (float) mCurrBatt.get() * 100F / (float) mMaxBatt.get();
+								if (batteryPercent <= LOW_BATT) {
+									updateReceivers("CSYS:LOWPOWER");
+								}
+							}
+						}
+					};
+					
+			        /* Gets a sensor manager */
+					SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
+					
+					/* Registers this class as a sensor listener for every necessary sensor. */
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
+					
+					/* Initialize GPS reading: */
+					LocationManager LocMan = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
+					LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	GPS_MIN_TIME,	GPS_MIN_DIST,	myCsStatus);
+					
+					mContext.registerReceiver(batteryInfo, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+		
+					Looper.loop();
+				}
+			};
+		}
+		if (sThread == null) {
+			sThread = new PersistentThread(mRunner);
+		}
+		return sThread;
+	}
+	
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
+		}
+	}
+	
 	/**
 	 * Writes the supplied GPS value at the specified GPS field. 
 	 * @param whichField The index of the GPS data to store.
@@ -331,58 +382,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		});
 	}
 	
-	private class Runner implements Runnable {
-		private ChopperStatus myCsStatus;
-		
-		private Runner(ChopperStatus myCs) {
-			myCsStatus = myCs;
-		}
-		/**
-		 * Registers the thread as a sensor listener for all desired sensors.
-		 */
-		public void run()
-		{
-			//System.out.println("ChopperStatus run() thread ID " + getId());
-			Looper.prepare();
-			Thread.currentThread().setName("ChopperStatus");
-			
-	        /* Register to receive battery status updates */
-	        BroadcastReceiver batteryInfo = new BroadcastReceiver() {
-				public void onReceive(Context context, Intent intent) {
-					String action = intent.getAction();
-					if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
-						/* int read/writes are uninterruptible, no lock needed */
-						mCurrBatt.set(intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0));
-						mMaxBatt.set(intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100));
-						float batteryPercent = (float) mCurrBatt.get() * 100F / (float) mMaxBatt.get();
-						if (batteryPercent <= LOW_BATT) {
-							updateReceivers("SYS:LOWPOWER");
-						}
-					}
-				}
-			};
-			
-	        /* Gets a sensor manager */
-			SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
-			
-			/* Registers this class as a sensor listener for every necessary sensor. */
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
-			sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
-			
-			/* Initialize GPS reading: */
-			LocationManager LocMan = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
-			LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	GPS_MIN_TIME,	GPS_MIN_DIST,	myCsStatus);
-			
-			mContext.registerReceiver(batteryInfo, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-
-			Looper.loop();
-		}
-	}
+	
 	
 	private void updateReceivers(String str) {
 		synchronized (mRec) {

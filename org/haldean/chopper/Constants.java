@@ -133,8 +133,8 @@ public interface Constants {
 	/** Indicates Nav-related message from server */
 	public final static int NAV = 2;
 	
-	/** Indicates system-wide message */
-	public final static int SYS = 3;
+	/** Indicates chopper-system-wide message */
+	public final static int CSYS = 3;
 	
 	/** Number of inbound message types. */
 	public final static int MSG_TYPES = 4;

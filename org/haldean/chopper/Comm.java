@@ -79,7 +79,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 	
 	/* Handles to other chopper components */
 	private MakePicture mTelemSrc;	
-	private TransmitPicture mPic;	
+	private TransmitPicture mPic;
 	
 	private boolean mAcceptMsgs;
 	/**
@@ -99,7 +99,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 		
 		mHeartbeat = new TimerTask() {
 			public void run() {
-				updateReceivers("SYS:NOCONN");
+				updateReceivers("CSYS:NOCONN");
 			}
 		};
 		
@@ -177,10 +177,6 @@ public final class Comm implements Runnable, Receivable, Constants {
 			}
 		};
 		mDataConn = new Thread(mDataConnArg);
-		
-		/*registerReceiver(COMM, this);
-		registerReceiver(IMAGE, this);
-		registerReceiver(SYS, this);*/
 	}
 	
 	/* Tears down the data (telemetry) connection. */
@@ -331,7 +327,9 @@ public final class Comm implements Runnable, Receivable, Constants {
 		String[] parts = msg.split(":");
 		if (parts[0].equals("IMAGE")) {
 			if (parts[1].equals("SETUP")) {
-				mHandler.sendEmptyMessage(MAKE_DATA_CONN);
+				if (mTelemSrc != null) {
+					mHandler.sendEmptyMessage(MAKE_DATA_CONN);
+				}
 				return true;
 			}
 		}
@@ -345,11 +343,12 @@ public final class Comm implements Runnable, Receivable, Constants {
 		        return true;
 			}
 		}
-		if (parts[0].equals("SYS")) {
+		if (parts[0].equals("CSYS")) {
 			if (parts[1].equals("NOCONN")) {
 				//mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
 				return true;
 			}
+			
 		}
 		return false;
 	}
@@ -376,8 +375,8 @@ public final class Comm implements Runnable, Receivable, Constants {
 			myList = mMsgTypes.get(COMM).listIterator();
 		}
 		
-		if (msg.startsWith("SYS:")) {
-			myList = mMsgTypes.get(SYS).listIterator();
+		if (msg.startsWith("CSYS:")) {
+			myList = mMsgTypes.get(CSYS).listIterator();
 		}
 		
 		if (myList != null) {

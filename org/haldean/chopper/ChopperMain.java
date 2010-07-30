@@ -67,7 +67,6 @@ public final class ChopperMain extends Activity implements Constants
 	        comm.registerReceiver(IMAGE, pic);
 	        comm.registerReceiver(NAV, nav);
 	        
-	        status.registerReceiver(comm);
 	        status.registerReceiver(nav);
 	        
 	        reporter.registerReceiver(comm);

@@ -14,6 +14,9 @@ import android.util.Log;
  * @author Benjamin Bardin
  */
 public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
+	
+	private static final long serialVersionUID = 1L;
+	
 	private static final String TAG = "nav.NavList";
 	NavTask currentTask;
 	

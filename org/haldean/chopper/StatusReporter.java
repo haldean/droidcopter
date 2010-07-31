@@ -13,25 +13,34 @@ import android.util.Log;
  * @author Benjamin Bardin
  */
 public class StatusReporter implements Runnable, Constants {
-	private ChopperStatus mStatus;
-	private LinkedList<Receivable> mRec;
-	private Handler mHandler;
-	public static final String TAG = "chopper.StatusReporter";
 	
 	/** How often (in ms) status updates should be sent by ChopperStatus to the server */
 	public int updateInterval = 500;
 	
+	/** Tag for logging */
+	public static final String TAG = "chopper.StatusReporter";
+	
+	/** The ChopperStatus from which to compile status reports */
+	private ChopperStatus mStatus;
+	
+	/** List of registered receivers */
+	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();;
+	
+	/** Handles task scheduling */
+	private Handler mHandler;
+	
+	/**
+	 * Constructs the object.
+	 * @param status The ChopperStatus from which to compile status reports
+	 */
 	public StatusReporter(ChopperStatus status) {
 		mStatus = status;
-		mRec = new LinkedList<Receivable>();
 	}
 	
-	public void registerReceiver(Receivable rec) {
-		synchronized (mRec) {
-			mRec.add(rec);
-		}
-	}
-	
+	 /**
+	  * Obtains a list of strings embodying a status report.
+	  * @return The status report
+	  */
 	public LinkedList<String> getStatusReport() {
 		LinkedList<String> infoList = new LinkedList<String>();
 		
@@ -128,6 +137,39 @@ public class StatusReporter implements Runnable, Constants {
 		return infoList;
 	}
 	
+	/**
+	 * Registers a receiver to receive status reports, especially a Comm object.
+	 * @param rec The Receivable to register.
+	 * @see Comm Comm
+	 */
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
+		}
+	}
+	
+	/**
+	 * Initializes the handler, schedules the status report update.
+	 */
+	public void run() {
+		Looper.prepare();
+		mHandler = new Handler() {
+			public void handleMessage(Message msg) {
+				switch (msg.what) {
+				case STATUS_UPDATE:
+					sendStatusUpdate();
+					break;
+				}
+			}
+		};
+		
+		mHandler.sendEmptyMessage(STATUS_UPDATE);
+		Looper.loop();
+	}
+	
+	/**
+	 * Compiles, sends a status report to all receivers.
+	 */
 	private void sendStatusUpdate() {
 		long starttime = System.currentTimeMillis(); //to ensure that messages are sent no faster than UPDATEINTERVAL
 		
@@ -147,6 +189,10 @@ public class StatusReporter implements Runnable, Constants {
 			mHandler.sendEmptyMessage(STATUS_UPDATE);
 	}
 	
+	/**
+	 * Updates all receivers.
+	 * @param str The message to send.
+	 */
 	private void updateReceivers(String str) {
 		synchronized (mRec) {
 			ListIterator<Receivable> myList = mRec.listIterator();
@@ -154,21 +200,5 @@ public class StatusReporter implements Runnable, Constants {
 				myList.next().receiveMessage(str, null);
 			}
 		}
-	}
-	
-	public void run() {
-		Looper.prepare();
-		mHandler = new Handler() {
-			public void handleMessage(Message msg) {
-				switch (msg.what) {
-				case STATUS_UPDATE:
-					sendStatusUpdate();
-					break;
-				}
-			}
-		};
-		
-		mHandler.sendEmptyMessage(STATUS_UPDATE);
-		Looper.loop();
 	}
 }

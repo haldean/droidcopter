@@ -25,18 +25,16 @@ import android.util.Log;
  */
 public final class Comm implements Runnable, Receivable, Constants {	
 	
-	/**
-	 * How long (in ms) to wait, upon connectivity failure, before attempting to reestablish connection
-	 */
+	/** How long (in ms) to wait, upon connectivity failure, before attempting to reestablish connection. */
 	public final static int CONNECTION_INTERVAL = 5000;
 	
-	/* URL of the control server */
+	/** URL of the control server */
 	private final String mControl = new String("pices.dynalias.org");
 	
-	/* Port used for text connection */
+	/** Port used for text connection */
 	private final int mTextOutPort = 23;
 	
-	/* Port used for data connection (telemetry) */
+	/** Port used for data connection (telemetry) */
 	private final int mDataOutPort = 24;
 	
 	/** How long (in ms) to wait for the first PULSE signal before assuming connectivity failure */
@@ -48,40 +46,41 @@ public final class Comm implements Runnable, Receivable, Constants {
 	/** Tag for logging */
 	public static final String TAG = "chopper.Comm";	
 	
-	/* Communication sockets */
+	/** Communication sockets */
 	private Socket mTextSocket;
 	private Socket mDataSocket;
 	
-	/* Reading & Riting */
+	/** Reading & Riting */
 	private PrintWriter mTextOut;
 	private ObjectOutputStream mDataOut;
 	private BufferedReader mTextIn;
 	
-	/* Message handler*/
+	/** Message handler*/
 	private Handler mHandler;
 	
-	/* For initializing a text connection */
+	/** For initializing a text connection */
 	private Runnable mTextConnArg;
 	private Thread mTextConn;
 	private ReentrantLock mTextConnLock = new ReentrantLock();
 	
-	/* For initializing a data connection */
+	/** For initializing a data connection */
 	private Runnable mDataConnArg;
 	private Thread mDataConn;
 	private ReentrantLock mDataConnLock = new ReentrantLock();
 	
-	/* Receivers */
+	/** Receivers */
 	private Vector<LinkedList<Receivable>> mMsgTypes;
 	
-	/* Heartbeat Timer */
+	/** Heartbeat Timer */
 	private Timer mCountdown;
 	private TimerTask mHeartbeat;
 	
-	/* Handles to other chopper components */
+	/** Handles to other chopper components */
 	private MakePicture mTelemSrc;	
 	private TransmitPicture mPic;
 	
 	private boolean mAcceptMsgs;
+	
 	/**
 	 * Initializes the object; instructions on how to connect to server.
 	 * @param takeMsgs If set to false, will only transmit; must be true to receive/process instructions
@@ -159,8 +158,8 @@ public final class Comm implements Runnable, Receivable, Constants {
 						synchronized (mDataOut) {
 							mPic.setOutputStream(mDataOut);
 						}
-						if (mPic.handler != null) {
-							mPic.handler.sendEmptyMessage(SEND_PIC);
+						if (mPic.mHandler != null) {
+							mPic.mHandler.sendEmptyMessage(SEND_PIC);
 						}
 					}
 					
@@ -179,64 +178,39 @@ public final class Comm implements Runnable, Receivable, Constants {
 		mDataConn = new Thread(mDataConnArg);
 	}
 	
-	/* Tears down the data (telemetry) connection. */
-	private void destroyDataConn() {
-		Log.i(TAG, "Closing data sockets...");
-		try {
-			if (mDataOut != null)
-				mDataOut.close();
-			if (mDataSocket != null)
-				mDataSocket.close();
-		}
-		/* Sockets might already be closed */
-		catch (IOException e) {
-			Log.i(TAG, "Data sockets already closed.");
-		}
-	}
-	
-	/* Tears down the text connection. */
-	private void destroyTextConn() {
-		Log.i(TAG, "Closing text sockets...");
-		try {
-			if (mTextIn != null) 
-				mTextIn.close();
-			if (mTextOut != null)
-				mTextOut.close();
-			if (mTextSocket != null)
-				mTextSocket.close();
-		}
-		catch (IOException e) {
-			Log.i(TAG, "Text sockets already closed.");
-		}
-	}
-	
+	/**
+	 * Processes a message by sending it to the control server.
+	 * @param msg The message to process.
+	 * @param source The source of the message.  May be null.
+	 */
 	public void receiveMessage(String msg, Receivable source) {
 		sendMessage(msg);
 	}
 	
 	/**
-	 * Sends a message back to the control server.  Called from other threads/classes.
-	 * @param message The message to send.
+	 * Registers a receiver to receive a category of Comm updates, especially MakePicture and Navigation objects.
+	 * @param msgType The type of updates for which to register.
+	 * @param receiver The receiver to register.
+	 * @see MakePicture MakePicture
+	 * @see Navigation Navigation
 	 */
-	public boolean sendMessage(String message) {
-		if (mTextOut == null) { //connection not yet initialized
-			return false;
-		}
-		
-		try {			
-			mTextOut.println(message);
-			mTextOut.flush();
-			return true;
-		}
-		/* The connection might be broken */
-		catch (Throwable t) {
-			t.printStackTrace();
-			Log.w(TAG, "Connection appears to be lost.  Attempting to reconnect.");
-			mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
-			return false;
+	public void registerReceiver(int msgType, Receivable receiver) {
+		LinkedList<Receivable> myList = mMsgTypes.get(msgType);
+		synchronized (myList) {
+			myList.add(receiver);
 		}
 	}
-
+	
+	/**
+	 * Registers a receiver to receive all categories of Comm updates.
+	 * @param receiver
+	 */
+	public void registerReceiver(Receivable receiver) {
+		for (int i = 0; i < MSG_TYPES; i++) {
+			registerReceiver(i, receiver);
+		}
+	}
+	
 	/**
 	 * Starts the communication thread.
 	 */
@@ -275,54 +249,74 @@ public final class Comm implements Runnable, Receivable, Constants {
         mHandler.sendEmptyMessage(MAKE_TEXT_CONN);
         Looper.loop();
 	}
-	
-	/* Starts reading from the text socket. */
-	private void startReading() {
-		if (!mAcceptMsgs) {
-			return;
+
+	/**
+	 * Sends a message back to the control server.  Called from other threads/classes.
+	 * @param message The message to send.
+	 */
+	public boolean sendMessage(String message) {
+		if (mTextOut == null) { //connection not yet initialized
+			return false;
 		}
-		new Thread(new Runnable() {
-			public void run() {
-				Thread.currentThread().setName("TextConn");
-				String input;
-				try {
-					while ((input = mTextIn.readLine()) != null) {
-					    updateReceivers(input);
-					}
-				}
-				catch (Throwable t) {
-					mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
-					Log.w(TAG, "Error reading from Socket");
-					t.printStackTrace();
-				}
-			}
-		}).start();
-	}
-	
-	public void registerReceiver(int msgType, Receivable receiver) {
-		LinkedList<Receivable> myList = mMsgTypes.get(msgType);
-		synchronized (myList) {
-			myList.add(receiver);
+		
+		try {			
+			mTextOut.println(message);
+			mTextOut.flush();
+			return true;
+		}
+		/* The connection might be broken */
+		catch (Throwable t) {
+			t.printStackTrace();
+			Log.w(TAG, "Connection appears to be lost.  Attempting to reconnect.");
+			mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
+			return false;
 		}
 	}
 	
-	public void registerReceiver(Receivable receiver) {
-		for (int i = 0; i < MSG_TYPES; i++) {
-			registerReceiver(i, receiver);
-		}
-	}
-	
+	/**
+	 * On first call, sets a MakePicture as the telemetry source.
+	 * Subsequent calls have no effect.
+	 * @param mP The MakePicture to set as the source.
+	 */
 	public void setTelemetrySource(MakePicture mP) {
 		if (mTelemSrc == null) {
 			mTelemSrc = mP;
 		}
-		else {
-			synchronized (mTelemSrc) {
-				mTelemSrc = mP;
-			}
+	}
+	
+	/** Tears down the data (telemetry) connection. */
+	private void destroyDataConn() {
+		Log.i(TAG, "Closing data sockets...");
+		try {
+			if (mDataOut != null)
+				mDataOut.close();
+			if (mDataSocket != null)
+				mDataSocket.close();
+		}
+		/* Sockets might already be closed */
+		catch (IOException e) {
+			Log.i(TAG, "Data sockets already closed.");
 		}
 	}
 	
+	/** Tears down the text connection. */
+	private void destroyTextConn() {
+		Log.i(TAG, "Closing text sockets...");
+		try {
+			if (mTextIn != null) 
+				mTextIn.close();
+			if (mTextOut != null)
+				mTextOut.close();
+			if (mTextSocket != null)
+				mTextSocket.close();
+		}
+		catch (IOException e) {
+			Log.i(TAG, "Text sockets already closed.");
+		}
+	}
+	
+	/** Processes a message meant specifically for the Comm component,
+	 * and not simply to be relayed to other components.  */
 	private boolean isItForMe(String msg) {
 		String[] parts = msg.split(":");
 		if (parts[0].equals("IMAGE")) {
@@ -352,8 +346,32 @@ public final class Comm implements Runnable, Receivable, Constants {
 		}
 		return false;
 	}
+	
+	/** Spawns a thread that starts reading from the text socket. */
+	private void startReading() {
+		if (!mAcceptMsgs) {
+			return;
+		}
+		new Thread(new Runnable() {
+			public void run() {
+				Thread.currentThread().setName("TextConn");
+				String input;
+				try {
+					while ((input = mTextIn.readLine()) != null) {
+					    updateReceivers(input);
+					}
+				}
+				catch (Throwable t) {
+					mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
+					Log.w(TAG, "Error reading from Socket");
+					t.printStackTrace();
+				}
+			}
+		}).start();
+	}
+	
 	/**
-	 * Processes communications received from the server and internal system-wide messages.
+	 * Processes communications received from the server, and some internal system-wide messages.
 	 * @param msg The method to process.
 	 */
 	private void updateReceivers(String msg) {

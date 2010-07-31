@@ -21,51 +21,53 @@ import android.util.Log;
  */
 public class Navigation implements Constants, Receivable {
 	
-	/* Velocity to achieve.  Must be locked on each read/write. */
-	private double[] mTarget = new double[4];
+	/** Tag for logging */
+	public static final String TAG = "chopper.Navigation";
 	
-	/* Lock for target[] */
-	private ReentrantLock mTargetLock;
-	
-	/* How long (in ms) Navigation should instruct the chopper to hover
+	/** How long (in ms) Navigation should instruct the chopper to hover
 	 * when autopilot has run out of NavTasks */
 	public static final int HOVER_PAUSE = 10000;
 	
-	/* Used to calculate next nav vector; prevents the thread
+	/** Velocity to achieve.  Must be locked on each read/write. */
+	private double[] mTarget = new double[4];
+	
+	/** Lock for target[] */
+	private ReentrantLock mTargetLock;
+	
+	/** Used to calculate next nav vector; prevents the thread
 	 * from holding a lock on mTarget itself for too long */
 	private double[] mTempTarget = new double[4];
 	
-	/* True if autopilot is engaged */
+	/** True if autopilot is engaged */
 	private final AtomicBoolean mAutoPilot = new AtomicBoolean(false);
 	
-	/* Chopper's navigation status */
+	/** Chopper's navigation status */
 	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES);
 	
-	/* Holds all flight plans */
+	/** Holds all flight plans */
 	private Vector<NavTask> mTravelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
 	
-	/* Different flight plans depending on Nav status */
+	/** Different flight plans depending on Nav status */
 	private NavTask mLowPower;
 	private NavTask mFlightPath;
 	private NavTask mOnMyOwn;
 	
-	/* Tag for logging */
-	public static final String TAG = "chopper.Navigation";
-	
-	/* Handle for other chopper components */
+	/** Handle for other chopper components */
 	private ChopperStatus mStatus;
 	
-	/* Handles messages */
+	/** Handles messages */
 	private Handler mHandler;
 	
-	/* Hides Runnability, ensures singleton-ness */
+	/** Hides Runnability, ensures singleton-ness */
 	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
+	/** Registered receivers */
 	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
 	
 	/**
 	 * Constructs a navigation object, initializes NavLists
+	 * @param status The ChopperStatus from which to obtain location information. 
 	 */
 	public Navigation(ChopperStatus status) {
 		if (status == null) {
@@ -98,42 +100,13 @@ public class Navigation implements Constants, Receivable {
 		}
 	}
 	
-	/* Evaluates a new navigation vector, based on current status and the relevant NavTask */
-	private void evalNextVector() {
-
-		/*Determine what the current task should be.  Copies to a local variable in case
-		 * 'status'	changes during execution of the method */
-		int thisStatus = mNavStatus.get();
-		
-		NavTask myList = mTravelPlans.get(thisStatus);
-		if (myList.isComplete()) {
-			System.out.println("Hovering");
-			hover();
-			return;
-		}
-		myList.getVelocity(mTempTarget);
-		setTarget(mTempTarget);
-		
-		System.out.print("New NAV Vector: ");
-		for (int i = 0; i < 4; i++) {
-			System.out.print(mTempTarget[i] + " ");
-		}
-		System.out.println();
-		
-		long interval = myList.getInterval();
-		
-		//Send the current NavList to the server, in case any tasks have been completed
-		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
-		
-		mHandler.removeMessages(EVAL_NAV);
-		if (interval > 0) {
-			mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
-		}
-		else {
-			mHandler.sendEmptyMessage(EVAL_NAV);
-		}
-	}
-	
+	/**
+	 * Obtains the thread that runs the Navigation routines.
+	 * On first call to this method, the PersistentThread is created.
+	 * But since two or more instances of Navigation should not be run concurrently,
+	 * subsequent calls to this method return only that first thread.
+	 * @return The PersistentThread that runs Navigation.
+	 */
 	public PersistentThread getPersistentThreadInstance() {
 		if (mRunner == null) {
 			mRunner = new Runnable(){
@@ -223,18 +196,11 @@ public class Navigation implements Constants, Receivable {
 		return myTasks;
 	}
 	
-	/* Orders the chopper to remain in place */
-	private void hover() {
-		
-		for (int i = 0; i < 3; i++) {
-			mTempTarget[i] = 0;
-		}
-		mTempTarget[3] = mStatus.getReadingFieldNow(AZIMUTH, mTempTarget[3]);
-		setTarget(mTempTarget);
-		mHandler.removeMessages(EVAL_NAV);
-		mHandler.sendEmptyMessageDelayed(EVAL_NAV, HOVER_PAUSE);
-	}
-	
+	/**
+	 * Receive a message.
+	 * @param msg The message to process.
+	 * @param source The source of the message, if a reply is needed.  May be null.
+	 */
 	public void receiveMessage(String msg, Receivable source) {
 		String[] parts = msg.split(":");
 		if (parts[0].equals("NAV")) {
@@ -276,10 +242,38 @@ public class Navigation implements Constants, Receivable {
 		}
 	}
 	
+	/**
+	 * Registers a receiver to receive Nav updates.
+	 * @param rec
+	 */
 	public void registerReceiver(Receivable rec) {
 		synchronized (mRec) {
 			mRec.add(rec);
 		}
+	}
+	
+	/** 
+	 * Sets a supplied NavList as flight plan for the specified Nav status.
+	 * @param whichPlan The Nav status for which to set the new flight plan
+	 * @param myTask The new flight plan
+	 */
+	public void setTask(int whichPlan, String myTask) {
+		NavList myList = NavList.fromString(myTask, mStatus);
+		if (myList != null) {
+			//Make change:
+			mTravelPlans.set(whichPlan, myList);
+			
+			//Confirm change to server:
+			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+		}
+	}
+	
+	/**
+	 * Compares the supplied status with the current status; stores the most important.
+	 * @param newstatus The new (potential) status
+	 */
+	public void updateStatus(int newstatus) {
+		mNavStatus.set(Math.min(mNavStatus.get(), newstatus));
 	}
 	
 	/**
@@ -302,22 +296,58 @@ public class Navigation implements Constants, Receivable {
 		}.start();
 	}
 	
-	/** 
-	 * Sets a supplied NavList as flight plan for the specified Nav status.
-	 * @param whichPlan The Nav status for which to set the new flight plan
-	 * @param myTask The new flight plan
-	 */
-	public void setTask(int whichPlan, String myTask) {
-		NavList myList = NavList.fromString(myTask, mStatus);
-		if (myList != null) {
-			//Make change:
-			mTravelPlans.set(whichPlan, myList);
-			
-			//Confirm change to server:
-			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+	/** Evaluates a new navigation vector, based on current status and the relevant NavTask */
+	private void evalNextVector() {
+
+		/*Determine what the current task should be.  Copies to a local variable in case
+		 * 'status'	changes during execution of the method */
+		int thisStatus = mNavStatus.get();
+		
+		NavTask myList = mTravelPlans.get(thisStatus);
+		if (myList.isComplete()) {
+			System.out.println("Hovering");
+			hover();
+			return;
+		}
+		myList.getVelocity(mTempTarget);
+		setTarget(mTempTarget);
+		
+		System.out.print("New NAV Vector: ");
+		for (int i = 0; i < 4; i++) {
+			System.out.print(mTempTarget[i] + " ");
+		}
+		System.out.println();
+		
+		long interval = myList.getInterval();
+		
+		//Send the current NavList to the server, in case any tasks have been completed
+		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
+		
+		mHandler.removeMessages(EVAL_NAV);
+		if (interval > 0) {
+			mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
+		}
+		else {
+			mHandler.sendEmptyMessage(EVAL_NAV);
 		}
 	}
 	
+	/** Orders the chopper to remain in place */
+	private void hover() {
+		
+		for (int i = 0; i < 3; i++) {
+			mTempTarget[i] = 0;
+		}
+		mTempTarget[3] = mStatus.getReadingFieldNow(AZIMUTH, mTempTarget[3]);
+		setTarget(mTempTarget);
+		mHandler.removeMessages(EVAL_NAV);
+		mHandler.sendEmptyMessageDelayed(EVAL_NAV, HOVER_PAUSE);
+	}
+	
+	/**
+	 * Updates all receivers
+	 * @param str The message to send.
+	 */
 	private void updateReceivers(String str) {
 		synchronized (mRec) {
 			ListIterator<Receivable> myList = mRec.listIterator();
@@ -325,13 +355,5 @@ public class Navigation implements Constants, Receivable {
 				myList.next().receiveMessage(str, this);
 			}
 		}
-	}
-	
-	/**
-	 * Compares the supplied status with the current status; stores the most important.
-	 * @param newstatus The new (potential) status
-	 */
-	public void updateStatus(int newstatus) {
-		mNavStatus.set(Math.min(mNavStatus.get(), newstatus));
 	}
 }

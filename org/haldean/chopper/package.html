@@ -16,8 +16,6 @@ Package has six main components: ChopperStatus maintains
 updated information on status readings from various sensors, Comm handles text communications with the control
 server, Guidance handles absolute motor speed, MakePicture captures telemetry from the camera, Navigation
 handles autopilot routines, and TransmitPicture handles the transmission of telemetry to the control server.
-These classes are all either Runnables or themselves Threads, and exactly one instance of each should be run
-at a time.
 <p>
 Task scheduling and inter-thread communication is handled with the Handler class.
 <p>

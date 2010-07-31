@@ -15,16 +15,59 @@ import android.util.Log;
  */
 public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 	
+	/** Tag for logging */
+	public static final String TAG = "nav.NavList";
+	
+	/** Version ID */
 	private static final long serialVersionUID = 1L;
 	
-	private static final String TAG = "nav.NavList";
-	NavTask currentTask;
+	/** Task currently being performed */
+	private NavTask currentTask;
 	
 	/**
 	 * Creates a NavList.
 	 */
 	public NavList() {
 		super();
+	}
+	
+	/**
+	 * Deserializes a NavList from valid serialized String form.
+	 * @param msg Serialized form of the NavList
+	 * @param cs The ChopperStatus with which to construct NavDests.
+	 * May be null, in which case null we be passed to the NavDest constructor. 
+	 * @return The newly-deserialized NavList
+	 */
+	public static NavList fromString(String msg, ChopperStatus cs) {
+		String[] tokens = msg.split(" ");
+		Stack<NavTask> myStack = new Stack<NavTask>();
+		for (int i = 0; i < tokens.length; i++){
+			if (!tokens[i].endsWith("}")) {
+				NavTask myTask = null;
+				if (tokens[i].startsWith("DEST")) {
+					myTask = new NavDest(tokens[i], cs);
+					myStack.push(myTask);
+				}
+				if (tokens[i].startsWith("VEL")) {
+					myTask = new NavVel(tokens[i]);
+					myStack.push(myTask);
+				}
+				if (tokens[i].startsWith("{")) {
+					myStack.push(null);
+				}
+			}
+			else {
+				NavList myList = new NavList();
+				NavTask myTask;
+				while ((myTask = myStack.pop()) != null)
+					myList.addFirst(myTask);
+				myStack.push(myList);
+			}
+		}
+		if (myStack.empty())
+			return null;
+		else
+			return (NavList) myStack.pop();
 	}
 	
 	/**
@@ -43,7 +86,8 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 	}
 	
 	/**
-	 * Calculates the target velocity vector.  Length must be at least 4.
+	 * Calculates the target velocity vector.  
+	 * @param target The array in which to write the velocity vector.  Length must be at least 4.
 	 */
 	public void getVelocity(double[] target) {
 		while (size() > 0) {
@@ -92,42 +136,5 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		}
 		me = me.concat(" }");
 		return me;
-	}
-	
-	/**
-	 * Deserializes a NavList from valid serialized String form.
-	 * @param msg Serialized form of the NavList
-	 * @return The newly-deserialized NavList
-	 */
-	public static NavList fromString(String msg, ChopperStatus cs) {
-		String[] tokens = msg.split(" ");
-		Stack<NavTask> myStack = new Stack<NavTask>();
-		for (int i = 0; i < tokens.length; i++){
-			if (!tokens[i].endsWith("}")) {
-				NavTask myTask = null;
-				if (tokens[i].startsWith("DEST")) {
-					myTask = new NavDest(tokens[i], cs);
-					myStack.push(myTask);
-				}
-				if (tokens[i].startsWith("VEL")) {
-					myTask = new NavVel(tokens[i]);
-					myStack.push(myTask);
-				}
-				if (tokens[i].startsWith("{")) {
-					myStack.push(null);
-				}
-			}
-			else {
-				NavList myList = new NavList();
-				NavTask myTask;
-				while ((myTask = myStack.pop()) != null)
-					myList.addFirst(myTask);
-				myStack.push(myList);
-			}
-		}
-		if (myStack.empty())
-			return null;
-		else
-			return (NavList) myStack.pop();
 	}
 }

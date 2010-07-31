@@ -23,14 +23,8 @@ import android.view.SurfaceHolder;
  * @author Benjamin Bardin
  *
  */
-public final class MakePicture implements Constants, Receivable {
-	
-	/* Stores preview frames for later access by other threads.  All read/writes should be externally synchronized. */
-	//private byte[] mBuffer = new byte[0];
-	
-	/**
-	 * Used to send messages to the thread
-	 */
+public final class MakePicture implements Constants, Receivable {	
+	/** Used to send messages to the thread */
 	public Handler handler;
 	
 	/** Desired compression rate of a high-quality jpeg image */
@@ -39,42 +33,43 @@ public final class MakePicture implements Constants, Receivable {
 	/** Tag for logging */
 	public static final String TAG = "chopper.MakePicture";
 	
-	/* The current width of preview frames */
+	/** The current width of preview frames */
 	private final AtomicInteger mXprev = new AtomicInteger(0);
 	
-	/* The current height of preview frames */
+	/** The current height of preview frames */
 	private final AtomicInteger mYprev = new AtomicInteger(0);
 	
-	/* Used to attempt to change frame size--holds desired new width of preview frames */
+	/** Used to attempt to change frame size--holds desired new width of preview frames */
 	private final AtomicInteger mNextX = new AtomicInteger(0);
 	
-	/* Used to attempt to change frame size--holds desired new height of preview frames */
+	/** Used to attempt to change frame size--holds desired new height of preview frames */
 	private final AtomicInteger mNextY = new AtomicInteger(0);
 	
-	/* Holds the value representing the format in which preview frames are stored
+	/** Holds the value representing the format in which preview frames are stored
 	 * @see android.graphics.ImageFormat */
 	private final AtomicInteger mPrevFormat = new AtomicInteger(0);
 	
-	/* Flag indicating whether or not new frame has been captured.
+	/** Flag indicating whether or not new frame has been captured.
 	 * TransmitPicture thread sets this to false when it copies the stored frame. */
 	private final AtomicBoolean mNewFrame = new AtomicBoolean(false);
 	
-	/* Internal array that stores a preview frame */
+	/** Internal array that stores a preview frame */
 	private byte[] mStoreFrame = new byte[0];
 	
-	/* Holds the camera object */
+	/** Holds the camera object */
 	private Camera mCamera;
 	
-	/* Various callbacks */
+	/** Various callbacks */
 	private Camera.PictureCallback mGoodPic;
 	private Camera.ErrorCallback mCamError;
-	private volatile SurfaceHolder mPreviewHolder;
+	private SurfaceHolder mPreviewHolder;
 	private SurfaceHolder.Callback mSurfaceCallback;
 	
-	/* Hides Runnability, ensures singleton-ness */
+	/** Hides Runnability, ensures singleton-ness */
 	private Runnable mRunner;
 	private static PersistentThread myThread;
 	
+	/** Registered receivers */
 	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
 	
 	/**
@@ -85,6 +80,32 @@ public final class MakePicture implements Constants, Receivable {
 		mPreviewHolder = sh;
 	}
 	
+	/**
+	 * Gets a copy of the last preview frame.
+	 * @return The frame copy.
+	 */
+	public byte[] getBufferCopy() {
+		synchronized (mStoreFrame) {
+			return mStoreFrame.clone();
+		}
+	}
+	
+	/**
+	 * Obtains the current preview frame size.
+	 * @return An array containing the size.  Index '0' is the current width, index '1' is the current height.
+	 */
+	public int[] getFrameSize() {
+		int[] myNums = {mXprev.get(), mYprev.get()};
+		return myNums;
+	}
+	
+	/**
+	 * Obtains the thread that runs the MakePicture routines.
+	 * On first call to this method, the PersistentThread is created.
+	 * But since two or more instances of MakePicture should not be run concurrently,
+	 * subsequent calls to this method return only that first thread.
+	 * @return The PersistentThread that runs MakePicture.
+	 */
 	public PersistentThread getPersistentThreadInstance() {
 		if (mRunner == null) {
 			mRunner = new Runnable() {
@@ -133,12 +154,29 @@ public final class MakePicture implements Constants, Receivable {
 		return myThread;
 	}
 	
-	public byte[] getBufferCopy() {
-		synchronized (mStoreFrame) {
-			return mStoreFrame.clone();
-		}
+	/**
+	 * Obtains the image format used for preview frames.
+	 * @return The format.
+	 * @see android.graphics.ImageFormat ImageFormat
+	 */
+	public int getPreviewFormat() {
+		return mPrevFormat.get();
 	}
 	
+	
+	/**
+	 * Determines whether or not the most recent preview frame is a "new" one.
+	 * @return The new-ness of the frame.
+	 */
+	public boolean isFrameNew() {
+		return mNewFrame.get();
+	}
+	
+	/**
+	 * Processes a message
+	 * @param msg The message to process
+	 * @param source The source of the message, if a reply is expected.  May be null.
+	 */
 	public void receiveMessage(String msg, Receivable source) {
 		Log.i(TAG, "Receiving msg: " + msg);
 		String[] parts = msg.split(":");
@@ -153,11 +191,129 @@ public final class MakePicture implements Constants, Receivable {
 			}
 			else if (parts[1].equals("GETPARAMS")) {
 				int[] mySize = getFrameSize();
-				source.receiveMessage("IMAGE:FRAMESIZE:" + mySize[0] + ":" + mySize[1], this);// + ":" + transPic.getPreviewQuality());
+				if (source != null) {
+					source.receiveMessage("IMAGE:FRAMESIZE:" + mySize[0] + ":" + mySize[1], this);// + ":" + transPic.getPreviewQuality());
+				}
 			}
 		}
 	}
 	
+	/**
+	 * Registers a receivable to receive telemetry-related updates, especially a Comm object.
+	 * @param rec The receivable to register.
+	 * @see Comm Comm
+	 */
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
+		}
+	}
+	
+	/**
+	 * Sends a list of available preview sizes to all registered receivers.
+	 */
+	public void sendSizes() {
+		if (mCamera == null)
+			return;
+		Camera.Parameters params = mCamera.getParameters();
+		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
+		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
+		if (sizes != null) {
+			ListIterator<Camera.Size> i1 = sizes.listIterator();
+			while (i1.hasNext()) {
+				Camera.Size mysize = i1.next();
+				updateReceivers("IMAGE:AVAILABLESIZE:" + mysize.width + ":" + mysize.height);
+			}
+		}
+		else {
+			Camera.Size size = params.getPreviewSize();
+			updateReceivers("IMAGE:AVAILABLESIZE:" + size.width + ":" + size.height);
+		}		
+	}
+	
+	/**
+	 * Sets whether or not the most recent preview frame is a "new" one.
+	 * @param newNess The new-ness of the frame.
+	 */
+	public void setFrameNewnessTo(boolean newNess) {
+		mNewFrame.set(newNess);
+	}
+	
+	/**
+	 * Attempts to change the preview frame size to values previously registered.
+	 * @return true if the operation succeeded; false otherwise.
+	 * @see #setNextFrameSize(int, int) setNextFrameSize(int, int)
+	 */
+	public boolean updateFrameSize() {
+		if (mCamera == null)
+			return false;
+
+		Camera.Parameters params = mCamera.getParameters();
+		if (!(mNextX.get() != mXprev.get() | mNextY.get() != mYprev.get()))
+			return false;
+		try {
+			params.setPreviewSize(mNextX.get(), mNextY.get());
+			mCamera.stopPreview();
+			mCamera.setParameters(params);
+			mXprev.set(mNextX.get());
+			mYprev.set(mNextY.get());
+			synchronized (mStoreFrame) {
+				mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+			}
+			handler.sendEmptyMessage(START_PREVIEW);
+		}
+		catch (Throwable t) {
+			mNextX.set(mXprev.get());
+			mNextY.set(mYprev.get());
+			Log.i(TAG, "Preview size not changed.");
+			handler.sendEmptyMessage(START_PREVIEW);
+			return false;
+		}
+		return true;
+	}
+	
+	/** Initializes the camera callbacks. */
+	private void initCallbacks() {
+		if (mCamera == null) {
+			mCamera = Camera.open();
+		}
+		initErrorCallback();
+		initGoodPicCallback();
+		initSurfaceCallback();
+		initPrevCallback();
+	}
+	
+	/** Initializes, registers the error callback. */
+	private void initErrorCallback() {
+		
+		//set up callbacks.  First is on error
+		mCamError = new ErrorCallback()
+		{
+			public void onError(int error, Camera camera)
+			{
+				System.out.println("Camera error, code " + error);
+			}
+		};
+		mCamera.setErrorCallback(mCamError);
+	}
+	
+	/** Initializes the High-quality picture callback. */
+	private void initGoodPicCallback() {
+		//callback class, with instructions on what to do with a high-quality image
+		mGoodPic = new Camera.PictureCallback()
+		{
+			public void onPictureTaken(byte[] imageData, Camera c)
+			{
+				if (imageData != null)
+				{
+					//TODO: store the picture
+				}
+				handler.sendEmptyMessage(START_PREVIEW);
+			}
+		};
+	}
+	
+	/** Initializes the camera parameters. */
 	private void initParams() {
 		Log.i(TAG, "Initializing camera");
 		if (mCamera == null) {
@@ -217,52 +373,31 @@ public final class MakePicture implements Constants, Receivable {
 			e.printStackTrace();
 			Log.w(TAG, "Camera parameters rejected.");
 		}
-		//sendSizes();
 	}
 	
-	
-	/* Initializes the camera callbacks. */
-	private void initCallbacks() {
-		if (mCamera == null) {
-			mCamera = Camera.open();
-		}
-		initErrorCallback();
-		initGoodPicCallback();
-		initSurfaceCallback();
-		initPrevCallback();
-	}
-	
-	private void initErrorCallback() {
-		
-		//set up callbacks.  First is on error
-		mCamError = new ErrorCallback()
-		{
-			public void onError(int error, Camera camera)
-			{
-				System.out.println("Camera error, code " + error);
-			}
-		};
-		mCamera.setErrorCallback(mCamError);
-	}
-	
-	private void initGoodPicCallback() {
-		//callback class, with instructions on what to do with a high-quality image
-		mGoodPic = new Camera.PictureCallback()
-		{
-			public void onPictureTaken(byte[] imageData, Camera c)
-			{
-				if (imageData != null)
-				{
-					//TODO: store the picture
+	/** Initializes the preview callback */
+	private void initPrevCallback() {
+		//what to do with each preview frame captured
+		PreviewCallback precall = new PreviewCallback (){
+			public void onPreviewFrame(byte[] data, Camera camera) {
+				setFrameNewnessTo(true);
+				synchronized (mStoreFrame) {
+					camera.addCallbackBuffer(mStoreFrame);
 				}
-				handler.sendEmptyMessage(START_PREVIEW);
 			}
 		};
+		mCamera.setPreviewCallbackWithBuffer(precall);
+		//Inner class defs done
 	}
 	
+	/** Initializes the surface callback. */
 	private void initSurfaceCallback() {
 		//handles drawing the preview to the surface.  Not algorithmically necessary, droid-required security feature.
 		mSurfaceCallback = new SurfaceHolder.Callback() {
+			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+				System.out.println("Surface callback, surface changed");
+			}
+
 			public void surfaceCreated(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface created");
 				System.out.println("surface callback, thread " + Thread.currentThread().getId());
@@ -278,10 +413,6 @@ public final class MakePicture implements Constants, Receivable {
 				handler.sendEmptyMessage(START_PREVIEW);
 			}
 
-			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-				System.out.println("Surface callback, surface changed");
-			}
-
 			public void surfaceDestroyed(SurfaceHolder holder) {
 				System.out.println("Surface callback, surface destroyed");
 				mCamera.stopPreview();
@@ -290,52 +421,7 @@ public final class MakePicture implements Constants, Receivable {
 		//add the callback
 		mPreviewHolder.addCallback(mSurfaceCallback);
 	}
-	
-	private void initPrevCallback() {
-		//what to do with each preview frame captured
-		PreviewCallback precall = new PreviewCallback (){
-			public void onPreviewFrame(byte[] data, Camera camera) {
-				setFrameNewnessTo(true);
-				synchronized (mStoreFrame) {
-					camera.addCallbackBuffer(mStoreFrame);
-				}
-			}
-		};
-		mCamera.setPreviewCallbackWithBuffer(precall);
-		//Inner class defs done
-	}
-	
-	public void registerReceiver(Receivable rec) {
-		synchronized (mRec) {
-			mRec.add(rec);
-		}
-	}
-	
-	private void updateReceivers(String str) {
-		synchronized (mRec) {
-			ListIterator<Receivable> myList = mRec.listIterator();
-			while (myList.hasNext()) {
-				myList.next().receiveMessage(str, this);
-			}
-		}
-	}
-	
-	/**
-	 * Determines whether or not the most recent preview frame is a "new" one.
-	 * @return The new-ness of the frame.
-	 */
-	public boolean isFrameNew() {
-		return mNewFrame.get();
-	}
-	
-	/**
-	 * Sets whether or not the most recent preview frame is a "new" one.
-	 * @param newNess The new-ness of the frame.
-	 */
-	public void setFrameNewnessTo(boolean newNess) {
-		mNewFrame.set(newNess);
-	}
-	
+
 	/**
 	 * Registers a desired preview frame size, to which the camera will try to switch when updateFrameSize() is called.
 	 * @param newx The desired new frame width. 
@@ -348,80 +434,15 @@ public final class MakePicture implements Constants, Receivable {
 	}
 	
 	/**
-	 * Obtains the image format used for preview frames.
-	 * @return The format.
-	 * @see android.graphics.ImageFormat ImageFormat
+	 * Updates all registered receivers
+	 * @param str The message to send.
 	 */
-	public int getPreviewFormat() {
-		return mPrevFormat.get();
-	}
-	
-	/**
-	 * Obtains the current preview frame size.
-	 * @return An array containing the size.  Index '0' is the current width, index '1' is the current height.
-	 */
-	public int[] getFrameSize() {
-		int[] myNums = {mXprev.get(), mYprev.get()};
-		return myNums;
-	}
-
-	/**
-	 * Attempts to change the preview frame size to values previously registered.
-	 * @return true if the operation succeeded; false otherwise.
-	 * @see #setNextFrameSize(int, int) setNextFrameSize(int, int)
-	 */
-	public boolean updateFrameSize() {
-		if (mCamera == null)
-			return false;
-		/*synchronized (frameSizeLock) {
-			synchronized (nextFrameSizeLock) {
-				System.out.println("Updating frame size, from " + XPREV + ", " + YPREV + " to " + nextx + ", " + nexty);
+	private void updateReceivers(String str) {
+		synchronized (mRec) {
+			ListIterator<Receivable> myList = mRec.listIterator();
+			while (myList.hasNext()) {
+				myList.next().receiveMessage(str, this);
 			}
 		}
-		*/
-		Camera.Parameters params = mCamera.getParameters();
-		if (!(mNextX.get() != mXprev.get() | mNextY.get() != mYprev.get()))
-			return false;
-		try {
-			params.setPreviewSize(mNextX.get(), mNextY.get());
-			mCamera.stopPreview();
-			mCamera.setParameters(params);
-			mXprev.set(mNextX.get());
-			mYprev.set(mNextY.get());
-			synchronized (mStoreFrame) {
-				mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
-			}
-			handler.sendEmptyMessage(START_PREVIEW);
-		}
-		catch (Throwable t) {
-			mNextX.set(mXprev.get());
-			mNextY.set(mYprev.get());
-			Log.i(TAG, "Preview size not changed.");
-			handler.sendEmptyMessage(START_PREVIEW);
-			return false;
-		}
-		return true;
-	}
-	
-	/**
-	 * Sends a list of available preview sizes to the control server.
-	 */
-	public void sendSizes() {
-		if (mCamera == null)
-			return;
-		Camera.Parameters params = mCamera.getParameters();
-		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
-		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
-		if (sizes != null) {
-			ListIterator<Camera.Size> i1 = sizes.listIterator();
-			while (i1.hasNext()) {
-				Camera.Size mysize = i1.next();
-				updateReceivers("IMAGE:AVAILABLESIZE:" + mysize.width + ":" + mysize.height);
-			}
-		}
-		else {
-			Camera.Size size = params.getPreviewSize();
-			updateReceivers("IMAGE:AVAILABLESIZE:" + size.width + ":" + size.height);
-		}		
 	}
 }

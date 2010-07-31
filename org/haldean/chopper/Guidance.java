@@ -23,13 +23,16 @@ public class Guidance implements Constants {
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
 	public static final double MAX_DMOTOR = .1F;
 	
-	/* Used when a really big number is needed, still small enough to prevent overflow. */
+	/** Tag for logging */
+	public static final String TAG = new String("chopper.Guidance");
+	
+	/** Used when a really big number is needed, still small enough to prevent overflow. */
 	private static final double sReallyBig = 10000;
 	
-	/* Handles messages for the thread */
+	/** Handles messages for the thread */
 	private Handler mHandler;
 	
-	/* Stores orientation data persistently, as expected values in case lock is not immediately available*/
+	/** Stores orientation data persistently, as expected values in case lock is not immediately available*/
 	private double mAzimuth;
 	private double mPitchDeg;
 	private double mRollDeg;
@@ -37,7 +40,7 @@ public class Guidance implements Constants {
 	private double mGpsSpeed;
 	private double mGpsDalt;
 	
-	/* Note that some of the following objects are declared outside their smallest scope.
+	/** Note that some of the following objects are declared outside their smallest scope.
 	 * This is to relieve unnecessary stress on the GC.  Many of these data holders
 	 * can easily be reused from iteration to iteration, and since the PID loops
 	 * may run as much as 20+ times a second this is considerably more efficient,
@@ -46,52 +49,51 @@ public class Guidance implements Constants {
 	 * remain persistent from iteration to iteration. 
 	 */
 	
-	/* Stores desired velocity */
+	/** Stores desired velocity */
 	private double[] mTarget = new double[4];
 	
-	/* Stores the current velocity (relative to the chopper) */
+	/** Stores the current velocity (relative to the chopper) */
 	private double[] mCurrent = new double[4];
 	
-	/* Stores current PID error */
+	/** Stores current PID error */
 	private double[][] mErrors = new double[4][3];
 	
-	/* Manages integral error */
+	/** Manages integral error */
 	private int mIntegralIndex = 0;
 	private double[][] mIntegralErrors = new double[4][PIDREPS];
 	
-	/* Timestamp of last PID evaluation */
+	/** Timestamp of last PID evaluation */
 	private long mLastUpdate = 0;
 	
-	/* Sum of errors * tuning parameter for a given PID loop */
+	/** Sum of errors * tuning parameter for a given PID loop */
 	private double[] mTorques = new double[4];
 	
-	/* Stores motor speeds temporarily */
+	/** Stores motor speeds temporarily */
 	private double[] mTempMotorSpeed = new double[4];
 	
-	/* Tuning parameters */
+	/** Tuning parameters */
 	private double[][] mGain = new double[4][3];
 	
-	/* Motor speed */
+	/** Motor speed */
 	private double[] mMotorSpeed = new double[4]; //ORDER: North, South, East, West
 	
-	/* If set to true, disregards lateral velocity commands
+	/** If set to true, disregards lateral velocity commands
 	 * Currently unused, though later may implement as extra safety protocol
 	 * in the event of difficulty maintaining altitude */
 	private boolean mHorizontalDrift = false; //if true, does not consider dx, dy or azimuth error; makes for maximally efficient altitude control
 	
-	/* Tag for logging */
-	public static final String TAG = new String("chopper.Guidance");
-	
-	/* Handles to other chopper components */
+	/** Handles to other chopper components */
 	private ChopperStatus mStatus;
 	private Navigation mNav;
 	
-	/* Hides Runnability, ensures singleton-ness */
+	/** Hides Runnability, ensures singleton-ness */
 	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
 	/**
-	 * Constructs the thread, assigns maximum priority
+	 * Constructs a Guidance object
+	 * @param status The source status information.
+	 * @param nav The source of navigation target information.
 	 */
 	public Guidance(ChopperStatus status, Navigation nav) {
 		if (status == null | nav == null) {
@@ -105,6 +107,13 @@ public class Guidance implements Constants {
 				mGain[i][j] = .05;
 	}
 	
+	/**
+	 * Obtains the thread that runs the Guidance routine.
+	 * On first call to this method, the PersistentThread is created.
+	 * But since two or more instances of Guidance should not be run concurrently,
+	 * subsequent calls to this method return only that first thread.
+	 * @return The PersistentThread that runs Guidance routine.
+	 */
 	public PersistentThread getPersistentThreadInstance() {
 		if (mRunner == null) {
 			mRunner = new Runnable() {
@@ -137,7 +146,7 @@ public class Guidance implements Constants {
 	
 	
 	
-	/* Core of the class; calculates new motor speeds based on status */
+	/** Core of the class; calculates new motor speeds based on status */
 	private void reviseMotorSpeed() {
 		//Log.v(TAG, "START MOTOR REVISION");
 		long starttime = System.currentTimeMillis();
@@ -331,8 +340,9 @@ public class Guidance implements Constants {
 			
 		}
 	
-		//Pass filtered values to motors.
+		//Pass filtered values to ChopperStatus.
 		mStatus.setMotorFields(mMotorSpeed);
+		
 		Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
 		long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);

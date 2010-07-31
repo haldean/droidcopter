@@ -12,17 +12,14 @@ import android.view.SurfaceView;
  */
 public final class ChopperMain extends Activity implements Constants
 {
+	/** Tag for logging */
+	public static final String TAG = "chopper.ChopperMain";
+	
 	/**
 	 * Holds the wakelock; needed to keep the camera preview rendering on
 	 * certain phones/android OS versions
 	 */
 	protected PowerManager.WakeLock mWakeLock;
-	
-	/* The Activity is destroyed and restarted whenever the phone rotates--
-	 * the threads it starts, however, persist and need only be started on the first run. */
-	
-	/** Tag for logging */
-	public static final String TAG = "chopper.ChopperMain";
 	
 	/**
 	 * Constructs the Chopper activity.
@@ -32,8 +29,7 @@ public final class ChopperMain extends Activity implements Constants
 	}
 	
 	/**
-	 * Initializes program.
-	 * On first call, starts subroutines.  On subsequent calls, only redraws camera preview display.
+	 * Initializes program by creating, linking and starting chopper components.
 	 * @param savedInstanceState Loads state data.  Not used in this program.
 	 */
 	public void onCreate(Bundle savedInstanceState)

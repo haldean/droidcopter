@@ -31,79 +31,77 @@ import android.util.Log;
  */
 public final class ChopperStatus implements SensorEventListener, Constants, LocationListener
 {	
-	/** Tag for logging */
-	public static final String TAG = "chopper.ChopperStatus";
-	
 	/** Point of "officially" low battery */
 	public final static int LOW_BATT = 30;
 	
-	/* Parameter to specify GPS minimum update distance, with the usual trade-off between accuracy and power consumption.
+	/** Tag for logging */
+	public static final String TAG = "chopper.ChopperStatus";
+	
+	/** Parameter to specify GPS minimum update distance, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy. */
 	private static final float GPS_MIN_DIST = 0;
 	
-	/* Parameter to specify GPS minimum update time, with the usual trade-off between accuracy and power consumption.
+	/** Parameter to specify GPS minimum update time, with the usual trade-off between accuracy and power consumption.
 	 * Value of '0' means maximum accuracy. */
 	private static final long GPS_MIN_TIME = 0;
 	
-	/* Number of threads in the mutator pool */
+	/** Number of threads in the mutator pool */
 	private static final int sNumMutatorThreads = 3;
 	
-	/* Thread pool for mutator methods */
-	private ExecutorService mMutatorPool;
+	/** Used to obtain location manager. */
+	private Context mContext;
 	
-	/* Holds data from various sensors, like gyroscope, acceleration and magnetic flux. */
-	private double[] mReading = new double[SENSORS]; //last known data for a given sensor
-	
-	/* Locks for fields in reading[]. */
-	private ReentrantLock[] mReadingLock;
-	
-	/* Timestamp of last write to corresponding field in reading[]. */
-	//private long[] timestamp = new long[NUMSENSORS]; //timestamp in nanos of last reading
-	
-	/* Holds GPS data. */
-	private double[] mGps = new double[GPS_FIELDS]; //last available GPS readings
-	
-	/* Locks for fields in gps[]. */
-	private ReentrantLock[] mGpsLock;
-	
-	/* Stores the location object last returned by the GPS. */
-	private Location mLastLoc;
-	
-	/* Stores the speeds last submitted to the motors. */
-	private double[] mMotorSpeed = new double[4];
-	
-	/* Lock for motorspeed[]. */
-	private ReentrantLock mMotorLock;
-	
-	/* Current battery level. */
+	/** Current battery level. */
 	private final AtomicInteger mCurrBatt = new AtomicInteger(0);
 	
-	/* Max battery level. */
-	private final AtomicInteger mMaxBatt = new AtomicInteger(100);
+	/** Holds GPS data. */
+	private double[] mGps = new double[GPS_FIELDS]; //last available GPS readings
 	
-	/* Accuracy of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
+	/** Accuracy of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
 	private float mGpsAccuracy; //accuracy of said reading
-
-	/* Timestamp of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
-	private long mGpsTimeStamp; //timestamp of the reading
 	
-	/* Number of satellites used to obtain last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
-	private int mGpsNumSats; //number of satellites used to collect last reading
-	
-	/* Lock for gps extras */
+	/** Lock for gps extras */
 	private ReentrantLock mGpsExtrasLock;
 	
-	/* Used to obtain location manager. */
-	private Context mContext;
+	/** Locks for fields in gps[]. */
+	private ReentrantLock[] mGpsLock;
+	
+	/** Number of satellites used to obtain last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
+	private int mGpsNumSats; //number of satellites used to collect last reading
+	
+	/** Timestamp of last GPS reading.  This field is only accessed by one thread, so no lock is needed. */
+	private long mGpsTimeStamp; //timestamp of the reading
+	
+	/** Stores the location object last returned by the GPS. */
+	private Location mLastLoc;
+	
+	/** Max battery level. */
+	private final AtomicInteger mMaxBatt = new AtomicInteger(100);
 
-	/* Hides Runnability, ensures singleton-ness */
+	/** Lock for motorspeed[]. */
+	private ReentrantLock mMotorLock;
+	
+	/** Stores the speeds last submitted to the motors. */
+	private double[] mMotorSpeed = new double[4];
+	
+	/** Thread pool for mutator methods */
+	private ExecutorService mMutatorPool;
+	
+	/** Holds data from various sensors, like gyroscope, acceleration and magnetic flux. */
+	private double[] mReading = new double[SENSORS]; //last known data for a given sensor
+
+	/** Locks for fields in reading[]. */
+	private ReentrantLock[] mReadingLock;
+	
+	/** List of registered receivers */
+	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
+	
+	/** Hides Runnability, ensures singleton-ness */
 	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
-	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
-	
 	/**
-	 * Initializes the locks
+	 * Initializes the locks, registers application context for runtime use.
 	 * @param mycontext Application context
 	 */
 	public ChopperStatus(Context mycontext)	{
@@ -126,15 +124,19 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		mMutatorPool = Executors.newFixedThreadPool(sNumMutatorThreads);
 	}
 	
-	
-	
-	
-	
+	/**
+	 * Gets the phone battery level
+	 * @return The power level, as a float between 0 and 1.
+	 */
 	public float getBatteryLevel() {
 		return (float) mCurrBatt.get() / (float) mMaxBatt.get();
 	}
 	
-
+	/**
+	 * Gets GPS "extras" data, through a string of the form accuracy:numberOfSatellitesInLatFix:timeStampOfLastFix
+	 * @return The data string
+	 * @throws IllegalAccessException If the lock is currently in use.
+	 */
 	public String getGpsExtrasNow() throws IllegalAccessException {
 		String gpsData = "";
 		if (mGpsExtrasLock.tryLock()) {
@@ -148,6 +150,39 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		}
 		return gpsData;
 	}
+	
+	/**
+	 * Returns the value stored at the specified GPS index.  If its lock is unavailable, blocks until it is.
+	 * @param whichField The index of the desired GPS data.
+	 * @return The desired GPS data.
+	 */
+	public double getGpsField(int whichField) {
+		double myValue;
+		mGpsLock[whichField].lock();
+		myValue = mGps[whichField];
+		mGpsLock[whichField].unlock();
+		return myValue;
+	}
+	
+	/**
+	 * Returns the value stored at the specified GPS index, if its lock is available.  Otherwise, throws an exception.
+	 * @param whichField The index of the desired GPS data.
+	 * @return The desired GPS data.
+	 * @throws IllegalAccessException If the lock for the desired data is unavailable.
+	 */
+	public double getGpsFieldNow(int whichField) throws IllegalAccessException {
+		double myValue;
+		if (mGpsLock[whichField].tryLock()) {
+			myValue = mGps[whichField];
+			mGpsLock[whichField].unlock();
+		}
+		else {
+			Log.w(TAG, "GPS Field " + whichField + " is locked.");
+			throw new IllegalAccessException();
+		}
+		return myValue;
+	}
+	
 	/**
 	 * Returns the value stored at the specified GPS index, if its lock is available.  Otherwise, returns the supplied default value.
 	 * @param whichField The index of the desired GPS data.
@@ -179,75 +214,6 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		}
 		return myLocation;
 	}
-	/**
-	 * Returns the value stored at the specified GPS index, if its lock is available.  Otherwise, throws an exception.
-	 * @param whichField The index of the desired GPS data.
-	 * @return The desired GPS data.
-	 * @throws IllegalAccessException If the lock for the desired data is unavailable.
-	 */
-	public double getGpsFieldNow(int whichField) throws IllegalAccessException {
-		double myValue;
-		if (mGpsLock[whichField].tryLock()) {
-			myValue = mGps[whichField];
-			mGpsLock[whichField].unlock();
-		}
-		else {
-			Log.w(TAG, "GPS Field " + whichField + " is locked.");
-			throw new IllegalAccessException();
-		}
-		return myValue;
-	}
-	
-	/**
-	 * Returns the value stored at the specified GPS index.  If its lock is unavailable, blocks until it is.
-	 * @param whichField The index of the desired GPS data.
-	 * @return The desired GPS data.
-	 */
-	public double getGpsField(int whichField) {
-		double myValue;
-		mGpsLock[whichField].lock();
-		myValue = mGps[whichField];
-		mGpsLock[whichField].unlock();
-		return myValue;
-	}
-	
-	/**
-	 * Returns the reading specified by the supplied index, if its lock is available.  Otherwise, returns the supplied default value.
-	 * @param whichField The index of the desired reading.
-	 * @param expectedValue The default to return, should its lock be unavailable.
-	 * @return Either the reading or the supplied default, depending on whether or not its lock is available.
-	 */
-	public double getReadingFieldNow(int whichField, double expectedValue) {
-		double myValue;
-		if (mReadingLock[whichField].tryLock()) {
-			myValue = mReading[whichField];
-			mReadingLock[whichField].unlock();
-		}
-		else {
-			Log.w(TAG, "Reading field " + whichField + " is locked.");
-			myValue = expectedValue;
-		}
-		return myValue;
-	}
-	
-	/**
-	 * Returns the reading specified by the supplied index, if its lock is available.  Otherwise, throws an exception.
-	 * @param whichField The index of the desired reading.
-	 * @return The desired reading.
-	 * @throws IllegalAccessException If the lock for the desired reading is unavailable.
-	 */
-	public double getReadingFieldNow(int whichField) throws IllegalAccessException {
-		double myValue;
-		if (mReadingLock[whichField].tryLock()) {
-			myValue = mReading[whichField];
-			mReadingLock[whichField].unlock();
-		}
-		else {
-			Log.w(TAG, "Reading field " + whichField + " is locked.");
-			throw new IllegalAccessException();
-		}
-		return myValue;
-	}
 	
 	/**
 	 * Obtains the current motor speeds.
@@ -269,6 +235,13 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		return myValues;
 	}
 	
+	/**
+	 * Obtains the thread that registers this ChopperStatus as a SensorListener.
+	 * On first call to this method, the PersistentThread is created.
+	 * But since two or more instances of ChopperStatus should not be run concurrently,
+	 * subsequent calls to this method return only that first thread.
+	 * @return The PersistentThread that registers as a ChopperStatus, and obtains all sensor/GPS updates.
+	 */
 	public PersistentThread getPersistentThreadInstance() {
 		if (mRunner == null) {
 			final ChopperStatus myCsStatus = this;
@@ -326,72 +299,52 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		return sThread;
 	}
 	
-	public void registerReceiver(Receivable rec) {
-		synchronized (mRec) {
-			mRec.add(rec);
+	/**
+	 * Returns the reading specified by the supplied index, if its lock is available.  Otherwise, throws an exception.
+	 * @param whichField The index of the desired reading.
+	 * @return The desired reading.
+	 * @throws IllegalAccessException If the lock for the desired reading is unavailable.
+	 */
+	public double getReadingFieldNow(int whichField) throws IllegalAccessException {
+		double myValue;
+		if (mReadingLock[whichField].tryLock()) {
+			myValue = mReading[whichField];
+			mReadingLock[whichField].unlock();
 		}
-	}
-	
-	/**
-	 * Writes the supplied GPS value at the specified GPS field. 
-	 * @param whichField The index of the GPS data to store.
-	 * @param value The GPS data.
-	 */
-	private void setGpsField(final int whichField, final double value) {
-		mMutatorPool.submit(new Runnable() {
-			public void run() {
-				mGpsLock[whichField].lock();
-				mGps[whichField] = value;
-				mGpsLock[whichField].unlock();
-			}
-		});
-	}
-	
-	/**
-	 * Writes the supplied reading at the specified field. 
-	 * @param whichField The index of the reading to store.
-	 * @param value The reading.
-	 */
-	private void setReadingField(final int whichField, final double value) {
-		mMutatorPool.submit(new Runnable() {
-			public void run() {
-				mReadingLock[whichField].lock();
-				mReading[whichField] = value;
-				mReadingLock[whichField].unlock();
-			}
-		});
-	}
-	
-	/**
-	 * Spawns a thread that sets the motor speeds info to the supplied values, after cloning them for safe multi-threading.
-	 * Uses a new thread to permit the caller (usually Guidance) to move on to a new task immediately.
-	 * @param mySpeeds The data to which the motor speeds should be set.
-	 */
-	protected void setMotorFields(double[] mySpeeds) {
-		if (mySpeeds.length < 4)
-			return;
-		final double[] speeds = mySpeeds.clone();
-		mMutatorPool.submit(new Runnable() {
-			public void run() {
-				mMotorLock.lock();
-				for (int i = 0; i < 4; i++) {
-					mMotorSpeed[i] = speeds[i];
-				}
-				mMotorLock.unlock();
-			}
-		});
-	}
-	
-	
-	
-	private void updateReceivers(String str) {
-		synchronized (mRec) {
-			ListIterator<Receivable> myList = mRec.listIterator();
-			while (myList.hasNext()) {
-				myList.next().receiveMessage(str, null);
-			}
+		else {
+			Log.w(TAG, "Reading field " + whichField + " is locked.");
+			throw new IllegalAccessException();
 		}
+		return myValue;
 	}
+	
+	/**
+	 * Returns the reading specified by the supplied index, if its lock is available.  Otherwise, returns the supplied default value.
+	 * @param whichField The index of the desired reading.
+	 * @param expectedValue The default to return, should its lock be unavailable.
+	 * @return Either the reading or the supplied default, depending on whether or not its lock is available.
+	 */
+	public double getReadingFieldNow(int whichField, double expectedValue) {
+		double myValue;
+		if (mReadingLock[whichField].tryLock()) {
+			myValue = mReading[whichField];
+			mReadingLock[whichField].unlock();
+		}
+		else {
+			Log.w(TAG, "Reading field " + whichField + " is locked.");
+			myValue = expectedValue;
+		}
+		return myValue;
+	}
+	
+	/**
+	 * Registers a change in sensor accuracy.  Not used in this application.
+	 * @param sensor Sensor registering change in accuracy.
+	 * @param newaccuracy New accuracy value.
+	 */
+	public void onAccuracyChanged(Sensor sensor, int newaccuracy) {
+	}
+	
 	/**
 	 * Changes the value of the local GPS fields based on the data contained in a new GPS fix.
 	 * @param loc New GPS fix
@@ -438,11 +391,21 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	}
 	
 	/**
-	 * Registers a change in sensor accuracy.  Not used in this application.
-	 * @param sensor Sensor registering change in accuracy.
-	 * @param newaccuracy New accuracy value.
+	 * Informs all receivers that a GPS provider is disabled.
+	 * @param provider The name of the provider that has been disabled
 	 */
-	public void onAccuracyChanged(Sensor sensor, int newaccuracy) {
+	public void onProviderDisabled(String provider)	{
+		System.out.println("GPS disabled");
+		updateReceivers("GPS:STATUS:DISABLED");
+	}
+	
+	/**
+	 * Informs all receivers that a GPS provider is enabled.
+	 * @param provider The name of the provider that has been enabled
+	 */
+	public void onProviderEnabled(String provider) {
+		System.out.println("GPS enabled");
+		updateReceivers("GPS:STATUS:ENABLED.");
 	}
 	
 	/**
@@ -483,32 +446,8 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		}
 	}
 	
-	/* Updates the relevant fields with the specified data. */
-	private void updateField(int field, int myaccuracy, long mytimestamp, double value) {
-		//timestamp[field] = mytimestamp;
-		setReadingField(field, value);
-	}
-	
 	/**
-	 * Informs server that a GPS provider is disabled.
-	 * @param provider The name of the provider that has been disabled
-	 */
-	public void onProviderDisabled(String provider)	{
-		System.out.println("GPS disabled");
-		updateReceivers("GPS:STATUS:DISABLED");
-	}
-	
-	/**
-	 * Informs server that a GPS provider is enabled.
-	 * @param provider The name of the provider that has been enabled
-	 */
-	public void onProviderEnabled(String provider) {
-		System.out.println("GPS enabled");
-		updateReceivers("GPS:STATUS:ENABLED.");
-	}
-	
-	/**
-	 * Informs server that a GPS provider's status has changed.
+	 * Informs all receivers that a GPS provider's status has changed.
 	 * @param provider The name of the provider whose status has changed
 	 * @param status The new status of the provider
 	 * @param extras Provider-specific extra data
@@ -525,6 +464,83 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 			case LocationProvider.AVAILABLE:
 				updateReceivers("GPS:STATUS:AVAILABLE");
 				break;
+		}
+	}
+	
+	/**
+	 * Registers a receivable for certain status-related updates, especially a Navigation object.
+	 * @param rec The receivable to register.
+	 * @see Navigation Navigation
+	 */
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
+		}
+	}
+	
+	/**
+	 * Spawns a thread that sets the motor speeds info to the supplied values, after cloning them for safe multi-threading.
+	 * Uses a new thread to permit the caller (usually Guidance) to move on to a new task immediately.
+	 * @param mySpeeds The data to which the motor speeds should be set.
+	 */
+	protected void setMotorFields(double[] mySpeeds) {
+		if (mySpeeds.length < 4)
+			return;
+		final double[] speeds = mySpeeds.clone();
+		mMutatorPool.submit(new Runnable() {
+			public void run() {
+				mMotorLock.lock();
+				for (int i = 0; i < 4; i++) {
+					mMotorSpeed[i] = speeds[i];
+				}
+				mMotorLock.unlock();
+			}
+		});
+	}
+	
+	/**
+	 * Writes the supplied GPS value at the specified GPS field. 
+	 * @param whichField The index of the GPS data to store.
+	 * @param value The GPS data.
+	 */
+	private void setGpsField(final int whichField, final double value) {
+		mMutatorPool.submit(new Runnable() {
+			public void run() {
+				mGpsLock[whichField].lock();
+				mGps[whichField] = value;
+				mGpsLock[whichField].unlock();
+			}
+		});
+	}
+	
+	/**
+	 * Writes the supplied reading at the specified field. 
+	 * @param whichField The index of the reading to store.
+	 * @param value The reading.
+	 */
+	private void setReadingField(final int whichField, final double value) {
+		mMutatorPool.submit(new Runnable() {
+			public void run() {
+				mReadingLock[whichField].lock();
+				mReading[whichField] = value;
+				mReadingLock[whichField].unlock();
+			}
+		});
+	}
+	
+	/** Updates the relevant fields with the specified data. */
+	private void updateField(int field, int myaccuracy, long mytimestamp, double value) {
+		//timestamp[field] = mytimestamp;
+		setReadingField(field, value);
+	}
+	
+	/** Updates all registered receivers with the specified String */
+	private void updateReceivers(String str) {
+		synchronized (mRec) {
+			ListIterator<Receivable> myList = mRec.listIterator();
+			while (myList.hasNext()) {
+				myList.next().receiveMessage(str, null);
+			}
 		}
 	}
 }

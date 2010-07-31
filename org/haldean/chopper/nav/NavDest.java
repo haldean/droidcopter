@@ -59,19 +59,6 @@ public class NavDest implements NavTask, Constants {
 	}
 	
 	/**
-	 * Serializes a NavDest to a String.
-	 * @return The NavDest in serialized form.
-	 */
-	public String toString() {
-		return "DEST" +
-				"!" + altitude +
-				"!" + longitude +
-				"!" + latitude +
-				"!" + myVelocity +
-				"!" + destDist;
-	}
-	
-	/**
 	 * Get desired time until next calculation of target velocity vector.
 	 */
 	public long getInterval() {
@@ -154,6 +141,19 @@ public class NavDest implements NavTask, Constants {
 			return true;
 		else
 			return false;
+	}
+	
+	/**
+	 * Serializes a NavDest to a String.
+	 * @return The NavDest in serialized form.
+	 */
+	public String toString() {
+		return "DEST" +
+				"!" + altitude +
+				"!" + longitude +
+				"!" + latitude +
+				"!" + myVelocity +
+				"!" + destDist;
 	}
 
 }

@@ -33,21 +33,6 @@ public class NavVel implements NavTask, Constants {
 	}
 	
 	/**
-	 * Serializes a NavVel to a String.
-	 * @return The NavVel in serialized form.
-	 */
-	public String toString() {
-		String me = "VEL!";
-		
-		for (int i = 0; i < 4; i++) {
-			me = me.concat(Double.toString(velocity[i]));
-			me = me.concat("!");
-		}
-		me = me.concat(Long.toString(timeToExecute));
-		return me;
-	}
-	
-	/**
 	 * Get desired time until next calculation of target velocity vector.
 	 */
 	public long getInterval() {
@@ -83,6 +68,21 @@ public class NavVel implements NavTask, Constants {
 			return true;
 		else
 			return false;
+	}
+	
+	/**
+	 * Serializes a NavVel to a String.
+	 * @return The NavVel in serialized form.
+	 */
+	public String toString() {
+		String me = "VEL!";
+		
+		for (int i = 0; i < 4; i++) {
+			me = me.concat(Double.toString(velocity[i]));
+			me = me.concat("!");
+		}
+		me = me.concat(Long.toString(timeToExecute));
+		return me;
 	}
 
 }

@@ -24,8 +24,6 @@ import android.view.SurfaceHolder;
  *
  */
 public final class MakePicture implements Constants, Receivable {	
-	/** Used to send messages to the thread */
-	public Handler handler;
 	
 	/** Desired compression rate of a high-quality jpeg image */
 	public static final int HIGH_Q_JPEG = 85;
@@ -58,6 +56,9 @@ public final class MakePicture implements Constants, Receivable {
 	
 	/** Holds the camera object */
 	private Camera mCamera;
+	
+	/** Used to send messages to the thread */
+	private Handler mHandler;
 	
 	/** Various callbacks */
 	private Camera.PictureCallback mGoodPic;
@@ -121,7 +122,7 @@ public final class MakePicture implements Constants, Receivable {
 					
 					
 					//Handles incoming messages
-					handler = new Handler() {
+					mHandler = new Handler() {
 			            public void handleMessage(Message msg)
 			            {
 			                switch (msg.what) {
@@ -143,7 +144,7 @@ public final class MakePicture implements Constants, Receivable {
 					initCallbacks();
 					
 					//Get to work!
-			        handler.sendEmptyMessage(START_PREVIEW);
+			        mHandler.sendEmptyMessage(START_PREVIEW);
 					Looper.loop();
 				}
 			};
@@ -260,13 +261,13 @@ public final class MakePicture implements Constants, Receivable {
 			synchronized (mStoreFrame) {
 				mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
 			}
-			handler.sendEmptyMessage(START_PREVIEW);
+			mHandler.sendEmptyMessage(START_PREVIEW);
 		}
 		catch (Throwable t) {
 			mNextX.set(mXprev.get());
 			mNextY.set(mYprev.get());
 			Log.i(TAG, "Preview size not changed.");
-			handler.sendEmptyMessage(START_PREVIEW);
+			mHandler.sendEmptyMessage(START_PREVIEW);
 			return false;
 		}
 		return true;
@@ -308,7 +309,7 @@ public final class MakePicture implements Constants, Receivable {
 				{
 					//TODO: store the picture
 				}
-				handler.sendEmptyMessage(START_PREVIEW);
+				mHandler.sendEmptyMessage(START_PREVIEW);
 			}
 		};
 	}
@@ -410,7 +411,7 @@ public final class MakePicture implements Constants, Receivable {
 				catch (Throwable t) {
 					t.printStackTrace();
 				}
-				handler.sendEmptyMessage(START_PREVIEW);
+				mHandler.sendEmptyMessage(START_PREVIEW);
 			}
 
 			public void surfaceDestroyed(SurfaceHolder holder) {

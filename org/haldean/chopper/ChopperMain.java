@@ -50,35 +50,29 @@ public final class ChopperMain extends Activity implements Constants
         SurfaceHolder previewHolder = preview.getHolder();
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
-        try {
-	        Comm comm = new Comm(true);
-	        ChopperStatus status = new ChopperStatus(getApplicationContext());
-	        StatusReporter reporter = new StatusReporter(status);
-	        MakePicture pic = new MakePicture(previewHolder);
-	        
-	        Navigation nav = new Navigation(status);
-	        Guidance guid = new Guidance(status, nav);
-	        
-	        comm.setTelemetrySource(pic);
-	        comm.registerReceiver(IMAGE, pic);
-	        comm.registerReceiver(NAV, nav);
-	        
-	        status.registerReceiver(nav);
-	        
-	        reporter.registerReceiver(comm);
-	        pic.registerReceiver(comm);
-	        
-	        new PersistentThread(comm).start();
-	        status.getPersistentThreadInstance().start();
-	        new PersistentThread(reporter).start();
-	        pic.getPersistentThreadInstance().start();
-	    	nav.getPersistentThreadInstance().start();
-	    	guid.getPersistentThreadInstance().start();
-	    	
-        }
-        catch (Throwable e) {
-        	e.printStackTrace();
-        }
+        Comm comm = new Comm(true);
+        ChopperStatus status = new ChopperStatus(getApplicationContext());
+        StatusReporter reporter = new StatusReporter(status);
+        MakePicture pic = new MakePicture(previewHolder);
+        
+        //Navigation nav = new Navigation(status);
+        //Guidance guid = new Guidance(status, nav);
+        
+        comm.setTelemetrySource(pic);
+        comm.registerReceiver(IMAGE, pic);
+        //comm.registerReceiver(NAV, nav);
+        
+        //status.registerReceiver(nav);
+        
+        reporter.registerReceiver(comm);
+        pic.registerReceiver(comm);
+        
+        new PersistentThread(comm).start();
+        status.getPersistentThreadInstance().start();
+        new PersistentThread(reporter).start();
+        pic.getPersistentThreadInstance().start();
+    	//nav.getPersistentThreadInstance().start();
+    	//guid.getPersistentThreadInstance().start();
 	}
 	
 	/**

@@ -12,7 +12,7 @@ import javax.swing.event.*;
 public class ServerHost extends JFrame {
     /** The chopper name. We've been changing it enough that
      *  it's just easier to have it be an easily-changable string */
-    public final String heloName = new String("Horizon");
+    public final String heloName = new String("Droidcopter");
 
     /* All sorts of components */
     /** The object responsible for receiving and sending

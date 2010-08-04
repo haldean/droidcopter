@@ -11,13 +11,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PersistentThread extends Thread {
 	/** Whether the thread should restart on task termination */
-	AtomicBoolean mStillAlive = new AtomicBoolean(false);
+	private AtomicBoolean mStillAlive = new AtomicBoolean(true);
 	
 	/** The last throwable */
-	Throwable mBad = null;
+	private Throwable mBad = null;
 	
 	/** Callback to run on task termination */
-	Runnable mCallback;
+	private Runnable mCallback;
 	
 	/**
 	 * Constructs a persistent thread.

@@ -152,6 +152,7 @@ public class StatusReporter implements Runnable, Constants {
 	 * Initializes the handler, schedules the status report update.
 	 */
 	public void run() {
+		Thread.currentThread().setName("StatusReporter");
 		Looper.prepare();
 		mHandler = new Handler() {
 			public void handleMessage(Message msg) {

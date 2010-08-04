@@ -29,17 +29,17 @@ public final class TransmitPicture implements Receivable, Constants
 	
 	/** How long (in ms) TransmitPicture should wait, if no new preview frame is available for transmission,
 	 * before trying again. */
-	private static final int CAMERA_INTERVAL = 2000;
+	private static final int CAMERA_INTERVAL = 200;
+	
+	/** Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
+	 * This flags whether or not to try to use them. */
+	private static final boolean NEWCOMPRESSMETHOD = false;
 	
 	/** Output stream */
 	private ObjectOutputStream mDataOut;
 	
 	/** For local JPEG compression */
 	private ByteArrayOutputStream mBaos;
-	
-	/** Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
-	 * This flags whether or not to try to use them. */
-	private static final boolean NEWCOMPRESSMETHOD = false;
 	
 	/** Used as part of the YUV --> JPEG coding process if NEWCOMPRESSMETHOD is false */
 	private int[] rgb = new int[0];

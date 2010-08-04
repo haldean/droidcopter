@@ -11,6 +11,8 @@ import java.util.ListIterator;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.os.Handler;
@@ -79,6 +81,13 @@ public final class Comm implements Runnable, Receivable, Constants {
 	private MakePicture mTelemSrc;	
 	private TransmitPicture mPic;
 	
+	/** Thread pool for mutator methods */
+	private ExecutorService mPool;
+	
+	/** Number of threads to run in the pool */
+	private static int sNumPoolThreads = 5;
+	
+	/** When set to false, only transmits messages; does not receive */
 	private boolean mAcceptMsgs;
 	
 	/**
@@ -89,7 +98,8 @@ public final class Comm implements Runnable, Receivable, Constants {
 	{
 		final Comm mComm = this;
 		mAcceptMsgs = takeMsgs;
-
+		mPool = Executors.newFixedThreadPool(sNumPoolThreads);
+		
 		mCountdown = new Timer();
 		mMsgTypes = new Vector<LinkedList<Receivable>>(MSG_TYPES);
 		for (int i = 0; i < MSG_TYPES; i++) {
@@ -109,14 +119,14 @@ public final class Comm implements Runnable, Receivable, Constants {
 				try	{
 					destroyTextConn();
 					
-					System.out.println("Initializing text sockets... ");
+					Log.i(TAG, "Initializing text sockets... ");
 					mTextSocket = new Socket(mControl, mTextOutPort);
 					mTextOut = new PrintWriter(mTextSocket.getOutputStream(), true);
 					mTextIn = new BufferedReader(new InputStreamReader(mTextSocket.getInputStream()));
 					
-					System.out.println("\tText Sockets initialized.");
-					System.out.println("Connection established");
-			        mTextOut.println("WTF");
+					Log.i(TAG, "\tText Sockets initialized.");
+					Log.i(TAG, "Connection established");
+					//mTextOut.println("WTF");
 			        /* Initializes heartbeat protocol */
 					mCountdown.purge();
 			        //countdown.cancel();
@@ -254,22 +264,25 @@ public final class Comm implements Runnable, Receivable, Constants {
 	 * Sends a message back to the control server.  Called from other threads/classes.
 	 * @param message The message to send.
 	 */
-	public boolean sendMessage(String message) {
+	public void sendMessage(final String message) {
 		if (mTextOut == null) { //connection not yet initialized
-			return false;
+			return;
 		}
-		
-		try {			
-			mTextOut.println(message);
-			mTextOut.flush();
-			return true;
-		}
-		/* The connection might be broken */
-		catch (Throwable t) {
-			t.printStackTrace();
-			Log.w(TAG, "Connection appears to be lost.  Attempting to reconnect.");
-			mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
-			return false;
+		else {
+			mPool.submit(new Runnable() {
+				public void run() {
+					try {			
+						mTextOut.println(message);
+						mTextOut.flush();
+					}
+					/* The connection might be broken */
+					catch (Throwable t) {
+						t.printStackTrace();
+						Log.w(TAG, "Connection appears to be lost.  Attempting to reconnect.");
+						mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
+					}
+				}
+			});
 		}
 	}
 	
@@ -358,12 +371,19 @@ public final class Comm implements Runnable, Receivable, Constants {
 				String input;
 				try {
 					while ((input = mTextIn.readLine()) != null) {
-					    updateReceivers(input);
+						final String mInput = input;
+						mPool.submit(new Runnable() {
+							public void run() {
+								updateReceivers(mInput);
+							}
+						});
 					}
+					mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
+					Log.w(TAG, "Error reading from Socket.  Reconnecting.");
 				}
 				catch (Throwable t) {
 					mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
-					Log.w(TAG, "Error reading from Socket");
+					Log.w(TAG, "Error reading from Socket.  Reconnecting.");
 					t.printStackTrace();
 				}
 			}

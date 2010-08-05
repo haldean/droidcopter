@@ -57,6 +57,7 @@ public class ServerHost extends JFrame {
      * WWJ doesn't run on Linux 86-64, so Ben's high-fallutin' 
      * 64-bit Ubuntu can't have a globe */
     //The hell it can't.
+    /* Fine. You just didn't know how to configure your own computer. */
     private boolean allowGlobe = true;
 
     /** Create a new ServerHost

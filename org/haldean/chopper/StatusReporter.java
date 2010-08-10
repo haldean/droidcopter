@@ -15,7 +15,7 @@ import android.util.Log;
 public class StatusReporter implements Runnable, Constants {
 	
 	/** How often (in ms) status updates should be sent by ChopperStatus to the server */
-	public int updateInterval = 500;
+	public int updateInterval = 350;
 	
 	/** Tag for logging */
 	public static final String TAG = "chopper.StatusReporter";

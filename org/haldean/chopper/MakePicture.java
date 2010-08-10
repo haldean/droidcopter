@@ -336,7 +336,14 @@ public final class MakePicture implements Constants, Receivable {
 		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
 		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
 		if (sizes != null) {
-			Camera.Size previewsize = sizes.get(0); //start with lowest resolution.
+			int mSize;
+			if (sizes.size() > 1) { //at least 2 elements
+				mSize = 1; //second lowest frame size, probably
+			}
+			else {
+				mSize = 0; //only element
+			}
+			Camera.Size previewsize = sizes.get(mSize);
 			params.setPreviewSize(previewsize.width, previewsize.height);
 			mXprev.set(previewsize.width);
 			mYprev.set(previewsize.height);
@@ -356,10 +363,12 @@ public final class MakePicture implements Constants, Receivable {
 		
 		//Deal with FPS
 		List<Integer> fps = params.getSupportedPreviewFrameRates();
-		if (fps != null)
+		if (fps != null) {
 			params.setPreviewFrameRate(fps.get(0)); //lowest frame rate possible
-		else //running off the emulator
+		}
+		else { //running off the emulator
 			Log.d(TAG, "One available FPS: " + params.getPreviewFrameRate());
+		}
 
 		//Some arbitrary parameters:
 		params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);

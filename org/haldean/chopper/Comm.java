@@ -57,7 +57,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 	private ObjectOutputStream mDataOut;
 	private BufferedReader mTextIn;
 	
-	/** Message handler*/
+	/** Message handler */
 	private Handler mHandler;
 	
 	/** For initializing a text connection */

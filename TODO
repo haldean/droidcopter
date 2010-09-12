@@ -9,10 +9,11 @@
 ** TODO Authentication on server				 :Will:
 ** DONE Teach Ben git						 :Will:
    CLOSED: [2010-05-02 Sun 10:31]
-** TODO Server-Chopper connectivity                      	 :Will:
-*** TODO Implement heartbeat server-side
-*** TODO Code for possibly unreliable pices-server connection
-*** TODO Code for full automatic telemetry reset (upon failure)
+** TODO Server-Chopper connectivity
+*** TODO Implement heartbeat server-side    			 :Will:
+*** TODO Finish heartbeat chopper-side  			  :Ben:
+*** TODO Code for possibly unreliable pices-server connection    :Will:
+*** TODO Code for full automatic telemetry reset (upon failure)  :Will:
 ** TODO Flight control						 :Will:
 *** TODO Manual control of velocity via 360 controller    
 *** TODO Manual control of velocity via keyboard(/mouse) 

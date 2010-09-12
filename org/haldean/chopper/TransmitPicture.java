@@ -14,7 +14,23 @@ import android.os.Message;
 import android.util.Log;
 
 /**
- * Transmits telemetry frames to the control server
+ * Transmits telemetry frames to the control server. <P>
+ * 
+ * May send the following messages to registered Receivables:<br>
+ * <pre>
+ * IMAGE:
+ *       REQUEST:DENIED (as a reply to an invalid IMAGE:SET:QUALITY:&lt;quality&gt; request)
+ *       FRAMEQUALITY:&lt;quality&gt; (as a reply to IMAGE:GETPARAMS)
+ * </pre>
+ * 
+ * May receive the following messages from Chopper components:
+ * <pre>
+ * IMAGE:
+ *       RECEIVED
+ *       SET:QUALITY:&lt;quality&gt;
+ *       GETPARAMS
+ * </pre>
+ * 
  * @author Benjamin Bardin
  */
 public final class TransmitPicture implements Receivable, Constants
@@ -178,7 +194,7 @@ public final class TransmitPicture implements Receivable, Constants
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("QUALITY")) {
 					Integer newq = new Integer(parts[3]);
-					if (Math.abs(newq) <= 100) {
+					if ((newq <= 100) && (newq > 0)) {
 						setPreviewQuality(newq);
 					}
 					else {

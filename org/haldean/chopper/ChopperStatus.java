@@ -26,6 +26,17 @@ import android.util.Log;
 
 /**
  * Central "storehouse" for information about the chopper's status--maintains updated sensor readings, gps readings, etc.
+ * <P>
+ * May send the following messages to registered Receivables:<br>
+ * <pre>
+ * CSYS:LOWPOWER
+ * GPS:STATUS:
+ *            DISABLED
+ *            ENABLED
+ *            OUT.OF.SERVICE
+ *            TEMPORARILY.UNAVAILABLE
+ *            AVAILABLE
+ * </pre>
  * @author Benjamin Bardin
  * @author Will Brown
  */

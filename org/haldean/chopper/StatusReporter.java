@@ -9,7 +9,22 @@ import android.os.Message;
 import android.util.Log;
 
 /**
- * Sends regular chopper status reports to all registered receivers
+ * Sends regular chopper status reports to all registered receivers. <P>
+ * 
+ * May send the following messages to registered Receivables:<br>
+ * <pre>
+ * ORIENT:&lt;azimuth&gt;:&lt;pitch&gt;:&lt;roll&gt;
+ * ACCEL:&lt;x_acceleration&gt;:&lt;y_acceleration&gt;:&lt;z_acceleration&gt;
+ * FLUX:&lt;x_flux&gt;:&lt;y_flux&gt;:&lt;z_flux&gt;
+ * MOTORSPEED:&lt;speed_north&gt;:&lt;speed_south&gt;:&lt;speed_east&gt;:&lt;speed_west&gt;
+ * LIGHT:&lt;light&gt;
+ * PROXIMITY:&lt;proximity&gt;
+ * PRESSURE:&lt;pressure&gt;
+ * TEMPERATURE:&lt;temperature&gt;
+ * BATTERY:&lt;battery_level&gt;
+ * GPS:&lt;altitude&gt;:&lt;bearing&gt;:&lt;longitude&gt;:&lt;latitude&gt;:&lt;speed&gt;:&lt;delta_altitude&gt;:&lt;accuracy&gt;:&lt;number_of_satellites&gt;:&lt;timestamp&gt;
+ * </pre>
+ * 
  * @author Benjamin Bardin
  */
 public class StatusReporter implements Runnable, Constants {

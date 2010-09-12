@@ -21,9 +21,25 @@ import android.os.Message;
 import android.util.Log;
 
 /**
- * Handles connectivity with control server
+ * Handles connectivity with control server. <P>
+ * 
+ * Will send any message received from the control server to registered Receivables. <br>
+ * 
+ * Additionally, may independently send the following messages to registered Receivables:<br>
+ * <pre>
+ * CSYS:NOCONN
+ * </pre>
+ * 
+ * When sending the following messages to registered Receivables, the Comm component will also process them locally:<br>
+ * <pre>
+ * IMAGE:SETUP
+ * COMM:PULSE
+ * CSYS:NOCONN
+ * </pre>
+ * 
+ * The Comm component will forward any message received from Chopper components to the control server.<br>
+ * 
  * @author Benjamin Bardin
- *
  */
 public final class Comm implements Runnable, Receivable, Constants {	
 	

@@ -19,11 +19,26 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 
 /**
- * Interfaces with the camera to obtain preview frames and to take high-quality pictures.
+ * Interfaces with the camera to obtain preview frames and to take high-quality pictures. <P>
+ * 
+ * May send the following messages to registered Receivables:<br>
+ * <pre>
+ * IMAGE:
+ *       AVAILABLESIZE:&lt;width&gt;:&lt;height&gt;
+ *       FRAMESIZE:&lt;width&gt;:&lt;height&gt; (as a reply to IMAGE:GETPARAMS) 
+ * </pre>
+ * 
+ * May receive the following messages from Chopper components:
+ * <pre>
+ * IMAGE:
+ *       SET:SIZE:&lt;width&gt;:&lt;height&gt;
+ *       AVAILABLESIZES
+ *       GETPARAMS
+ * </pre>
+ * 
  * @author Benjamin Bardin
- *
  */
-public final class MakePicture implements Constants, Receivable {	
+public final class MakePicture implements Constants, Receivable {
 	
 	/** Desired compression rate of a high-quality jpeg image */
 	public static final int HIGH_Q_JPEG = 85;

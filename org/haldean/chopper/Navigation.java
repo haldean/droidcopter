@@ -16,7 +16,26 @@ import android.os.Message;
 import android.util.Log;
 
 /**
- * Handles Navigation routines; calculates next target velocity vector.
+ * Handles Navigation routines; calculates next target velocity vector. <P>
+ * 
+ * May send the following messages to registered Receivables:<br>
+ * <pre>
+ * NAV:AUTOTASK:&lt;travel_plan_index&gt;:&lt;serialized_NavTask&gt;
+ * </pre>
+ * 
+ * May receive the following messages from Chopper components:
+ * <pre>
+ * NAV:
+ *     SET:
+ *         MANUAL
+ *         AUTOPILOT
+ *         AUTOTASK:&lt;travel_plan_index&gt;:&lt;serialized_NavTask&gt;
+ *     GET:AUTOTASKS
+ * CSYS:
+ *      NOCONN
+ *      LOWPOWER
+ * </pre>
+ * 
  * @author Benjamin Bardin
  */
 public class Navigation implements Constants, Receivable {

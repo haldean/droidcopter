@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ -n "${ANDROIDPATH}" ]; then
+    if [ `hostname` == "alux" ]; then
+	export ANDROIDPATH='/usr/share/android/platforms/android-8/android.jar'
+    else
+	export ANDROIDPATH='~/bin/android-sdk-linux_86/platforms/android-8/android.jar'
+    fi
+fi
 export CLASSPATH=$CLASSPATH:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
 OSNAME=`uname`
 
@@ -23,9 +30,8 @@ run() {
 }
 
 doc() {
-    javadoc -d doc/ -author org.haldean.chopper.server
-    javadoc -d doc/check/ -doclet com.sun.tools.doclets.doccheck.DocCheck \
-	-docletpath jars/doccheck.jar org.haldean.chopper.server
+    javadoc -d doc/ -author -version -classpath $CLASSPATH:$ANDROIDPATH \
+	org.haldean.chopper `ls -d org/haldean/chopper/*/ | sed "s/[\/]*$//" | sed "s/\//./g" | xargs`
 }
 
 check() {

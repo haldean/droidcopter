@@ -60,9 +60,7 @@ public class ServerHost extends JFrame {
     /* Fine. You just didn't know how to configure your own computer. */
     private boolean allowGlobe = true;
 
-    /** Create a new ServerHost
-     *  @param s The server address and port in the form hostname:port. If passed null,
-     *           it will automatically show a JOptionPane to ask for one */
+    /** Create a new ServerHost. */
     public ServerHost() {
 	super();
 	/* Set the title of the JFrame */

@@ -111,6 +111,9 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
+	/** Transformation matrix to from local frame to absolute **/
+	private double[] mTransform = new double[9];
+	
 	/**
 	 * Initializes the locks, registers application context for runtime use.
 	 * @param mycontext Application context
@@ -286,7 +289,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 					SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
 					
 					/* Registers this class as a sensor listener for every necessary sensor. */
-					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
 					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
 					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
 					sensors.registerListener(myCsStatus, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
@@ -308,6 +311,14 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 			sThread = new PersistentThread(mRunner);
 		}
 		return sThread;
+	}
+	
+	public double getReadingField(int whichField) {
+		double myValue;
+		mReadingLock[whichField].lock();
+		myValue = mReading[whichField];
+		mReadingLock[whichField].unlock();
+		return myValue;
 	}
 	
 	/**
@@ -428,31 +439,56 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		switch (type) {
 			//Locks handled in updateField()
 			case Sensor.TYPE_ACCELEROMETER:
-				updateField(X_ACCEL, event.accuracy, event.timestamp, event.values[0]);
-				updateField(Y_ACCEL, event.accuracy, event.timestamp, event.values[1]);
-				updateField(Z_ACCEL, event.accuracy, event.timestamp, event.values[2]);				
+				double t1 = getReadingField(AZIMUTH) * Math.PI / 180.0;
+				double t2 = getReadingField(PITCH) * Math.PI / 180.0;
+				double t3 = getReadingField(ROLL) * Math.PI / 180.0;
+				
+				mTransform[0] = Math.cos(t1) * Math.cos(t3) + Math.sin(t1) * Math.sin(t2) * Math.sin(t3);
+				mTransform[1] = Math.cos(t2) * Math.sin(t1);
+				mTransform[2] = Math.cos(t3) * Math.sin(t1) * Math.sin(t2) - Math.cos(t1) * Math.sin(t3);
+				mTransform[3] = Math.cos(t1) * Math.sin(t2) * Math.sin(t3) - Math.cos(t3) * Math.sin(t1);
+				mTransform[4] = Math.cos(t1) * Math.cos(t2);
+				mTransform[5] = Math.cos(t1) * Math.cos(t3) * Math.sin(t2) + Math.sin(t1) * Math.sin(t3);
+				mTransform[6] = Math.cos(t2) * Math.sin(t3);
+				mTransform[7] = -Math.sin(t2);
+				mTransform[8] = Math.cos(t2) * Math.cos(t3);
+				
+				double absX = 0;
+				double absY = 0;
+				double absZ = -SensorManager.GRAVITY_EARTH;
+				
+				for (int i = 0; i < 3; i++) {
+					absX += mTransform[i];
+					absY += mTransform[i + 3];
+					absZ += mTransform[i + 6];
+				}
+				
+				setReadingField(X_ACCEL, absX);
+				setReadingField(Y_ACCEL, absY);
+				setReadingField(Z_ACCEL, absZ);
+				
 				break;
 			case Sensor.TYPE_LIGHT:
-				updateField(LIGHT, event.accuracy, event.timestamp, event.values[0]);
+				setReadingField(LIGHT, event.values[0]);
 				break;
 			case Sensor.TYPE_MAGNETIC_FIELD:
-				updateField(X_FLUX, event.accuracy, event.timestamp, event.values[0]);
-				updateField(Y_FLUX, event.accuracy, event.timestamp, event.values[1]);
-				updateField(Z_FLUX, event.accuracy, event.timestamp, event.values[2]);
+				setReadingField(X_FLUX, event.values[0]);
+				setReadingField(Y_FLUX, event.values[1]);
+				setReadingField(Z_FLUX, event.values[2]);
 				break;
 			case Sensor.TYPE_ORIENTATION:
-				updateField(AZIMUTH, event.accuracy, event.timestamp, event.values[0]);
-				updateField(PITCH, event.accuracy, event.timestamp, event.values[1]);
-				updateField(ROLL, event.accuracy, event.timestamp, event.values[2]);
+				setReadingField(AZIMUTH, event.values[0]);
+				setReadingField(PITCH, event.values[1]);
+				setReadingField(ROLL, event.values[2]);
 				break;
 			case Sensor.TYPE_PRESSURE:
-				updateField(PRESSURE, event.accuracy, event.timestamp, event.values[0]);
+				setReadingField(PRESSURE, event.values[0]);
 				break;
 			case Sensor.TYPE_PROXIMITY:
-				updateField(PROXIMITY, event.accuracy, event.timestamp, event.values[0]);
+				setReadingField(PROXIMITY, event.values[0]);
 				break;
 			case Sensor.TYPE_TEMPERATURE:
-				updateField(TEMPERATURE, event.accuracy, event.timestamp, event.values[0]);
+				setReadingField(TEMPERATURE, event.values[0]);
 				break;
 		}
 	}
@@ -537,12 +573,6 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 				mReadingLock[whichField].unlock();
 			}
 		});
-	}
-	
-	/** Updates the relevant fields with the specified data. */
-	private void updateField(int field, int myaccuracy, long mytimestamp, double value) {
-		//timestamp[field] = mytimestamp;
-		setReadingField(field, value);
 	}
 	
 	/** Updates all registered receivers with the specified String */

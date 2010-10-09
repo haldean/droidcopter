@@ -1,13 +1,20 @@
 #!/bin/bash
 
-if [ -n "${ANDROIDPATH}" ]; then
+if [ -z "${ANDROIDPATH}" ]; then
     if [ `hostname` == "alux" ]; then
 	export ANDROIDPATH='/usr/share/android/platforms/android-8/android.jar'
     else
-	export ANDROIDPATH='~/bin/android-sdk-linux_86/platforms/android-8/android.jar'
+	export ANDROIDPATH='/home/benjamin/bin/android-sdk-linux_86/platforms/android-8/android.jar'
     fi
 fi
-export CLASSPATH=$CLASSPATH:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
+export CLASSPATH=$ANDROIDPATH$CLASSPATH:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`
+
+if [ `hostname` == "alux" ]; then
+export LINKOFFLINE=''
+else
+export LINKOFFLINE='-linkoffline http://developer.android.com/reference/ /home/benjamin/bin/android-sdk-linux_86/docs/reference'
+fi
+
 OSNAME=`uname`
 
 if [ 'Linux' == "$OSNAME" ]; then
@@ -30,8 +37,8 @@ run() {
 }
 
 doc() {
-    javadoc -d doc/ -author -version -classpath $CLASSPATH:$ANDROIDPATH \
-	org.haldean.chopper `ls -d org/haldean/chopper/*/ | sed "s/[\/]*$//" | sed "s/\//./g" | xargs`
+    javadoc -author -version -d doc/ $LINKOFFLINE -classpath $CLASSPATH -sourcepath . \
+	`ls -d org/haldean/chopper/*/ | sed "s/[\/]*$//" | sed "s/\//./g" | xargs`
 }
 
 check() {

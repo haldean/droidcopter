@@ -1,7 +1,4 @@
-/**
- * 
- */
-package org.haldean.chopper;
+package org.haldean.chopper.pilot;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

@@ -1,4 +1,4 @@
-package org.haldean.chopper;
+package org.haldean.chopper.pilot;
 
 import java.io.IOException;
 import java.util.LinkedList;

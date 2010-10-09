@@ -1,7 +1,7 @@
 package org.haldean.chopper.nav;
 
-import org.haldean.chopper.ChopperStatus;
-import org.haldean.chopper.Constants;
+import org.haldean.chopper.pilot.ChopperStatus;
+import org.haldean.chopper.pilot.Constants;
 
 import android.location.Location;
 import android.util.Log;

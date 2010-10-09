@@ -4,8 +4,8 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Stack;
 
-import org.haldean.chopper.ChopperStatus;
-import org.haldean.chopper.Constants;
+import org.haldean.chopper.pilot.ChopperStatus;
+import org.haldean.chopper.pilot.Constants;
 
 import android.util.Log;
 

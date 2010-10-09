@@ -1,4 +1,4 @@
-package org.haldean.chopper;
+package org.haldean.chopper.pilot;
 
 import java.util.LinkedList;
 import java.util.ListIterator;

@@ -1,6 +1,6 @@
 package org.haldean.chopper.nav;
 
-import org.haldean.chopper.Constants;
+import org.haldean.chopper.pilot.Constants;
 
 /**
  * A NavTask that returns a specific velocity for a specific amount of time.

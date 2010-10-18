@@ -22,10 +22,11 @@
 **** TODO Locally create flight plan, submit to autopilot              
 **** TODO Query autopilot for current flight plans      
 **** TODO Visualization for autopilot interface          
-* DONE Stability					          :Ben:
-   CLOSED: [2010-09-11 SAT 21:40]
+* TODO Stability					          :Ben:
+** TODO Tune PID loops
+** TODO Determine velocity through integrating acceleration
 ** DONE Navigation						  :Ben:
-   CLOSED: [2010-09-11 SAT 21:40]
+   CLOSED: [2010-09-11 Sat 21:40]
 ** TODO Host commands						 :Will:
 ** TODO Raw statistics      					 :Will:
 *** Visualization of bounds and accuracy

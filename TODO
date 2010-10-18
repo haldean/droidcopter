@@ -1,4 +1,4 @@
-#+TODO: TODO PROGRESS | DONE
+#+TODO: TODO PROGRESS | DONE IGNORE
 * TODO First Programming Iteration
 ** DONE Automatic Frame Rate Compensation			  :Ben:
    CLOSED: [2010-05-03 Mon 22:18]*
@@ -6,11 +6,11 @@
    CLOSED: [2010-05-03 Mon 22:19]
 ** DONE Data transmitter on host 				 :Will:
    CLOSED: [2010-05-02 Sun 21:00]
-** TODO Authentication on server				 :Will:
+** IGNORE Authentication on server				       :Will:
 ** DONE Teach Ben git						 :Will:
    CLOSED: [2010-05-02 Sun 10:31]
 ** TODO Server-Chopper connectivity
-*** TODO Implement heartbeat server-side    			 :Will:
+*** PROGRESS Implement heartbeat server-side			       :Will:
 *** TODO Finish heartbeat chopper-side  			  :Ben:
 *** TODO Code for possibly unreliable pices-server connection    :Will:
 *** TODO Code for full automatic telemetry reset (upon failure)  :Will:
@@ -28,7 +28,7 @@
 ** DONE Navigation						  :Ben:
    CLOSED: [2010-09-11 Sat 21:40]
 ** TODO Host commands						 :Will:
-** TODO Raw statistics      					 :Will:
+** IGNORE Raw statistics					       :Will:
 *** Visualization of bounds and accuracy
 ** DONE Acceleration visualization				 :Will:
    CLOSED: [2010-05-02 Sun 21:00]
@@ -38,7 +38,7 @@
 **** Running average
 **** Delta from running average
 **** Accuracy
-** TODO Display flux magnitude (now flux x-component)		 :Will:
+** DONE Display flux magnitude (now flux x-component)		       :Will:
 ** DONE Pressure sensor as altimeter				 :Will:
    CLOSED: [2010-09-11 SAT 21:40]
 ** DONE Transmit battery data					  :Ben:
@@ -48,6 +48,7 @@
 
 * TODO First Hardware Iteration
 ** TODO Radio control of motors					 :Will:
-** TODO Serial port from Arduino to Droid			 :Will:
-** TODO Buy hardware						 :Both:
-** TODO Pressure sensor
+** PROGRESS Bluetooth connection from Arduino to Droid		       :Will:
+** PROGRESS Buy hardware					       :Both:
+** IGNORE Pressure sensor
+** TODO Ultrasonic rangefinder					       :Will:

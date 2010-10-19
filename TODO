@@ -27,6 +27,9 @@
 ** TODO Determine velocity through integrating acceleration
 ** DONE Navigation						  :Ben:
    CLOSED: [2010-09-11 Sat 21:40]
+*** Figure out where it is
+*** Figure out where to go
+*** Figure out how to get there
 ** TODO Host commands						 :Will:
 ** TODO Raw statistics      					 :Will:
 *** Visualization of bounds and accuracy

@@ -35,8 +35,13 @@ public class ServerCreator {
 	for (int i=0; i<args.length; i++) {
 	    if (args[i].startsWith("-d"))
 		Debug.setEnabled(true);
-	    if (args[i].startsWith("-h"))
+	    if (args[i].startsWith("-h")) {
+		if (args.length - 1 == i) {
+		    System.err.println("You must supply a host:port after the -h flag.");
+		    System.exit(-1);
+		}
 		uriString = args[++i];
+	    }
 	}
 
 	String[] uriParts = uriString.split(":");

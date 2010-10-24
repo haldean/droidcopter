@@ -33,7 +33,7 @@ clean() {
 run() {
     java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m \
 	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator \
-	-h pices.dynalias.org:23 -d
+	-h droidcopter.cs.columbia.edu -d
 }
 
 doc() {

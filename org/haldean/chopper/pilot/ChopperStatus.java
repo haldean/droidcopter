@@ -111,18 +111,6 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	private Runnable mRunner;
 	private static PersistentThread sThread;
 	
-	/** Transformation matrix to from local frame to absolute **/
-	private double[][] mTransform = new double[3][3];
-	
-	/** Holds the timestamp of the last acceleration update **/
-	private long mLastAccelUpdate = -1;
-	
-	/** Waits through this many acceleratino updates before calculating velocities **/
-	private int mAccCount = 0;
-	
-	/** Holds velocity **/
-	private double[] mVel = new double[3];
-	
 	/**
 	 * Initializes the locks, registers application context for runtime use.
 	 * @param mycontext Application context
@@ -446,80 +434,10 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	public void onSensorChanged(SensorEvent event) {
 		int type = event.sensor.getType();
 		switch (type) {
-			//Locks handled in updateField()
 			case Sensor.TYPE_ACCELEROMETER:
-				
-				double t3 = getReadingField(AZIMUTH) * Math.PI / 180.0D;
-				double t1 = getReadingField(PITCH) * Math.PI / 180.0D;
-				double t2 = getReadingField(ROLL) * Math.PI / 180.0D;
-				
-				double s1 = Math.sin(t1);
-				double s2 = Math.sin(t2);
-				double s3 = Math.sin(t3);
-				
-				double c1 = Math.cos(t1);
-				double c2 = Math.cos(t2);
-				double c3 = Math.cos(t2);
-				
-				//XYZ
-				mTransform[0][0] = c2*c3;
-				mTransform[1][0] = c1*s3 + c3*s1*s2;
-				mTransform[2][0] = s1*s3 - c1*c3*s2;
-				
-				mTransform[0][1] = -c2*s3;
-				mTransform[1][1] = c1*c3 - s1*s2*s3;
-				mTransform[2][1] = c1*s2*s3 + c3*s1;
-				
-				mTransform[0][2] = s2;
-				mTransform[1][2] = -c2*s1;
-				mTransform[2][2] = c1*c2;
-				
-				double[] newAcc = new double[3];
-				newAcc[0] = 0;
-				newAcc[1] = 0;
-				newAcc[2] = -SensorManager.GRAVITY_EARTH;
-				
-				for (int i = 0; i < 3; i++) {
-						for (int j = 0; j < 3; j++) {
-							newAcc[i] += (double)event.values[j] * mTransform[j][i]; 
-						}
-						Log.v(TAG, "ACC" + i + ": " + newAcc[i]);
-						
-				}
-				Log.v(TAG, "ACC:   ");
-				if (mAccCount < 300) {
-					mAccCount++; 
-					Log.v(TAG,"MCOUNT is " + mAccCount);
-				}
-				else {
-					if (mLastAccelUpdate==-1) {
-						mLastAccelUpdate = event.timestamp;
-					}
-					else {
-						for (int i = 0; i < 3; i++) {
-							mVel[i] += ((double)(event.timestamp - mLastAccelUpdate))/1000000000.0 * newAcc[i];
-							Log.v(TAG, "VEL" + i + ": " + mVel[i]);
-							}
-						Log.v(TAG, "VEL:   ");
-						mLastAccelUpdate = event.timestamp;
-					}
-				}
-				/*
-				double sumsqd = Math.sqrt(Math.pow(event.values[0], 2.0) +
-						 Math.pow(event.values[1], 2.0) +
-						 Math.pow(event.values[2], 2.0)) -
-						Math.sqrt(Math.pow(newAcc[0], 2.0) +
-						 Math.pow(newAcc[1], 2.0) +
-						 Math.pow(newAcc[2], 2.0));
-				*/
-				//Log.v(TAG, "XACC: " + newAcc[0]);
-				//Log.v(TAG, "YACC: " + newAcc[1]);
-				//Log.v(TAG, "ZACC: " + newAcc[2]);
-				//Log.v(TAG, "DIFFOFSUMOFTDASQUARES: " + sumsqd);
-				setReadingField(X_ACCEL, newAcc[0]);
-				setReadingField(Y_ACCEL, newAcc[1]);
-				setReadingField(Z_ACCEL, newAcc[2]);
-				
+				setReadingField(X_ACCEL, event.values[0]);
+				setReadingField(Y_ACCEL, event.values[1]);
+				setReadingField(Z_ACCEL, event.values[2]);
 				break;
 			case Sensor.TYPE_LIGHT:
 				setReadingField(LIGHT, event.values[0]);

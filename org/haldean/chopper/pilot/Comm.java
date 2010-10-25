@@ -287,7 +287,8 @@ public final class Comm implements Runnable, Receivable, Constants {
 		else {
 			mPool.submit(new Runnable() {
 				public void run() {
-					try {			
+					try {
+						Log.v(TAG, message);
 						mTextOut.println(message);
 						mTextOut.flush();
 					}
@@ -358,6 +359,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 		}
 		if (parts[0].equals("COMM")) {
 			if (parts[1].equals("PULSE")) {
+				sendMessage(msg);
 				//Reset the heartbeat countdown
 				mCountdown.purge();
 				//countdown.cancel();

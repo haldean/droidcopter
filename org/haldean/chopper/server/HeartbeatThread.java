@@ -13,7 +13,7 @@ import java.util.Map;
  *  @author William Brown
  */
 public class HeartbeatThread implements Runnable, Updatable {
-    private HeartbeatThread instance;
+    private static HeartbeatThread instance;
 
     /* Milliseconds between updates */
     private int period = 1000;
@@ -37,7 +37,7 @@ public class HeartbeatThread implements Runnable, Updatable {
     public static HeartbeatThread revive() {
 	if (instance == null) {
 	    instance = new HeartbeatThread();
-	    Thread(instance).run();
+	    new Thread(instance).start();
 	}
 	return instance;
     }
@@ -61,13 +61,20 @@ public class HeartbeatThread implements Runnable, Updatable {
      *  method and does not need to be called by an API user.
      */
     public void run() {
-	if (DataReceiver.getInstance().isConnected()) {
-	    String message = String.format("COMM:PULSE:%.8d", lastMessageId);
-	    messageTimes.put(message, System.currentTimeMillis());
-	    DataReceiver.sendToDefault(message);
-	}
+	while (true) {
+	    if (DataReceiver.getInstance().isConnected()) {
+		String message = "COMM:PULSE:" + lastMessageId++;
+		messageTimes.put(message, System.currentTimeMillis());
+		DataReceiver.sendToDefault(message);
+	    }
 
-	Thread.sleep(period);
+	    try {
+		Thread.sleep(period);
+	    } catch (InterruptedException e) {
+		Debug.log("Heartbeat was interrupted.");
+		e.printStackTrace();
+	    }
+	}
     }
 
     /**
@@ -76,6 +83,7 @@ public class HeartbeatThread implements Runnable, Updatable {
     public void update(String message) {
 	if (message.startsWith("COMM:PULSE:")) {
 	    roundTripTime = System.currentTimeMillis() - messageTimes.remove(message);
+	    Debug.log("Round trip time: " + roundTripTime);
 	}
     }
 	

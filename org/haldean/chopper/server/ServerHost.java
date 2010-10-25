@@ -100,7 +100,8 @@ public class ServerHost extends JFrame {
 
 	/* Tie the updatables to the DataReceiver */
 	r.tie(sp);
-	//	r.tie(status);
+	/* Tie the heartbeat to the DataReceiver */
+	r.tie(HeartbeatThread.revive());
 	r.tieImage(ic);
 
 	leftTabPanes = new LinkedList<Component>();
@@ -219,7 +220,7 @@ public class ServerHost extends JFrame {
 		     * it does */
 		    r.die();
 		    try {
-			while (r.connected())
+			while (r.isConnected())
 			    Thread.sleep(200);
 		    } catch (InterruptedException ex) {
 			;

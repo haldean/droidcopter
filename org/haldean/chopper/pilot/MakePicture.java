@@ -199,6 +199,7 @@ public final class MakePicture implements Constants, Receivable {
 		if (parts[0].equals("IMAGE")) {
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("SIZE")) {
+					Log.v(TAG, "Set size to " + parts[3] + ", " + parts[4]);
 					setNextFrameSize(new Integer(parts[3]), new Integer(parts[4]));
 				}
 			}
@@ -268,14 +269,18 @@ public final class MakePicture implements Constants, Receivable {
 		if (!(mNextX.get() != mXprev.get() | mNextY.get() != mYprev.get()))
 			return false;
 		try {
-			params.setPreviewSize(mNextX.get(), mNextY.get());
+			Log.d(TAG, "updateFrameSize: " + mNextX.get() + ", " + mNextY.get());
 			mCamera.stopPreview();
+			params.setPreviewSize(mNextX.get(), mNextY.get());
 			mCamera.setParameters(params);
 			mXprev.set(mNextX.get());
 			mYprev.set(mNextY.get());
+			Log.v(TAG, "Init prev array: " + mXprev.get() + ", " + mYprev.get());
 			synchronized (mStoreFrame) {
 				mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+				Log.e(TAG, "Array size: " + mStoreFrame.length);
 			}
+			initPrevCallback();
 			mHandler.sendEmptyMessage(START_PREVIEW);
 		}
 		catch (Throwable t) {
@@ -371,11 +376,6 @@ public final class MakePicture implements Constants, Receivable {
 		mNextX.set(mXprev.get());
 		mNextY.set(mYprev.get());
 		
-		synchronized (mStoreFrame) {
-			mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
-			mCamera.addCallbackBuffer(mStoreFrame);
-		}
-		
 		//Deal with FPS
 		List<Integer> fps = params.getSupportedPreviewFrameRates();
 		if (fps != null) {
@@ -411,7 +411,13 @@ public final class MakePicture implements Constants, Receivable {
 				}
 			}
 		};
+		mCamera.setPreviewCallbackWithBuffer(null);
 		mCamera.setPreviewCallbackWithBuffer(precall);
+		
+		synchronized (mStoreFrame) {
+			mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+			mCamera.addCallbackBuffer(mStoreFrame);
+		}
 		//Inner class defs done
 	}
 	

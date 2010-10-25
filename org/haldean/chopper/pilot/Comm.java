@@ -47,13 +47,13 @@ public final class Comm implements Runnable, Receivable, Constants {
 	public final static int CONNECTION_INTERVAL = 5000;
 	
 	/** URL of the control server */
-	private final String mControl = new String("pices.dynalias.org");
+	private final String mControl = new String("droidcopter.cs.columbia.edu");
 	
 	/** Port used for text connection */
-	private final int mTextOutPort = 23;
+	private final int mTextOutPort = 7000;
 	
 	/** Port used for data connection (telemetry) */
-	private final int mDataOutPort = 24;
+	private final int mDataOutPort = 7001;
 	
 	/** How long (in ms) to wait for the first PULSE signal before assuming connectivity failure */
 	public static final int FIRST_PULSE = 20000;

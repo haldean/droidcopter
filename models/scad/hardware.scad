@@ -18,3 +18,10 @@ module m3(h=16) {
 		cylinder(r=2, h=h);
 	}
 }
+
+module m5(h=16) {
+	union() {
+		cylinder(r=4.5, h=5);
+		cylinder(r=3, h=h);
+	}
+}

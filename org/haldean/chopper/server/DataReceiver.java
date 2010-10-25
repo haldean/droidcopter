@@ -201,7 +201,7 @@ public class DataReceiver implements Runnable {
 
     /** Returns the status of the connection.
      *  @return True if connected to server, false if not */
-    public boolean connected() {
+    public boolean isConnected() {
 	return isConnected;
     }
 

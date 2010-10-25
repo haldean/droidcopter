@@ -1,11 +1,11 @@
 package org.haldean.chopper.nav;
 
+import org.haldean.chopper.nav.NavTask;
 import org.haldean.chopper.pilot.ChopperStatus;
 import org.haldean.chopper.pilot.Constants;
 
 import android.location.Location;
 import android.util.Log;
-
 /**
  * A NavTask that determines target velocity based on a desired destination.
  */

@@ -9,10 +9,10 @@ import android.util.Log;
  * Determines motor speeds, based on chopper's status and desired velocity vector.
  * @author Benjamin Bardin
  */
-public class Guidance implements Constants {
+public class Guidance implements Constants{
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 1;
+	public int PIDREPS = 20;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;

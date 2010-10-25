@@ -1,0 +1,3 @@
+[submodule "lib/simplegraph"]
+	path = lib/simplegraph
+	url = git@github.com:haldean/SimpleGraph.git

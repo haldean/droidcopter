@@ -7,7 +7,7 @@ if [ -z "${ANDROIDPATH}" ]; then
 	export ANDROIDPATH='/home/benjamin/bin/android-sdk-linux_86/platforms/android-8/android.jar'
     fi
 fi
-export CLASSPATH=$ANDROIDPATH:$CLASSPATH:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`
+export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
 
 if [ `hostname` == "alux" ]; then
 export LINKOFFLINE=''

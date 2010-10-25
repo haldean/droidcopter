@@ -4,12 +4,14 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
+import org.haldean.simplegraph.*;
+
 /** A component to display graphs of on-board sensors 
  *  @author William Brown */
 public class SensorComponent extends JPanel {
     /* Graphs and labels to display magnetic flux and temperature */
-    private final GraphComponent flux;
-    private final GraphComponent temp;
+    private final StreamingGraphComponent flux;
+    private final StreamingGraphComponent temp;
 
     private JPanel statsPanel;
     private final JLabel fluxLabel;
@@ -31,8 +33,8 @@ public class SensorComponent extends JPanel {
 	super(new BorderLayout());
 	JPanel graphsPanel = new JPanel(new GridLayout(3,1));
 
-	flux = new GraphComponent("Flux");
-	temp = new GraphComponent("Internal Temperature");
+	flux = new StreamingGraphComponent(new GraphConfiguration("Flux"));
+	temp = new StreamingGraphComponent(new GraphConfiguration("Internal Temperature"));
 	fluxLabel = new JLabel();
 	tempLabel = new JLabel();
 
@@ -93,7 +95,7 @@ public class SensorComponent extends JPanel {
     /** Add a new magnetic flux datapoint
      *  @param _f The flux in microtesla */
     public void setFlux(double _f) {
-	flux.addPoint(_f);
+	flux.addValue(_f);
 	fluxLabel.setText("<html><b>Flux</b>: " + _f + " \u00B5T</html>");
 	repaint();
     }
@@ -101,7 +103,7 @@ public class SensorComponent extends JPanel {
     /** Add a new internal temperature datapoint
      *  @param _t The internal temperature of the phone in degrees Celcius */
     public void setTemperature(double _t) {
-	temp.addPoint(_t);
+	temp.addValue(_t);
 	tempLabel.setText("<html><b>Internal Temperature</b>: " + _t + "\u00B0 C</html>");
 	repaint();
     }

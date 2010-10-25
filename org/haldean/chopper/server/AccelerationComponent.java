@@ -5,17 +5,19 @@ import javax.swing.*;
 import javax.swing.event.*;
 import java.util.LinkedList;
 
+import org.haldean.simplegraph.*;
+
 /** A component to represent the different axes of acceleration 
  *  @author William Brown */
 public class AccelerationComponent extends JPanel {
     /* The graphs for each axis of acceleration */
-    private final GraphComponent xAccel;
-    private final GraphComponent yAccel;
-    private final GraphComponent zAccel;
+    private final StreamingGraphComponent xAccel;
+    private final StreamingGraphComponent yAccel;
+    private final StreamingGraphComponent zAccel;
     /* This plots the absolute magnitude of the acceleration */
-    private final GraphComponent magAccel;
+    private final StreamingGraphComponent magAccel;
     /* This plots a running average */
-    private final GraphComponent avgAccel;
+    private final StreamingGraphComponent avgAccel;
 
     /* These show the numeric values of each component */
     private JPanel statsPanel;
@@ -47,11 +49,11 @@ public class AccelerationComponent extends JPanel {
 
 	points = new LinkedList<Double>();
 
-	xAccel = new GraphComponent("X");
-	yAccel = new GraphComponent("Y");
-	zAccel = new GraphComponent("Z");
-	magAccel = new GraphComponent("Magnitude");
-	avgAccel = new GraphComponent(averagePointCount + "-Sample Average");
+	xAccel = new StreamingGraphComponent(new GraphConfiguration("X"));
+	yAccel = new StreamingGraphComponent(new GraphConfiguration("Y"));
+	zAccel = new StreamingGraphComponent(new GraphConfiguration("Z"));
+	magAccel = new StreamingGraphComponent(new GraphConfiguration("Magnitude"));
+	avgAccel = new StreamingGraphComponent(new GraphConfiguration(averagePointCount + "-Sample Average"));
 
 	xLabel = new JLabel();
 	yLabel = new JLabel();
@@ -160,11 +162,11 @@ public class AccelerationComponent extends JPanel {
 	}
 	double avg = average();
 
-	xAccel.addPoint(x);
-	yAccel.addPoint(y);
-	zAccel.addPoint(z);
-	magAccel.addPoint(mag);
-	avgAccel.addPoint(avg);
+	xAccel.addValue(x);
+	yAccel.addValue(y);
+	zAccel.addValue(z);
+	magAccel.addValue(mag);
+	avgAccel.addValue(avg);
 
 	/* HTML is used to set the line label bold and the text plain */
 	xLabel.setText("<html><b>Fx</b>: " + x + " N</html>");

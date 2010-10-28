@@ -7,13 +7,11 @@
 ** DONE Data transmitter on host 				 :Will:
    CLOSED: [2010-05-02 Sun 21:00]
 ** IGNORE Authentication on server				       :Will:
-** DONE Teach Ben git						 :Will:
-   CLOSED: [2010-05-02 Sun 10:31]
-** TODO Server-Chopper connectivity
-*** PROGRESS Implement heartbeat server-side			       :Will:
-*** TODO Finish heartbeat chopper-side  			  :Ben:
-*** TODO Code for possibly unreliable pices-server connection    :Will:
-*** TODO Code for full automatic telemetry reset (upon failure)  :Will:
+** DONE Server-Chopper connectivity
+*** DONE Implement heartbeat server-side			       :Will:
+*** DONE Finish heartbeat chopper-side					:Ben:
+*** DONE Code for possibly unreliable pices-server connection	       :Will:
+*** DONE Code for full automatic telemetry reset (upon failure)	       :Will:
 ** TODO Flight control						 :Will:
 *** TODO Manual control of velocity via 360 controller    
 *** TODO Manual control of velocity via keyboard(/mouse) 
@@ -24,7 +22,9 @@
 **** TODO Visualization for autopilot interface          
 * TODO Stability					          :Ben:
 ** TODO Tune PID loops
-** TODO Determine velocity through integrating acceleration
+   After doing more research, we've decided this can and should be
+   done by hand.
+** IGNORE Determine velocity through integrating acceleration
 ** DONE Navigation						  :Ben:
    CLOSED: [2010-09-11 Sat 21:40]
 *** Figure out where it is
@@ -49,9 +49,15 @@
 ** DONE Visualize battery data					 :Will:
    CLOSED: [2010-09-11 SAT 21:41]
 
-* TODO First Hardware Iteration
-** TODO Radio control of motors					 :Will:
+* TODO First Hardware Iteration					       :Will:
+** PROGRESS Build chopper					       :Will:
+*** DONE Create design
+*** DONE Order hardware
+*** PROGRESS Construct chopper
+**** PROGRESS Print chopper parts
+**** TODO Chopper assembly
+** TODO Arduino control of motors 				       :Will:
 ** PROGRESS Bluetooth connection from Arduino to Droid		       :Will:
-** PROGRESS Buy hardware					       :Both:
+** PROGRESS Buy electronics 					       :Both:
 ** IGNORE Pressure sensor
-** TODO Ultrasonic rangefinder					       :Will:
+** IGNORE Ultrasonic rangefinder				       :Will:

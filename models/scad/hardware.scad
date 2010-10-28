@@ -1,4 +1,4 @@
-axle_r = 5;
+axle_r = 4.5;
 axle_separation = 30;
 
 module axle(h) {
@@ -9,6 +9,13 @@ module axlepair(h=100) {
 	union() {
 		axle(h);
 		translate(v=[axle_separation, 0, 0]) axle(h);
+	}
+}
+
+module m2(h=16) {
+	union() {
+		cylinder(r=2, h=2);
+		cylinder(r=1.5, h=h);
 	}
 }
 

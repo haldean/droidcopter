@@ -3,6 +3,8 @@ package org.haldean.chopper.server;
 import java.awt.Color;
 import java.awt.Font;
 
+import org.haldean.simplegraph.GraphConfiguration;
+
 public class StyleProvider {
     private static Color bg = new Color(28, 25, 20);
 
@@ -45,6 +47,19 @@ public class StyleProvider {
 
     public static Color lowValue() {
 	return lowValue;
+    }
+
+    public static GraphConfiguration graphFor(String title) {
+	GraphConfiguration config = new GraphConfiguration(title);
+	config.setAxisColor(fg2);
+	config.setBackgroundColor(bg);
+	config.setBorderColor(fg3);
+	config.setEnableInspector(true);
+	config.setEnableTickLabels(true);
+	config.setInspectorColor(highValue);
+	config.setLabelFont(fontSmall);
+	config.setLineColor(fg1);
+	return config;
     }
 
     /** Blend the high and low value colors

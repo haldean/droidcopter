@@ -4,7 +4,7 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-import org.haldean.simplegraph.*;
+import org.haldean.simplegraph.StreamingGraphComponent;
 
 /** A component to display graphs of on-board sensors 
  *  @author William Brown */
@@ -33,8 +33,8 @@ public class SensorComponent extends JPanel {
 	super(new BorderLayout());
 	JPanel graphsPanel = new JPanel(new GridLayout(3,1));
 
-	flux = new StreamingGraphComponent(new GraphConfiguration("Flux"));
-	temp = new StreamingGraphComponent(new GraphConfiguration("Internal Temperature"));
+	flux = new StreamingGraphComponent(StyleProvider.graphFor("Flux"));
+	temp = new StreamingGraphComponent(StyleProvider.graphFor("Internal Temperature"));
 	fluxLabel = new JLabel();
 	tempLabel = new JLabel();
 

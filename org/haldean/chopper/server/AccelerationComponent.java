@@ -5,7 +5,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import java.util.LinkedList;
 
-import org.haldean.simplegraph.*;
+import org.haldean.simplegraph.StreamingGraphComponent;
 
 /** A component to represent the different axes of acceleration 
  *  @author William Brown */
@@ -49,11 +49,11 @@ public class AccelerationComponent extends JPanel {
 
 	points = new LinkedList<Double>();
 
-	xAccel = new StreamingGraphComponent(new GraphConfiguration("X"));
-	yAccel = new StreamingGraphComponent(new GraphConfiguration("Y"));
-	zAccel = new StreamingGraphComponent(new GraphConfiguration("Z"));
-	magAccel = new StreamingGraphComponent(new GraphConfiguration("Magnitude"));
-	avgAccel = new StreamingGraphComponent(new GraphConfiguration(averagePointCount + "-Sample Average"));
+	xAccel = new StreamingGraphComponent(StyleProvider.graphFor("X"));
+	yAccel = new StreamingGraphComponent(StyleProvider.graphFor("Y"));
+	zAccel = new StreamingGraphComponent(StyleProvider.graphFor("Z"));
+	magAccel = new StreamingGraphComponent(StyleProvider.graphFor("Magnitude"));
+	avgAccel = new StreamingGraphComponent(StyleProvider.graphFor(averagePointCount + "-Sample Average"));
 
 	xLabel = new JLabel();
 	yLabel = new JLabel();

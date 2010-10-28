@@ -5,6 +5,11 @@ Required libraries:
   directory. It has been tested and is functioning on Mac (all
   architectures), Windows 7 (all architectures), and Linux (all
   architectures).
+  
+  If you get multiple exceptions about texture support, the globe
+  doesn't show up on the location tab, and you are running Linux or
+  Mac, install and run driconf and set "Enable S3TC texture
+  compression..." to Yes.
 
 - Java3D Java3D is not included in the distribution. It can be
   downloaded at http://java.sun.com/javase/technologies/desktop/java3d

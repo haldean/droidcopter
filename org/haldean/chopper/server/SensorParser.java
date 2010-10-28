@@ -104,5 +104,8 @@ public class SensorParser implements Updatable {
 
 	else if (parts[0].equals("TEMPERATURE"))
 	    sensors.setTemperature(new Double(parts[1]));
+
+	else if (parts[0].equals("PING"))
+	    sensors.setPing(new Integer(parts[1]));
     }
 }

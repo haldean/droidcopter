@@ -12,10 +12,7 @@ public class SensorComponent extends JPanel {
     /* Graphs and labels to display magnetic flux and temperature */
     private final StreamingGraphComponent flux;
     private final StreamingGraphComponent temp;
-
-    private JPanel statsPanel;
-    private final JLabel fluxLabel;
-    private final JLabel tempLabel;
+    private final StreamingGraphComponent ping;
 
     /* Components for choosing graph scale */
     private JPanel scalePanel;
@@ -35,12 +32,7 @@ public class SensorComponent extends JPanel {
 
 	flux = new StreamingGraphComponent(StyleProvider.graphFor("Flux"));
 	temp = new StreamingGraphComponent(StyleProvider.graphFor("Internal Temperature"));
-	fluxLabel = new JLabel();
-	tempLabel = new JLabel();
-
-	statsPanel = new JPanel(new GridLayout(2,1));
-	statsPanel.add(fluxLabel);
-	statsPanel.add(tempLabel);
+	ping = new StreamingGraphComponent(StyleProvider.graphFor("Round-Trip Network Latency"));
 
 	scaleChooser = new JSlider(25, 500, defaultScale);
 	scaleLabel = new JLabel(scaleChooser.getValue() + " samples");
@@ -58,7 +50,7 @@ public class SensorComponent extends JPanel {
 
 	graphsPanel.add(flux);
 	graphsPanel.add(temp);
-	graphsPanel.add(statsPanel);
+	graphsPanel.add(ping);
 
 	add(graphsPanel, BorderLayout.CENTER);
 	add(scalePanel, BorderLayout.SOUTH);
@@ -80,12 +72,8 @@ public class SensorComponent extends JPanel {
     /** Update the look and feel of the component */
     public void updateUI() {
 	super.updateUI();
-	if (statsPanel != null) {
-	    statsPanel.updateUI();
-	    fluxLabel.updateUI();
-	    tempLabel.updateUI();
+	if (scalePanel != null) {
 	    scaleLabel.updateUI();
-
 	    scalePanel.updateUI();
 	    scaleLabel.updateUI();
 	    scaleChooser.updateUI();
@@ -96,7 +84,6 @@ public class SensorComponent extends JPanel {
      *  @param _f The flux in microtesla */
     public void setFlux(double _f) {
 	flux.addValue(_f);
-	fluxLabel.setText("<html><b>Flux</b>: " + _f + " \u00B5T</html>");
 	repaint();
     }
 
@@ -104,7 +91,16 @@ public class SensorComponent extends JPanel {
      *  @param _t The internal temperature of the phone in degrees Celcius */
     public void setTemperature(double _t) {
 	temp.addValue(_t);
-	tempLabel.setText("<html><b>Internal Temperature</b>: " + _t + "\u00B0 C</html>");
+	repaint();
+    }
+
+    /**
+     *  Add a new round-trip ping datapoint
+     *
+     *  @param ping The most recent round trip time.
+     */
+    public void setPing(int newPing) {
+	ping.addValue(newPing);
 	repaint();
     }
 }

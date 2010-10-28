@@ -125,9 +125,12 @@ public class DataReceiver implements Runnable {
 	tied.add(i);
     }
 
-    /** Update all tied classes.
-     *  @param msg The received message */
-    private void updateAll(String msg) {
+    /** 
+     *  Update all tied classes.
+     *
+     *  @param msg The received message
+     */
+    public void updateAll(String msg) {
 	/* If this message means there's an incoming image,
 	 * get ready to receive it. */
 	if (msg.startsWith("SYS"))

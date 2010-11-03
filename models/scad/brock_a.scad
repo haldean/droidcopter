@@ -1,10 +1,9 @@
 include <hardware.scad>
 
-module brock() {
-	h = 1.5 * axle_r;
-	echo("Total Height = ", h * 8);
+module brock_a() {
+	h = 1.3 * axle_r;
 	corner = 20;
-	width = 80;
+	width = 70;
 	screw = 5;
 	z_off = 6.1;
 	m5_z_off = -6;
@@ -16,7 +15,6 @@ module brock() {
 				[0,width-corner,0],[width-corner,width-corner,0]]) 
 			translate(v=v) cube([corner, corner, h]);
 
-		if (type == "a")
 		for (v = [[screw, corner+screw, z_off],
 				[screw, width-(corner+screw), z_off],
 				[corner+screw, screw, z_off],
@@ -35,4 +33,4 @@ module brock() {
 	}
 }
 
-brock();
+brock_a();

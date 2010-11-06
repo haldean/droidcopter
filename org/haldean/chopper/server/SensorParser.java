@@ -100,7 +100,9 @@ public class SensorParser implements Updatable {
 
 	/* Sensors. All other sensors unsupported by phone and .:. ignored. */
 	else if (parts[0].equals("FLUX"))
-	    sensors.setFlux(new Double(parts[1]));
+	    sensors.setFlux(Math.sqrt(Math.pow(new Double(parts[1]), 2) +
+				      Math.pow(new Double(parts[2]), 2) +
+				      Math.pow(new Double(parts[3]), 2)));
 
 	else if (parts[0].equals("TEMPERATURE"))
 	    sensors.setTemperature(new Double(parts[1]));

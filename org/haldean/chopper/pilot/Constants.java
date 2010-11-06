@@ -36,8 +36,10 @@ public interface Constants {
 	/** Message for Guidance handler, instructing it to revise motor speeds based on current status */
 	public static final int EVAL_MOTOR_SPEED = 108;
 	
+	/** Message for Guidance handler, passing a new PID value **/
+	public static final int NEW_PID_VALUE = 109;
 	
-	/* Sensor indeces */
+	/* Sensor indices */
 	
 	/** Used by internal data structures as an index for the chopper's azimuth, related data and objects */
 	public final static int AZIMUTH = 0;
@@ -136,6 +138,9 @@ public interface Constants {
 	/** Indicates chopper-system-wide message */
 	public final static int CSYS = 3;
 	
+	/** Indicates Guidance-related message from server */
+	public final static int GUID = 4;
+	
 	/** Number of inbound message types. */
-	public final static int MSG_TYPES = 4;
+	public final static int MSG_TYPES = 5;
 }

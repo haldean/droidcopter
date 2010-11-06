@@ -7,9 +7,15 @@ import android.util.Log;
 
 /**
  * Determines motor speeds, based on chopper's status and desired velocity vector.
+ * 
+ * May receive the following messages from Chopper components:
+ * <pre>
+ * GUID:PID:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ * </pre>
+ * 
  * @author Benjamin Bardin
  */
-public class Guidance implements Constants{
+public class Guidance implements Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
 	public int PIDREPS = 20;
@@ -130,6 +136,9 @@ public class Guidance implements Constants{
 							case EVAL_MOTOR_SPEED:
 								reviseMotorSpeed();
 								break;
+							case NEW_PID_VALUE:
+								mGain[msg.arg1][msg.arg2] = (Double)msg.obj;
+								break;
 							}
 						}
 					};
@@ -144,7 +153,24 @@ public class Guidance implements Constants{
 		return sThread;
 	}
 	
-	
+	/**
+	 * Receive a message.
+	 * @param msg The message to process.
+	 * @param source The source of the message, if a reply is needed.  May be null.
+	 */
+	public void receiveMessage(String msg, Receivable source) {
+		String[] parts = msg.split(":");
+		if (parts[0].equals("GUID")) {
+			if (parts[1].equals("PID")) {
+				Message newValue = Message.obtain(mHandler,
+												  NEW_PID_VALUE,
+												  new Integer(parts[2]),
+												  new Integer(parts[3]), 
+												  new Double(parts[4]));
+				newValue.sendToTarget();
+			}
+		}
+	}
 	
 	/** Core of the class; calculates new motor speeds based on status */
 	private void reviseMotorSpeed() {
@@ -336,12 +362,18 @@ public class Guidance implements Constants{
 				mMotorSpeed[i] += Math.min(diff, MAX_DMOTOR);
 			else if (diff < 0)
 				mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
+			
+			//Linearizes system with regard to prop thrust, not prop RPMs
+			mMotorSpeed[i] = Math.sqrt(mMotorSpeed[i]);
+			
 			mTempMotorSpeed[i] = mMotorSpeed[i];
 			
 		}
 	
 		//Pass filtered values to ChopperStatus.
 		mStatus.setMotorFields(mMotorSpeed);
+		
+		//Send motor values to motors here:
 		
 		Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while

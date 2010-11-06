@@ -142,11 +142,9 @@ public final class Comm implements Runnable, Receivable, Constants {
 					
 					Log.i(TAG, "\tText Sockets initialized.");
 					Log.i(TAG, "Connection established");
-					//mTextOut.println("WTF");
+
 			        /* Initializes heartbeat protocol */
 					mCountdown.purge();
-			        //countdown.cancel();
-			        //countdown = new Timer();
 			        mCountdown.schedule(mHeartbeat, FIRST_PULSE);
 			        startReading();
 				}
@@ -361,15 +359,13 @@ public final class Comm implements Runnable, Receivable, Constants {
 				sendMessage(msg);
 				//Reset the heartbeat countdown
 				mCountdown.purge();
-				//countdown.cancel();
-		        //countdown = new Timer();
 		        mCountdown.schedule(mHeartbeat, PULSE_RATE);
 		        return true;
 			}
 		}
 		if (parts[0].equals("CSYS")) {
 			if (parts[1].equals("NOCONN")) {
-				//mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
+				mHandler.sendEmptyMessageDelayed(MAKE_TEXT_CONN, CONNECTION_INTERVAL); //Try to reconnect soon
 				return true;
 			}
 			
@@ -432,6 +428,10 @@ public final class Comm implements Runnable, Receivable, Constants {
 		
 		if (msg.startsWith("CSYS:")) {
 			myList = mMsgTypes.get(CSYS).listIterator();
+		}
+		
+		if (msg.startsWith("GUID:")) {
+			myList = mMsgTypes.get(GUID).listIterator();
 		}
 		
 		if (myList != null) {

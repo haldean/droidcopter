@@ -61,3 +61,8 @@
 ** PROGRESS Buy electronics 					       :Both:
 ** IGNORE Pressure sensor
 ** IGNORE Ultrasonic rangefinder				       :Will:
+* TODO Second Hardware Iteration				       :Will:
+** TODO Ultrasonic or laser rangefinder
+** TODO Structural pins for shear force in Brock		       :Will:
+* TODO Second Software Iteration
+** TODO Use rangefinder for landing					:Ben:

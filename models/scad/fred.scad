@@ -3,8 +3,7 @@ use <stanley.scad>
 
 module fred() {
 	h = 2 * axle_r;
-	echo("Total Height = ", h * 2);
-	echo("Using M2 holes");
+
 	difference() {
 		cube([80, 40, h]);
 

@@ -1,7 +1,9 @@
 include <hardware.scad>
 
+brock_b_height = 7;
+
 module brock_b() {
-	h = 7;
+	h = brock_b_height;
 
 	corner = 20;
 	width = 70;

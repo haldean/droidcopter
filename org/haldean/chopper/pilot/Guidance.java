@@ -10,7 +10,11 @@ import android.util.Log;
  * 
  * May receive the following messages from Chopper components:
  * <pre>
- * GUID:PID:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ * GUID:
+ *      PID:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ *      AUTOMATIC
+ *      VECTOR:&lt;north_motor_speed&gt;:&lt;south_motor_speed&gt;:&lt;east_motor_speed&gt;:&lt;west_motor_speed&gt;
+ * 
  * </pre>
  * 
  * @author Benjamin Bardin
@@ -27,7 +31,7 @@ public class Guidance implements Constants, Receivable {
 	public static final double MAX_ANGLE = 20;
 	
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
-	public static final double MAX_DMOTOR = .1F;
+	public static final double MAX_DMOTOR = .05F;
 	
 	/** Tag for logging */
 	public static final String TAG = new String("chopper.Guidance");
@@ -139,6 +143,13 @@ public class Guidance implements Constants, Receivable {
 							case NEW_PID_VALUE:
 								mGain[msg.arg1][msg.arg2] = (Double)msg.obj;
 								break;
+							case NEW_GUID_VECTOR:
+								Double[] mVector = (Double[])msg.obj;
+								for (int i = 0; i < 4; i++) {
+									mMotorSpeed[i] = mVector[i];
+									updateMotors();
+								}
+								break;
 							}
 						}
 					};
@@ -167,6 +178,19 @@ public class Guidance implements Constants, Receivable {
 												  new Integer(parts[2]),
 												  new Integer(parts[3]), 
 												  new Double(parts[4]));
+				newValue.sendToTarget();
+			}
+			if (parts[1].equals("AUTOMATIC")) {
+				mHandler.removeMessages(EVAL_MOTOR_SPEED);
+				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+			}
+			if (parts[1].equals("VECTOR")) {
+				mHandler.removeMessages(EVAL_MOTOR_SPEED);
+				Double[] myVector = new Double[4];
+				for (int i = 0; i < 4; i++) {
+					myVector[i] = new Double(parts[i + 2]);
+				}
+				Message newValue = Message.obtain(mHandler, NEW_GUID_VECTOR, myVector);
 				newValue.sendToTarget();
 			}
 		}
@@ -366,14 +390,12 @@ public class Guidance implements Constants, Receivable {
 			//Linearizes system with regard to prop thrust, not prop RPMs
 			mMotorSpeed[i] = Math.sqrt(mMotorSpeed[i]);
 			
-			mTempMotorSpeed[i] = mMotorSpeed[i];
-			
+			mTempMotorSpeed[i] = mMotorSpeed[i];	
 		}
 	
-		//Pass filtered values to ChopperStatus.
-		mStatus.setMotorFields(mMotorSpeed);
 		
 		//Send motor values to motors here:
+		updateMotors();
 		
 		Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
@@ -382,6 +404,14 @@ public class Guidance implements Constants, Receivable {
 			mHandler.sendEmptyMessageDelayed(EVAL_MOTOR_SPEED, timetonext);
 		else
 			mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+	}
+	
+	/* To be finished */
+	private void updateMotors() {
+		//Pass filtered values to ChopperStatus.
+		mStatus.setMotorFields(mMotorSpeed);
+		
+		//Pass motor values to motor controller!
 	}
 }
 

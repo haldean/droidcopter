@@ -86,13 +86,14 @@ public final class MakePicture implements Constants, Receivable {
 	private static PersistentThread myThread;
 	
 	/** Registered receivers */
-	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
+	private LinkedList<Receivable> mRec;
 	
 	/**
 	 * Constructs the thread, stores the surface for preview rendering.
 	 * @param sh The SurfaceHolder to which the preview will be rendered
 	 */
 	public MakePicture(SurfaceHolder sh) {
+		mRec = new LinkedList<Receivable>();
 		mPreviewHolder = sh;
 	}
 	

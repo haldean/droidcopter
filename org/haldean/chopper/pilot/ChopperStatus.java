@@ -105,7 +105,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	private ReentrantLock[] mReadingLock;
 	
 	/** List of registered receivers */
-	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();
+	private LinkedList<Receivable> mRec;
 	
 	/** Hides Runnability, ensures singleton-ness */
 	private Runnable mRunner;
@@ -117,6 +117,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	 */
 	public ChopperStatus(Context mycontext)	{
 		mContext = mycontext;
+		mRec = new LinkedList<Receivable>();
 		
 		//Initialize the data locks
 		mReadingLock = new ReentrantLock[SENSORS];

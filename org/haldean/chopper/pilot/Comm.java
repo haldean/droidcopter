@@ -280,9 +280,11 @@ public final class Comm implements Runnable, Receivable, Constants {
 	 */
 	public void sendMessage(final String message) {
 		if (mTextOut == null) { //connection not yet initialized
+			//Log.d(TAG, "Message not sent, socket not available.");
 			return;
 		}
 		else {
+		//	Log.v(TAG, "Sending msg: " + message);
 			mPool.submit(new Runnable() {
 				public void run() {
 					try {

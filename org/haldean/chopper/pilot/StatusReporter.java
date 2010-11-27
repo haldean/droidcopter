@@ -39,7 +39,7 @@ public class StatusReporter implements Runnable, Constants {
 	private ChopperStatus mStatus;
 	
 	/** List of registered receivers */
-	private LinkedList<Receivable> mRec = new LinkedList<Receivable>();;
+	private LinkedList<Receivable> mRec;
 	
 	/** Handles task scheduling */
 	private Handler mHandler;
@@ -49,6 +49,7 @@ public class StatusReporter implements Runnable, Constants {
 	 * @param status The ChopperStatus from which to compile status reports
 	 */
 	public StatusReporter(ChopperStatus status) {
+		mRec = new LinkedList<Receivable>();
 		mStatus = status;
 	}
 	

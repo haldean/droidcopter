@@ -69,6 +69,7 @@ public final class ChopperMain extends Activity implements Constants
         
         reporter.registerReceiver(comm);
         pic.registerReceiver(comm);
+        guid.registerReceiver(comm);
         
         new PersistentThread(comm).start();
         status.getPersistentThreadInstance().start();

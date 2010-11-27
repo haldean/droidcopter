@@ -1,5 +1,8 @@
 package org.haldean.chopper.pilot;
 
+import java.util.LinkedList;
+import java.util.ListIterator;
+
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -8,9 +11,18 @@ import android.util.Log;
 /**
  * Determines motor speeds, based on chopper's status and desired velocity vector.
  * 
+ * May send the following messages to registered Receivables:<br>
+ * <pre>
+ * GUID:ERROR:&lt;loop_1_error&gt;:&lt;loop_2_error&gt;:&lt;loop_3_error&gt;:&lt;loop_4_error&gt;
+ * </pre>
+ * 
  * May receive the following messages from Chopper components:
  * <pre>
- * GUID:PID:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ * GUID:
+ *      PID:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ *      AUTOMATIC
+ *      VECTOR:&lt;north_motor_speed&gt;:&lt;south_motor_speed&gt;:&lt;east_motor_speed&gt;:&lt;west_motor_speed&gt;
+ * 
  * </pre>
  * 
  * @author Benjamin Bardin
@@ -18,7 +30,7 @@ import android.util.Log;
 public class Guidance implements Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 20;
+	public int PIDREPS = 1;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;
@@ -27,7 +39,10 @@ public class Guidance implements Constants, Receivable {
 	public static final double MAX_ANGLE = 20;
 	
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
-	public static final double MAX_DMOTOR = .1F;
+	public static final double MAX_DMOTOR = .05;
+	
+	/** The maximum change in motor speed permitted at one time if the chopper is stabilizing.  Must be positive. */
+	public static final double MAX_DSTABLE = .1;
 	
 	/** Tag for logging */
 	public static final String TAG = new String("chopper.Guidance");
@@ -88,6 +103,8 @@ public class Guidance implements Constants, Receivable {
 	 * in the event of difficulty maintaining altitude */
 	private boolean mHorizontalDrift = false; //if true, does not consider dx, dy or azimuth error; makes for maximally efficient altitude control
 	
+	private LinkedList<Receivable> mRec;
+	
 	/** Handles to other chopper components */
 	private ChopperStatus mStatus;
 	private Navigation mNav;
@@ -107,10 +124,19 @@ public class Guidance implements Constants, Receivable {
 		}
 		mStatus = status;
 		mNav = nav;
-		//Temporary: need real tuning values at some point:
+		mRec = new LinkedList<Receivable>();
+		
+		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 4; i++)
 			for (int j = 0; j < 3; j++)
 				mGain[i][j] = .05;
+	}
+	
+	private String getErrorString() {
+		return "GUID:ERROR:" + mErrors[0][0]
+		               + ":" + mErrors[1][0]
+		               + ":" + mErrors[2][0]
+		               + ":" + mErrors[3][0];
 	}
 	
 	/**
@@ -135,9 +161,17 @@ public class Guidance implements Constants, Receivable {
 							switch (msg.what) {
 							case EVAL_MOTOR_SPEED:
 								reviseMotorSpeed();
+								updateReceivers(getErrorString());
 								break;
 							case NEW_PID_VALUE:
 								mGain[msg.arg1][msg.arg2] = (Double)msg.obj;
+								break;
+							case NEW_GUID_VECTOR:
+								Double[] mVector = (Double[])msg.obj;
+								for (int i = 0; i < 4; i++) {
+									mMotorSpeed[i] = mVector[i];
+									updateMotors();
+								}
 								break;
 							}
 						}
@@ -169,6 +203,29 @@ public class Guidance implements Constants, Receivable {
 												  new Double(parts[4]));
 				newValue.sendToTarget();
 			}
+			if (parts[1].equals("AUTOMATIC")) {
+				mHandler.removeMessages(EVAL_MOTOR_SPEED);
+				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+			}
+			if (parts[1].equals("VECTOR")) {
+				mHandler.removeMessages(EVAL_MOTOR_SPEED);
+				Double[] myVector = new Double[4];
+				for (int i = 0; i < 4; i++) {
+					myVector[i] = new Double(parts[i + 2]);
+				}
+				Message newValue = Message.obtain(mHandler, NEW_GUID_VECTOR, myVector);
+				newValue.sendToTarget();
+			}
+		}
+	}
+	
+	/**
+	 * Registers a receiver to receive Guidance updates.
+	 * @param rec
+	 */
+	public void registerReceiver(Receivable rec) {
+		synchronized (mRec) {
+			mRec.add(rec);
 		}
 	}
 	
@@ -240,7 +297,7 @@ public class Guidance implements Constants, Receivable {
 					Log.w(TAG, "Nav Target lock not available.");
 				}
 			}
-			Log.v(TAG, "Relative target: " + mTarget[0] + ", " + mTarget[1] + ", " + mTarget[2]);
+			Log.v(TAG, "Relative target: " + mTarget[0] + ", " + mTarget[1] + ", " + mTarget[2] + ", " + mTarget[3]);
 		}
 		
 		
@@ -322,9 +379,7 @@ public class Guidance implements Constants, Receivable {
 			case 3: //Azimuth
 				break;
 			}				
-			mTorques[i] = dmotor;
-			//Log.v(TAG, "phi: " + phi);
-			//Log.v(TAG, "dmotor: " + dmotor);	
+			mTorques[i] = dmotor;	
 		}
 		mLastUpdate = thistime;
 		
@@ -358,22 +413,27 @@ public class Guidance implements Constants, Receivable {
 			else if (mTempMotorSpeed[i] > 1)
 				mTempMotorSpeed[i] = 1;
 			double diff = mTempMotorSpeed[i] - mMotorSpeed[i];
-			if (diff > 0)
-				mMotorSpeed[i] += Math.min(diff, MAX_DMOTOR);
-			else if (diff < 0)
-				mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
-			
+			if (mStabilizing) {
+				if (diff > 0)
+					mMotorSpeed[i] += Math.min(diff, MAX_DSTABLE);
+				else if (diff < 0)
+					mMotorSpeed[i] += Math.max(diff, -MAX_DSTABLE);
+			}
+			else {				
+				if (diff > 0)
+					mMotorSpeed[i] += Math.min(diff, MAX_DMOTOR);
+				else if (diff < 0)
+					mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
+			}
 			//Linearizes system with regard to prop thrust, not prop RPMs
 			mMotorSpeed[i] = Math.sqrt(mMotorSpeed[i]);
 			
-			mTempMotorSpeed[i] = mMotorSpeed[i];
-			
+			mTempMotorSpeed[i] = mMotorSpeed[i];	
 		}
 	
-		//Pass filtered values to ChopperStatus.
-		mStatus.setMotorFields(mMotorSpeed);
 		
 		//Send motor values to motors here:
+		updateMotors();
 		
 		Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
@@ -382,6 +442,27 @@ public class Guidance implements Constants, Receivable {
 			mHandler.sendEmptyMessageDelayed(EVAL_MOTOR_SPEED, timetonext);
 		else
 			mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+	}
+	
+	/* To be finished */
+	private void updateMotors() {
+		//Pass filtered values to ChopperStatus.
+		mStatus.setMotorFields(mMotorSpeed);
+		
+		//Pass motor values to motor controller!
+	}
+	
+	/**
+	 * Updates all receivers
+	 * @param str The message to send.
+	 */
+	private void updateReceivers(String str) {
+		synchronized (mRec) {
+			ListIterator<Receivable> myList = mRec.listIterator();
+			while (myList.hasNext()) {
+				//myList.next().receiveMessage(str, this);
+			}
+		}
 	}
 }
 

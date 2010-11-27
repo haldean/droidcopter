@@ -13,4 +13,4 @@ fi
 echo 'Testing transfer speed using random ASCII data from urandom.'
 /usr/bin/time -f %e -o timing.dat cat /dev/urandom | ./parse-random > /dev/ttyUSB2
 echo 'Motor commands per second:'
-echo 10 k 1000 `tail -1 timing.dat` / p | dc
+echo 10 k 10000 `tail -1 timing.dat` / p | dc

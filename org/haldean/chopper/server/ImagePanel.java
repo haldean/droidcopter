@@ -23,55 +23,55 @@ public class ImagePanel extends JPanel implements Updatable {
 
     /** Create a new Image Panel*/
     public ImagePanel() {
-		super(new BorderLayout());
+	super(new BorderLayout());
 	
-		/* This panel contains the quality controls */
-		bottomPanel = new JPanel(new GridLayout(1, 4));
-		add(bottomPanel, BorderLayout.SOUTH);
+	/* This panel contains the quality controls */
+	bottomPanel = new JPanel(new GridLayout(1, 4));
+	add(bottomPanel, BorderLayout.SOUTH);
 	
-		/* This combo box allows the user to choose between
-		 * supported sizes. Changing it reenables the set
-		 * quality button */
-		imageSizes = new JComboBox();
-		imageSizes.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			    sendButton.setEnabled(true);
-			}
+	/* This combo box allows the user to choose between
+	 * supported sizes. Changing it reenables the set
+	 * quality button */
+	imageSizes = new JComboBox();
+	imageSizes.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+		    sendButton.setEnabled(true);
+		}
 	    });
-		bottomPanel.add(imageSizes);
+	bottomPanel.add(imageSizes);
 	
-		/* This slider adjusts the JPEG image compression.
-		 * Changing it calls changeQuality, which updates the
-		 * label and enables the set quality button */
-		imageQuality = new JSlider(0, 100, defaultQuality);
-		imageQuality.addChangeListener(new ChangeListener() {
-			public void stateChanged(ChangeEvent e) {
-			    changeQuality(imageQuality.getValue());
-			}
-		});
-		bottomPanel.add(imageQuality);
-	
-		/* This label displays the value of the slider */
-		imagQualLabel = new JLabel();
-		bottomPanel.add(imagQualLabel);
-		changeQuality(defaultQuality);
-	
-		/* This button send the signal to the phone to
-		 * change quality settings */
-		sendButton = new JButton("Set Quality Settings");
-		sendButton.setEnabled(false);
-		sendButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			    sendButton.setEnabled(false);
-			    setQuality();
-			}
+	/* This slider adjusts the JPEG image compression.
+	 * Changing it calls changeQuality, which updates the
+	 * label and enables the set quality button */
+	imageQuality = new JSlider(0, 100, defaultQuality);
+	imageQuality.addChangeListener(new ChangeListener() {
+		public void stateChanged(ChangeEvent e) {
+		    changeQuality(imageQuality.getValue());
+		}
 	    });
-		bottomPanel.add(sendButton);
+	bottomPanel.add(imageQuality);
 	
-		image = new ImageComponent();
-		add(image, BorderLayout.CENTER);
+	/* This label displays the value of the slider */
+	imagQualLabel = new JLabel();
+	bottomPanel.add(imagQualLabel);
+	changeQuality(defaultQuality);
 	
-		sizes = new HashMap<Integer, ImageSizeEntry>();
+	/* This button send the signal to the phone to
+	 * change quality settings */
+	sendButton = new JButton("Set Quality Settings");
+	sendButton.setEnabled(false);
+	sendButton.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+		    sendButton.setEnabled(false);
+		    setQuality();
+		}
+	    });
+	bottomPanel.add(sendButton);
+	
+	image = new ImageComponent();
+	add(image, BorderLayout.CENTER);
+	
+	sizes = new HashMap<Integer, ImageSizeEntry>();
     }
 
     /** Used for Tab Pane
@@ -82,13 +82,13 @@ public class ImagePanel extends JPanel implements Updatable {
 
     /** Update the look and feel of all child components */
     public void updateUI() {
-		if (imageQuality != null) {
-		    imagQualLabel.updateUI();
-		    imageSizes.updateUI();
-		    imageQuality.updateUI();
-		    bottomPanel.updateUI();
-		    sendButton.updateUI();
-		}
+	if (imageQuality != null) {
+	    imagQualLabel.updateUI();
+	    imageSizes.updateUI();
+	    imageQuality.updateUI();
+	    bottomPanel.updateUI();
+	    sendButton.updateUI();
+	}
     }
 
     /** Change the quality of the captured images
@@ -110,64 +110,70 @@ public class ImagePanel extends JPanel implements Updatable {
      *  @param _image The JPEG-encoded byte array representing the image 
      *  @see org.haldean.chopper.server.ImageComponent#setImage */
     public void setImage(byte _image[]) {
-   	    image.setImage(_image);
+	image.setImage(_image);
     }
 
     /** Listens for the available size signal from the image capture device 
      *  @param msg The message string received from the device */
     public void update(String msg) {
-		if (msg.startsWith("IMAGE:AVAILABLESIZE")) {
-		    String msgParts[] = msg.split(":");
-		    ImageSizeEntry size = new ImageSizeEntry(msgParts[2], msgParts[3]);
-		    imageSizes.addItem(size);
-		    sizes.put(size.area(), size);
-		} else if (msg.startsWith("IMAGE:FRAMESIZE")) {
-		    String msgParts[] = msg.split(":");
-		    imageSizes.setSelectedItem(sizes.get(new Integer(msgParts[2]) * 
-							 new Integer(msgParts[3])));
-		} else if (msg.startsWith("IMAGE:FRAMEQUALITY")) {
-			String msgParts[] = msg.split(":");
-			imageQuality.setValue(new Integer(msgParts[2]));
-		}
+	if (msg.startsWith("IMAGE:AVAILABLESIZE")) {
+	    String msgParts[] = msg.split(":");
+	    if (msgParts.length <= 3) return;
+
+	    ImageSizeEntry size = new ImageSizeEntry(msgParts[2], msgParts[3]);
+	    imageSizes.addItem(size);
+	    sizes.put(size.area(), size);
+	} else if (msg.startsWith("IMAGE:FRAMESIZE")) {
+	    String msgParts[] = msg.split(":");
+	    if (msgParts.length <= 3) return;
+
+	    imageSizes.setSelectedItem(sizes.get(new Integer(msgParts[2]) * 
+						 new Integer(msgParts[3])));
+	} else if (msg.startsWith("IMAGE:FRAMEQUALITY")) {
+	    String msgParts[] = msg.split(":");
+	    if (msgParts.length <= 2) return;
+
+	    imageQuality.setValue(new Integer(msgParts[2]));
+	}
     }
 
     /** A class used to represent image sizes in the combo box */
     private class ImageSizeEntry {
-		public int width;
-		public int height;
+	public int width;
+	public int height;
 	
-		/** Create a new ImageSizeEntry
-		 *  @param _w The width of the image size option
-		 *  @param _h The height of the image size option */
-		public ImageSizeEntry(String _w, String _h) {
-		    this(new Integer(_w), new Integer(_h));
-		}
+	/** Create a new ImageSizeEntry
+	 *  @param _w The width of the image size option
+	 *  @param _h The height of the image size option */
+	public ImageSizeEntry(String _w, String _h) {
+	    this(new Integer(_w), new Integer(_h));
+	}
 	
-		/** Create a new ImageSizeEntry
-		 *  @param _w The width of the image size option
-		 *  @param _h The height of the image size option */
-		public ImageSizeEntry(int _w, int _h) {
-		    width = _w;
-		    height = _h;
-		}
+	/** Create a new ImageSizeEntry
+	 *  @param _w The width of the image size option
+	 *  @param _h The height of the image size option */
+	public ImageSizeEntry(int _w, int _h) {
+	    width = _w;
+	    height = _h;
+	}
 	
-		/** Get the string to send to the device to tell it to
-		 *  switch image sizes 
-		 *  @return A string of the format "IMAGE:SET:SIZE:W:H" */
-		public String setSizeString() {
-		    return new String("IMAGE:SET:SIZE:" + width + ":" + height);
-		}
+	/** Get the string to send to the device to tell it to
+	 *  switch image sizes 
+	 *  @return A string of the format "IMAGE:SET:SIZE:W:H" */
+	public String setSizeString() {
+	    return new String("IMAGE:SET:SIZE:" + width + ":" + height);
+	}
 	
-		/** The string representation of the size for the combo box
-		 *  @return A string of the format "WxH" */
-		public String toString() {
-		    return new String(width + "x" + height);
-		}
+	/** The string representation of the size for the combo box
+	 *  @return A string of the format "WxH" */
+	public String toString() {
+	    return new String(width + "x" + height);
+	}
 	
-		/** Returns the area of the image size
-		 *  @return The area (in pixels) of the image */
-		public int area() {
-		    return width * height;
-		}
+	/** Returns the area of the image size
+	 *  @return The area (in pixels) of the image */
+	public int area() {
+	    return width * height;
+	}
     }
 }

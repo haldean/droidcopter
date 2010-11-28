@@ -67,13 +67,13 @@ public class StyleProvider {
      *  high color, a value of 0.0 is low color, and values in between
      *  have the appropriate blend.
      *  @param val The weight given to the high value color */
-    public static Color forValue(float val) {
-	int red = (int) (((1.0 - val) * (float) lowValue.getRed()) + 
-			 (val * (float) highValue.getRed()));
-	int green = (int) (((1.0 - val) * (float) lowValue.getGreen()) +
-			   (val * (float) highValue.getGreen()));
-	int blue = (int) (((1.0 - val) * (float) lowValue.getBlue()) +
-			  (val * (float) highValue.getBlue()));
+    public static Color forValue(double val) {
+	int red = (int) (((1.0 - val) * (double) lowValue.getRed()) + 
+			 (val * (double) highValue.getRed()));
+	int green = (int) (((1.0 - val) * (double) lowValue.getGreen()) +
+			   (val * (double) highValue.getGreen()));
+	int blue = (int) (((1.0 - val) * (double) lowValue.getBlue()) +
+			  (val * (double) highValue.getBlue()));
 	return new Color(red, green, blue);
     }
 

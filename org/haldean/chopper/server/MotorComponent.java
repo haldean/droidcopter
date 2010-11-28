@@ -8,12 +8,13 @@ import java.util.HashMap;
 
 import org.haldean.chopper.server.StyleProvider;
 
-public class MotorComponent extends JPanel {
+public class MotorComponent extends UpdateUiPanel implements Updatable {
     private MotorDisplay display;
-    private final int MOTOR_MAX = 1023;
+    private final int MOTOR_MAX = 1;
     private final int MOTOR_MIN = 0;
+
     private HashMap<Motor, MotorController> motorControllers;
-    private JPanel controlPanel;
+    private UpdateUiPanel controlPanel;
     private JButton applyButton;
 
     public enum Motor {
@@ -27,7 +28,7 @@ public class MotorComponent extends JPanel {
 	display = new MotorDisplay();
 	add(display, BorderLayout.CENTER);
 
-	controlPanel = new JPanel(new GridLayout(2, 3, 10, 10));
+	controlPanel = new UpdateUiPanel(new GridLayout(2, 3, 10, 10));
 	for (Motor m : Motor.values()) {
 	    controlPanel.add(new MotorController(m));
 	}
@@ -36,7 +37,6 @@ public class MotorComponent extends JPanel {
 	applyButton.addActionListener(new ActionListener() {
 		public void actionPerformed(ActionEvent e) {
 		    updateSpeeds();
-		    applyButton.setEnabled(false);
 		}
 	    });
 	controlPanel.add(applyButton, 2);
@@ -50,66 +50,77 @@ public class MotorComponent extends JPanel {
 	return "Motor Speeds";
     }
 
-    public void updateUI() {
-	super.updateUI();
-	if (controlPanel != null) {
-	    applyButton.updateUI();
-	    controlPanel.updateUI();
-	    for(MotorController m : motorControllers.values()) {
-		m.updateUI();
-	    }
+    public void update(String message) {
+	if (!message.startsWith("MOTORSPEED")) return;
+
+	String[] parts = message.split(":");
+	
+	for (Motor m : Motor.values()) {
+	    int index = 0;
+	    if (m.equals(Motor.YNEG)) index = 1;
+	    if (m.equals(Motor.XPOS)) index = 2;
+	    if (m.equals(Motor.XNEG)) index = 3;
+	    double speed = new Double(parts[index + 1]);
+	    
+	    display.setMotorSpeed(m, speed);
 	}
     }
 
     private void updateSpeeds() {
-	double[] speeds = { 
-	    motorControllers.get(Motor.YPOS).getSpeed(), 
-	    motorControllers.get(Motor.YNEG).getSpeed(),
-	    motorControllers.get(Motor.XPOS).getSpeed(), 
-	    motorControllers.get(Motor.XNEG).getSpeed()
-	};
-	Navigator.setMotorSpeeds(speeds);
+	try {
+	    double[] speeds = { 
+		motorControllers.get(Motor.YPOS).getSpeed(), 
+		motorControllers.get(Motor.YNEG).getSpeed(),
+		motorControllers.get(Motor.XPOS).getSpeed(), 
+		motorControllers.get(Motor.XNEG).getSpeed()
+	    };
+
+	    for (double s : speeds) {
+		if (s > MOTOR_MAX || s < MOTOR_MIN) {
+		    throw new NumberFormatException("Motor values must be between " + 
+						    MOTOR_MIN + " and " + MOTOR_MAX);
+		}
+	    }
+
+	    Navigator.setMotorSpeeds(speeds);
+	} catch (NumberFormatException e) {
+	    try {
+		JOptionPane.showMessageDialog(this, "There was an error setting the motor speeds.\n" + e.toString(),
+					      "Error", JOptionPane.ERROR_MESSAGE);
+	    } catch (HeadlessException e2) {
+		e.printStackTrace();
+	    }
+	}
     }
 
-    private class MotorController extends JPanel {
+    private class MotorController extends UpdateUiPanel {
 	private Motor m;
-	private JSlider slider;
+	private JTextField field;
 	private JLabel label;
 
 	public MotorController(Motor m) {
 	    this.m = m;
 	    motorControllers.put(m, this);
-
-	    slider = new JSlider(MOTOR_MIN, MOTOR_MAX, 0);
-	    slider.addChangeListener(new ChangeListener() {
-		    public void stateChanged(ChangeEvent e) {
-			applyButton.setEnabled(true);
-		    }
-		});
+	    field = new JTextField("0.0");
 
 	    label = new JLabel(m.toString());
-	    label.setLabelFor(slider);
+	    label.setLabelFor(field);
+	    label.setPreferredSize(new Dimension(40, 0));
 
 	    setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 	    add(label);
-	    add(slider);
+	    add(field);
 	}
 
-	public int getSpeed() {
-	    return slider.getValue();
-	}
-
-	public void updateUI() {
-	    super.updateUI();
-	    if (slider != null) slider.updateUI();
-	    if (label != null) label.updateUI();
+	public double getSpeed() throws NumberFormatException {
+	    return new Double(field.getText());
 	}
     }
 
     private class MotorDisplay extends JComponent {
 	private final int motorRadius = 20;
 	private final int motorCount = 4;
-	private float[] motorSpeeds;
+	private double[] motorSpeeds;
 
 	private Color highSpeedColor = StyleProvider.highValue();
 	private Color lowSpeedColor = StyleProvider.lowValue();
@@ -118,11 +129,11 @@ public class MotorComponent extends JPanel {
 	private Color labelColor = StyleProvider.background();
 
 	public MotorDisplay() {
-	    motorSpeeds = new float[motorCount];
+	    motorSpeeds = new double[motorCount];
 	    setPreferredSize(new Dimension(300, 300));
 	}
 
-	public void setMotorSpeed(Motor motor, float speed) {
+	public void setMotorSpeed(Motor motor, double speed) {
 	    if (speed < MOTOR_MIN || speed > MOTOR_MAX)
 		return;
 	    motorSpeeds[motor.ordinal()] = speed;

@@ -107,6 +107,8 @@ public class ServerHost extends JFrame {
 	r.tie(sp);
 	/* Tie the PID error visualization to the DataReceiver */
 	r.tie(pidc);
+	r.tie(PidTuningComponent.getInstance());
+	r.tie(mc);
 	r.tieImage(ic);
 
 	if (ServerCreator.getHeartbeatEnabled()) {

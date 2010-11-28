@@ -48,8 +48,10 @@ public class Navigator {
    */
   public static void setTargetLocation(Position location, double velocity,
 				       double targetRadius) {
-    sendTask(NavDest.taskFor(location.getElevation(), location.getLongitude().getDegrees(),
-			     location.getLatitude().getDegrees(), velocity, targetRadius));
+    sendTask(NavDest.taskFor(location.getElevation(), 
+			     location.getLongitude().getDegrees(),
+			     location.getLatitude().getDegrees(), 
+			     velocity, targetRadius));
   }
 
   /**
@@ -81,8 +83,15 @@ public class Navigator {
    *  @param value The new value for the parameter.
    */
   public static void tunePid(int motor, int parameter, double value) {
-    String taskString = "GUID:PID:" + motor + ":" + parameter + ":" + value;
+    String taskString = "GUID:PID:SET:" + motor + ":" + parameter + ":" + value;
     DataReceiver.sendToDefault(taskString);
+  }
+
+  /**
+   *  Ask the chopper to send us the current PID tuning parameters.
+   */
+  public static void requestPidValues() {
+    DataReceiver.sendToDefault("GUID:PID:GET");
   }
 
   /**

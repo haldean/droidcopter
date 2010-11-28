@@ -15,6 +15,9 @@ import gov.nasa.worldwind.geom.Position;
  *  @author William Brown
  */
 public class Navigator {
+  private static String navGoToManual = "NAV:SET:MANUAL";
+  private static String navGoToAutomatic = "NAV:SET:AUTOPILOT";
+
   /**
    *  This is a convenience class that is never instantiated.
    */
@@ -49,18 +52,35 @@ public class Navigator {
   }
 
   /**
-   *  Send raw motor speed values to the chopper. Each speed is
-   *  assumed to be a magic value, because the API on the chopper
-   *  doesn't give any indication as to the units for these values,
-   *  nor does it mention that these values can be set. Huzzah!
+   *  Send raw motor speed values to the chopper.
    *
-   *  @param speeds An array full of magic.
+   *  @param speeds An array full of magic, where the values
+   *  correspond to the new speeds for the "north", "south", "east"
+   *  and "west" motors.
+   *
+   *  Note that the motor "directions" aren't directions at
+   *  all. They're convenient ways of describing which motor is
+   *  which. Changing the "north" motor doesn't mean you are changing
+   *  the motor closest to North.
    */
   public static void setMotorSpeeds(double[] speeds) {
-    String taskString = navPrefix + "MANUAL";
+    String taskString = "GUID:VECTOR";
     for (int i=0; i<4; i++) {
       taskString += ":" + speeds[i];
     }
+    DataReceiver.sendToDefault(navGoToManual);
+    DataReceiver.sendToDefault(taskString);
+  }
+
+  /**
+   *  Send PID tuning values to the helicopter.
+   *
+   *  @param motor The index of the motor whose loop needs tuning.
+   *  @param parameter The parameter (0 for P, 1 for I, 2 for D) to tune.
+   *  @param value The new value for the parameter.
+   */
+  public static void tunePid(int motor, int parameter, double value) {
+    String taskString = "GUID:PID:" + motor + ":" + parameter + ":" + value;
     DataReceiver.sendToDefault(taskString);
   }
 
@@ -70,6 +90,7 @@ public class Navigator {
    *  @param task The task to issue.
    */
   private static void sendTask(NavTask task) {
+    DataReceiver.sendToDefault(navGoToAutomatic);
     DataReceiver.sendToDefault(task.toString());
     Debug.log("Sent new navigation task: " + task.toString());
   }

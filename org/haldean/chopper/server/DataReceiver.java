@@ -228,7 +228,7 @@ public class DataReceiver implements Runnable {
     /** Send a line to the phone.
      *  @param s The string to send to the phone */
     public void sendln(String s) {
-	System.err.println("Sending: " + s);
+	Debug.log("Sending: " + s);
 	try {
 	    output.write(s + "\n");
 	    output.flush();

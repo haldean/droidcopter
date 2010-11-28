@@ -166,7 +166,9 @@ public class Navigation implements Constants, Receivable {
 	}
 	
 	/**
-	 * Obtains current navigation target vector.  If the data is locked, immediately throws an exception.
+	 * Obtains current navigation target vector.  If the data is
+	 * locked, immediately throws an exception.
+	 *
 	 * @return A new array containing the navigation target vector.
 	 * @throws IllegalAccessException If the data is currently locked.
 	 */
@@ -186,8 +188,12 @@ public class Navigation implements Constants, Receivable {
 	}
 	
 	/**
-	 * Writes current navigation target vector into supplied array.  If the data is locked, immediately returns with neither data update nor warning.
-	 * @param expectedValues  The array in which to write the vector--must be at least of length 4.
+	 * Writes current navigation target vector into supplied
+	 * array.  If the data is locked, immediately returns with
+	 * neither data update nor warning.
+	 *
+	 * @param expectedValues The array in which to write the
+	 * vector--must be at least of length 4.
 	 */
 	public void getTarget(double[] expectedValues) {
 		if (expectedValues.length < 4)

@@ -49,7 +49,7 @@ public class HeartbeatThread implements Runnable, Updatable {
     /**
      *  Set the time delay between heartbeats. The default period is one second.
      *
-     *  @param period The number of milliseconds to wait between
+     *  @param newPeriod The number of milliseconds to wait between
      *  heartbeat messages 
      */
     public void setPeriod(int newPeriod) {
@@ -57,7 +57,7 @@ public class HeartbeatThread implements Runnable, Updatable {
     }
 
     /**
-     *  Start the heartbeat. This will be run with the {@link revive}
+     *  Start the heartbeat. This will be run with the {@link HeartbeatThread#revive}
      *  method and does not need to be called by an API user.
      */
     public void run() {

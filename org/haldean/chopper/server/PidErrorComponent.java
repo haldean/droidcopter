@@ -18,8 +18,6 @@ public class PidErrorComponent extends JPanel implements Updatable {
     private final StreamingGraphComponent loop3;
     private final StreamingGraphComponent loop4;
 
-    private final StreamingGraphComponent total;
-
     /* Components to choose the graph scale */
     private JPanel scalePanel;
     private JSlider scaleChooser;
@@ -30,34 +28,16 @@ public class PidErrorComponent extends JPanel implements Updatable {
     public PidErrorComponent() {
 	super(new BorderLayout());
 	JPanel graphPanel = new JPanel(new GridLayout(2,2));
-	GridBagConstraints gbc = new GridBagConstraints();
 
 	loop1 = new StreamingGraphComponent(StyleProvider.graphFor("Loop 1 Error"));
 	loop2 = new StreamingGraphComponent(StyleProvider.graphFor("Loop 2 Error"));
 	loop3 = new StreamingGraphComponent(StyleProvider.graphFor("Loop 3 Error"));
 	loop4 = new StreamingGraphComponent(StyleProvider.graphFor("Loop 4 Error"));
-	total = new StreamingGraphComponent(StyleProvider.graphFor("Total Absolute Error"));
 
-	gbc.fill = GridBagConstraints.HORIZONTAL;
-	gbc.gridx = 0;
-	gbc.gridy = 0;
 	graphPanel.add(loop1);
-	
-	gbc.gridx = 1;
 	graphPanel.add(loop2);
-
-	gbc.gridx = 0;
-	gbc.gridy = 1;
 	graphPanel.add(loop3);
-
-	gbc.gridx = 1;
 	graphPanel.add(loop4);
-
-	gbc.gridx = 0;
-	gbc.gridy = 2;
-	gbc.gridwidth = 2;
-	//graphPanel.add(total, gbc);
-     
 	add(graphPanel, BorderLayout.CENTER);
 
 	scaleChooser = new JSlider(25, 500, defaultScale);
@@ -92,7 +72,6 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	loop2.setSampleCount(s);
 	loop3.setSampleCount(s);
 	loop4.setSampleCount(s);
-	total.setSampleCount(s);
 	scaleLabel.setText(s + " samples");
     }
 
@@ -115,7 +94,6 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	loop2.addValue(l2);
 	loop3.addValue(l3);
 	loop4.addValue(l4);
-	total.addValue(Math.abs(l1) + Math.abs(l2) + Math.abs(l3) + Math.abs(l4));
 	repaint();
     }
     

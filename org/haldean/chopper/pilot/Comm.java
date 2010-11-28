@@ -59,7 +59,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 	public static final int FIRST_PULSE = 30000;
 	
 	/** How long (in ms) to wait for subsequent PULSE signals before assuming connectivity failure. */
-	public static final int PULSE_RATE = 4000;
+	public static final int PULSE_RATE = 15000;
 	
 	/** Tag for logging */
 	public static final String TAG = "chopper.Comm";	
@@ -144,7 +144,10 @@ public final class Comm implements Runnable, Receivable, Constants {
 					Log.i(TAG, "Connection established");
 
 			        /* Initializes heartbeat protocol */
+					mHeartbeat.cancel();
 					mCountdown.purge();
+					//mCountdown.cancel();
+					//mCountdown = new Timer();
 			        mCountdown.schedule(mHeartbeat, FIRST_PULSE);
 			        startReading();
 				}
@@ -247,9 +250,9 @@ public final class Comm implements Runnable, Receivable, Constants {
 			public void handleMessage(Message msg) {
                 switch (msg.what) {
                 case MAKE_TEXT_CONN:
-                	Log.i(TAG, "Making Text connection");
-                	if (mTextConnLock.tryLock()) { //if not, the thread is in the process of being created. No action necessary
+                	if (mTextConnLock.tryLock()) { //if not, the thread is in the process of being created. No action necessary                		
 	                	if (!mTextConn.isAlive()) {//a connection is being established
+	                		Log.i(TAG, "Making Text connection");
 	                		mTextConn = new Thread(mTextConnArg);
 	            			mTextConn.start(); //Try to connect
 	            			mTextConnLock.unlock();
@@ -257,9 +260,9 @@ public final class Comm implements Runnable, Receivable, Constants {
                 	}
                 	break;
                 case MAKE_DATA_CONN:
-                	Log.i(TAG, "Making data connection");
                 	if (mDataConnLock.tryLock()) { //if not, the thread is in the process of being created. No action necessary
 	                	if (!mDataConn.isAlive()) {//a connection is being established
+	                		Log.i(TAG, "Making data connection");
 	                		mDataConn = new Thread(mDataConnArg);
 	                		mDataConn.start(); //Try to connect
 	                		mDataConnLock.unlock();
@@ -360,7 +363,10 @@ public final class Comm implements Runnable, Receivable, Constants {
 			if (parts[1].equals("PULSE")) {
 				sendMessage(msg);
 				//Reset the heartbeat countdown
+				mHeartbeat.cancel();
 				mCountdown.purge();
+				//mCountdown.cancel();
+				//mCountdown = new Timer();
 		        mCountdown.schedule(mHeartbeat, PULSE_RATE);
 		        return true;
 			}

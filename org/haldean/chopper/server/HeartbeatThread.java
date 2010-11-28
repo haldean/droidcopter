@@ -16,7 +16,7 @@ public class HeartbeatThread implements Runnable, Updatable {
     private static HeartbeatThread instance;
 
     /* Milliseconds between updates */
-    private int period = 500;
+    private int period = 1000;
     private int lastMessageId = 0;
 
     /* Maps messages to when they were sent. */

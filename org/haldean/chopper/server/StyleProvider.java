@@ -80,4 +80,17 @@ public class StyleProvider {
     public static Font fontSmall() {
 	return fontSmall;
     }
+
+    /** Get the UI font
+     *  @param size The size in pixels */
+    public static Font getFont(int size) {
+	return getFont(size, false);
+    }
+
+    /** Get the UI font
+     *  @param size The size in pixels
+     *  @param bold True if bold font is desired, false if not */
+    public static Font getFont(int size, boolean bold) {
+	return new Font("Helvetica", (bold) ? Font.BOLD : Font.PLAIN, size);
+    }
 }

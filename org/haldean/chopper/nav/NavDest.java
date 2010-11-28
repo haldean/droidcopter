@@ -48,7 +48,7 @@ public class NavDest implements NavTask, Constants {
 		n.altitude = altitude;
 		n.longitude = longitude;
 		n.latitude = latitude;
-		n.velocity = velocity;
+		n.myVelocity = velocity;
 		n.destDist = destDist;
 		return n;
 	}

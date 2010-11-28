@@ -1,6 +1,7 @@
 package org.haldean.chopper.server;
 
 import org.haldean.chopper.nav.NavDest;
+import org.haldean.chopper.nav.NavTask;
 import org.haldean.chopper.nav.NavVel;
 
 import gov.nasa.worldwind.geom.Position;
@@ -47,8 +48,8 @@ public class Navigator {
    */
   public static void setTargetLocation(Position location, double velocity,
 				       double targetRadius) {
-    sendTask(NavDest.taskFor(location.getElevation(), location.getLongitude(),
-			     location.getLatitude(), velocity, targetRadius));
+    sendTask(NavDest.taskFor(location.getElevation(), location.getLongitude().getDegrees(),
+			     location.getLatitude().getDegrees(), velocity, targetRadius));
   }
 
   /**

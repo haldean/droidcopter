@@ -12,7 +12,7 @@ import javax.swing.event.*;
 public class ServerHost extends JFrame {
     /** The chopper name. We've been changing it enough that
      *  it's just easier to have it be an easily-changable string */
-    public final String heloName = new String("Droidcopter");
+    public final String heloName = "Robocopter";
 
     /* All sorts of components */
     /** The object responsible for receiving and sending
@@ -43,6 +43,8 @@ public class ServerHost extends JFrame {
     /** The component that displays mission-critical data like
      *  battery levels and connection statuses */
     public final StatusLabel sl;
+    /** A component to display and set motor speeds. */
+    public final MotorComponent mc;
 
     /* Custom controllers, mostly because Will is the effing man */
     private final PadController pad;
@@ -75,10 +77,8 @@ public class ServerHost extends JFrame {
 	 * into each other */
 	r = DataReceiver.getInstance();
 
-	if (allowGlobe)
-	    lc = new WorldWindComponent();
-	else
-	    lc = null;
+	if (allowGlobe) lc = new WorldWindComponent();
+	else lc = null;
 
 	tc = new OrientationComponent();
 	ic = new ImagePanel();
@@ -87,6 +87,7 @@ public class ServerHost extends JFrame {
 	sc = new SensorComponent();
 	status = new EchoUpdatable();
 	debug = new UpdatableTextArea("Debug");
+	mc = new MotorComponent();
 
 	sl = new StatusLabel();
 	r.setStatusLabel(sl);
@@ -121,6 +122,7 @@ public class ServerHost extends JFrame {
 	    leftTabPanes.add(lc);
 	leftTabPanes.add(tc);
 	leftTabPanes.add(debug);
+	leftTabPanes.add(mc);
 
 	/* The right has the telemetry, the acceleration and the sensor data */
 	rightTabPanes.add(ic);
@@ -135,19 +137,6 @@ public class ServerHost extends JFrame {
     public void accept() {
 	/* Start the DataReceiver thread */
 	(new Thread(r)).start();
-    }
-
-    /** Get the UI font
-     *  @param size The size in pixels */
-    private Font getFont(int size) {
-	return getFont(size, false);
-    }
-
-    /** Get the UI font
-     *  @param size The size in pixels
-     *  @param bold True if bold font is desired, false if not */
-    private Font getFont(int size, boolean bold) {
-	return new Font("Helvetica", (bold) ? Font.BOLD : Font.PLAIN, size);
     }
 
     /** Initialize operating system specific stuff */
@@ -168,6 +157,7 @@ public class ServerHost extends JFrame {
 	lc.updateUI();
 	ic.updateUI();
 	pidc.updateUI();
+	mc.updateUI();
 
 	/* The right/left pane creator */
 	JPanel horizontalPanel = new JPanel(new GridLayout(1,2));
@@ -194,7 +184,7 @@ public class ServerHost extends JFrame {
 
 	/* The title label*/
 	JLabel titleLabel = new JLabel(heloName.toUpperCase() + " SERVER");
-	titleLabel.setFont(getFont(24, true));
+	titleLabel.setFont(StyleProvider.getFont(24, true));
 	titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
 	/* The status bar */

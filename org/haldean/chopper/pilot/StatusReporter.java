@@ -101,6 +101,17 @@ public class StatusReporter implements Runnable, Constants {
 		catch (IllegalAccessException e) {
 			Log.w(TAG, "MotorSpeeds Report Unavailable");
 		}
+		
+		try {
+			double[] myPowers = mStatus.getMotorFieldsNow();
+			infoList.add("MOTORPOWER:" + myPowers[0] +
+					":" + myPowers[1] +
+					":" + myPowers[2] +
+					":" + myPowers[3]);
+		}
+		catch (IllegalAccessException e) {
+			Log.w(TAG, "MotorPowers Report Unavailable");
+		}
 		try {
 			double myLight = mStatus.getReadingFieldNow(LIGHT);
 			infoList.add("LIGHT:" + myLight);

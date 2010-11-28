@@ -95,6 +95,12 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	/** Stores the speeds last submitted to the motors. */
 	private double[] mMotorSpeed = new double[4];
 	
+	/** Lock for mMotorPower[] */
+	private ReentrantLock mMotorPowerLock;
+	
+	/** Stores power levels for the motors. */
+	private double[] mMotorPower = new double[4];
+	
 	/** Thread pool for mutator methods */
 	private ExecutorService mMutatorPool;
 	
@@ -121,6 +127,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		
 		//Initialize the data locks
 		mReadingLock = new ReentrantLock[SENSORS];
+		
 		for (int i = 0; i < SENSORS; i++) {
 			mReadingLock[i] = new ReentrantLock();
 		}
@@ -132,6 +139,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		
 		mMotorLock = new ReentrantLock();
 		mGpsExtrasLock = new ReentrantLock();
+		mMotorPowerLock = new ReentrantLock();
 		
 		mMutatorPool = Executors.newFixedThreadPool(sNumMutatorThreads);
 	}
@@ -242,6 +250,25 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		}
 		else {
 			Log.w(TAG, "motorspeed is locked.");
+			throw new IllegalAccessException();
+		}
+		return myValues;
+	}
+	
+	/** Obtains the current motor power levels.
+	 * @return A copy of the array containing the motor power levels.
+	 * @throws IllegalAccessException If the lock is unavailable.
+	 */
+	public double[] getMotorPowerFieldsNow() throws IllegalAccessException {
+		double[] myValues = new double[4];
+		if (mMotorPowerLock.tryLock()) {
+			for (int i = 0; i < 4; i++) {
+				myValues[i] = mMotorPower[i];
+			}
+			mMotorPowerLock.unlock();
+		}
+		else {
+			Log.w(TAG, "motorpowers is locked.");
 			throw new IllegalAccessException();
 		}
 		return myValues;
@@ -498,11 +525,10 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	}
 	
 	/**
-	 * Spawns a thread that sets the motor speeds info to the supplied values, after cloning them for safe multi-threading.
-	 * Uses a new thread to permit the caller (usually Guidance) to move on to a new task immediately.
+	 * Sets the motor speed data to the supplied array.
 	 * @param mySpeeds The data to which the motor speeds should be set.
 	 */
-	protected synchronized void setMotorFields(double[] mySpeeds) {
+	protected void setMotorFields(double[] mySpeeds) {
 		if (mySpeeds.length < 4)
 			return;
 		final double[] speeds = mySpeeds.clone();
@@ -518,11 +544,30 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	}
 	
 	/**
+	 * Sets the motor power levels to the supplied array.
+	 * @param myPowers The data to which the motor power levels should be set.
+	 */
+	protected void setMotorPowerFields(double[] myPowers) {
+		if (myPowers.length < 4)
+			return;
+		final double[] powers = myPowers.clone();
+		mMutatorPool.submit(new Runnable() {
+			public void run() {
+				mMotorPowerLock.lock();
+				for (int i = 0; i < 4; i++) {
+					mMotorPower[i] = powers[i];
+				}
+				mMotorPowerLock.unlock();	
+			}
+		});
+	}
+	
+	/**
 	 * Writes the supplied GPS value at the specified GPS field. 
 	 * @param whichField The index of the GPS data to store.
 	 * @param value The GPS data.
 	 */
-	private synchronized void setGpsField(final int whichField, final double value) {
+	private void setGpsField(final int whichField, final double value) {
 		mMutatorPool.submit(new Runnable() {
 			public void run() {
 				mGpsLock[whichField].lock();
@@ -532,12 +577,13 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		});
 	}
 	
+	
 	/**
 	 * Writes the supplied reading at the specified field. 
 	 * @param whichField The index of the reading to store.
 	 * @param value The reading.
 	 */
-	private synchronized void setReadingField(final int whichField, final double value) {
+	private void setReadingField(final int whichField, final double value) {
 		mMutatorPool.submit(new Runnable() {
 			public void run() {
 				mReadingLock[whichField].lock();

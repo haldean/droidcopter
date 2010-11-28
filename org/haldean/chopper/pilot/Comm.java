@@ -144,11 +144,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 					Log.i(TAG, "Connection established");
 
 			        /* Initializes heartbeat protocol */
-					mHeartbeat.cancel();
-					mCountdown.purge();
-					//mCountdown.cancel();
-					//mCountdown = new Timer();
-			        mCountdown.schedule(mHeartbeat, FIRST_PULSE);
+					resetHeartbeat(FIRST_PULSE);
 			        startReading();
 				}
 				/* Something's wrong with the internet connection.  Try again soon. */
@@ -363,11 +359,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 			if (parts[1].equals("PULSE")) {
 				sendMessage(msg);
 				//Reset the heartbeat countdown
-				mHeartbeat.cancel();
-				mCountdown.purge();
-				//mCountdown.cancel();
-				//mCountdown = new Timer();
-		        mCountdown.schedule(mHeartbeat, PULSE_RATE);
+				resetHeartbeat(PULSE_RATE);
 		        return true;
 			}
 		}
@@ -379,6 +371,19 @@ public final class Comm implements Runnable, Receivable, Constants {
 			
 		}
 		return false;
+	}
+	
+	private void resetHeartbeat(int newTime) {
+		mHeartbeat.cancel();
+		mCountdown.purge();
+		mHeartbeat = new TimerTask() {
+			public void run() {
+				updateReceivers("CSYS:NOCONN");
+			}
+		};
+		//mCountdown.cancel();
+		//mCountdown = new Timer();
+        mCountdown.schedule(mHeartbeat, newTime);
 	}
 	
 	/** Spawns a thread that starts reading from the text socket. */

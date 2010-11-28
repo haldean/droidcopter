@@ -27,7 +27,7 @@ import android.util.Log;
  * <pre>
  * NAV:
  *     SET:
- *         MANUAL
+ *         MANUAL:&lt;north_south_vel&gt;:&lt;east_west_vel&gt;:&lt;up_down_vel&gt;:&lt;orientation&gt;
  *         AUTOPILOT
  *         AUTOTASK:&lt;travel_plan_index&gt;:&lt;serialized_NavTask&gt;
  *     GET:AUTOTASKS
@@ -235,7 +235,7 @@ public class Navigation implements Constants, Receivable {
 					autoPilot(false);
 					double[] newTarget = new double[4];
 					for (int i = 0; i < 4; i++) {
-						newTarget[i] = new Double(parts[i] + 3);
+						newTarget[i] = new Double(parts[i + 3]);
 					}
 					setTarget(newTarget);
 				}

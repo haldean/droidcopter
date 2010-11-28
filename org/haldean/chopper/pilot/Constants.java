@@ -42,6 +42,9 @@ public interface Constants {
 	/** Message for Guidance handler, passing a manual vector for motorspeeds **/
 	public static final int NEW_GUID_VECTOR = 110;
 	
+	/** Message for Guidance handler, instructing it to obtain PID values **/
+	public static final int GET_PIDS = 11;
+	
 	/* Sensor indices */
 	
 	/** Used by internal data structures as an index for the chopper's azimuth, related data and objects */

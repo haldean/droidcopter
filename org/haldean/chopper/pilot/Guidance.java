@@ -14,12 +14,15 @@ import android.util.Log;
  * May send the following messages to registered Receivables:<br>
  * <pre>
  * GUID:ERROR:&lt;loop_1_error&gt;:&lt;loop_2_error&gt;:&lt;loop_3_error&gt;:&lt;loop_4_error&gt;
+ * GUID:PID:VALUE:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
  * </pre>
  * 
  * May receive the following messages from Chopper components:
  * <pre>
  * GUID:
- *      PID:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ *      PID:
+ *          SET:&lt;pid_loop_number&gt;:&lt;pid_parameter_index&gt;:&lt;pid_parameter_value&gt;
+ *          GET
  *      AUTOMATIC
  *      VECTOR:&lt;north_motor_speed&gt;:&lt;south_motor_speed&gt;:&lt;east_motor_speed&gt;:&lt;west_motor_speed&gt;
  * 
@@ -173,6 +176,21 @@ public class Guidance implements Constants, Receivable {
 									updateMotors();
 								}
 								break;
+							case GET_PIDS:
+								Receivable source = (Receivable) msg.obj;
+								
+								//Send each PID value to the requesting object
+								for (int i = 0; i < 4; i++) {
+									for (int j = 0; j < 3; j++) {
+										source.receiveMessage("GUID:PID:VALUE:" +
+															  i + ":" + j + ":" +
+															  mGain[i][j],
+															  null);
+												
+									}
+								}
+									
+								break;
 							}
 						}
 					};
@@ -196,12 +214,18 @@ public class Guidance implements Constants, Receivable {
 		String[] parts = msg.split(":");
 		if (parts[0].equals("GUID")) {
 			if (parts[1].equals("PID")) {
-				Message newValue = Message.obtain(mHandler,
-												  NEW_PID_VALUE,
-												  new Integer(parts[2]),
-												  new Integer(parts[3]), 
-												  new Double(parts[4]));
-				newValue.sendToTarget();
+				if (parts[2].equals("SET")) {
+					Message newValue = Message.obtain(mHandler,
+													  NEW_PID_VALUE,
+													  new Integer(parts[3]),
+													  new Integer(parts[4]), 
+													  new Double(parts[5]));
+					newValue.sendToTarget();
+				}
+				if (parts[2].equals("GET")) {
+					Message getPids = Message.obtain(mHandler, GET_PIDS, source);
+					getPids.sendToTarget();
+				}
 			}
 			if (parts[1].equals("AUTOMATIC")) {
 				mHandler.removeMessages(EVAL_MOTOR_SPEED);

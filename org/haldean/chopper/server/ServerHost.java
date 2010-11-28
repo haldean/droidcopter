@@ -29,6 +29,9 @@ public class ServerHost extends JFrame {
     public final ImagePanel ic;
     /** The component that displays graphs of the acceleration */
     public final AccelerationComponent ac;
+    /** The component that displays error values from the four PID
+     *  loops on the chopper. */
+    public final PidErrorComponent pidc;
     /** An Updatable that receives all messages from the chopper
      *  @see EchoUpdatable */
     public final Updatable status;
@@ -80,6 +83,7 @@ public class ServerHost extends JFrame {
 	tc = new OrientationComponent();
 	ic = new ImagePanel();
 	ac = new AccelerationComponent();
+	pidc = new PidErrorComponent();
 	sc = new SensorComponent();
 	status = new EchoUpdatable();
 	debug = new UpdatableTextArea("Debug");
@@ -100,9 +104,14 @@ public class ServerHost extends JFrame {
 
 	/* Tie the updatables to the DataReceiver */
 	r.tie(sp);
-	/* Tie the heartbeat to the DataReceiver */
-	r.tie(HeartbeatThread.revive());
+	/* Tie the PID error visualization to the DataReceiver */
+	r.tie(pidc);
 	r.tieImage(ic);
+
+	if (ServerCreator.getHeartbeatEnabled()) {
+	    /* Tie the heartbeat to the DataReceiver */
+	    r.tie(HeartbeatThread.revive());
+	}
 
 	leftTabPanes = new LinkedList<Component>();
 	rightTabPanes = new LinkedList<Component>();
@@ -117,6 +126,7 @@ public class ServerHost extends JFrame {
 	rightTabPanes.add(ic);
 	rightTabPanes.add(ac);
 	rightTabPanes.add(sc);
+	rightTabPanes.add(pidc);
 
 	pad = new PadController(this);
     }
@@ -157,6 +167,7 @@ public class ServerHost extends JFrame {
 	sc.updateUI();
 	lc.updateUI();
 	ic.updateUI();
+	pidc.updateUI();
 
 	/* The right/left pane creator */
 	JPanel horizontalPanel = new JPanel(new GridLayout(1,2));

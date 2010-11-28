@@ -31,6 +31,32 @@ public class NavDest implements NavTask, Constants {
 	private static String TAG = "nav.NavDest";
 	
 	private ChopperStatus myCs;
+
+	/**
+	 *  Create a NavDest for a given set of parameters.
+	 *
+	 *  @param altitude The target altitude.
+	 *  @param longitude The target longitude.
+	 *  @param latitude The target latitude.
+	 *  @param velocity The velocity at which to move to the target.
+	 *  @param destDist The radius around the target at which we
+	 *  will consider this task complete.
+	 */
+	public static NavDest taskFor(double altitude, double longitude, double latitude,
+				      double velocity, double destDist) {
+		NavDest n = new NavDest();
+		n.altitude = altitude;
+		n.longitude = longitude;
+		n.latitude = latitude;
+		n.myVelocity = velocity;
+		n.destDist = destDist;
+		return n;
+	}
+
+	private NavDest() {
+		/* This is here so that we can use the static NavDest builder. */
+	}
+		
 	/**
 	 *  Creates/deserializes a NavDest from a String.  The String should be of the format DEST!altitude!longitude!latitude!velocity!minimumDistance
 	 * @param myString String to deserialize

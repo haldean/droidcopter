@@ -9,6 +9,17 @@ public class NavVel implements NavTask, Constants {
 	private double[] velocity = new double[4];
 	private long timeToExecute;
 	private long firstCall = -1;
+
+	public static NavVel taskFor(double[] velocities, long timeToExecute) {
+		NavVel n = new NavVel();
+		n.velocity = velocities;
+		n.timeToExecute = timeToExecute;
+		return n;
+	}
+
+	private NavVel() {
+		/* This is here so that we can use the static NavVel builder. */
+	}
 	
 	/**
 	 * Constructs/deserializes a NavVel from a String.

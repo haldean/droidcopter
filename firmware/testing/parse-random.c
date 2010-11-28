@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#define MAX 10000
+
 int main(int argc, char* argv[]) {
   int i;
   long j = 0;
@@ -9,10 +11,10 @@ int main(int argc, char* argv[]) {
     j++;
 
     if (j % 4 == 0) {
-      printf("\n");
+      printf("\r\n");
     }
 
-    if (j == 1000) break;
+    if (j == 10000) break;
   }
 
   return 0;

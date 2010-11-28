@@ -97,7 +97,7 @@ public class SensorComponent extends JPanel {
     /**
      *  Add a new round-trip ping datapoint
      *
-     *  @param ping The most recent round trip time.
+     *  @param newPing The most recent round trip time.
      */
     public void setPing(int newPing) {
 	ping.addValue(newPing);

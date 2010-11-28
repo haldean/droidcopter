@@ -2,17 +2,20 @@
 
 if [ -z "${ANDROIDPATH}" ]; then
     if [ `hostname` == "alux" ]; then
-	export ANDROIDPATH='/usr/share/android/platforms/android-8/android.jar'
+	export ANDROID_ROOT='/usr/share/android'
+	export LINKOFFLINE="-linkoffline $ANDROID_ROOT/docs/reference $ANDROID_ROOT/docs/reference"
+	export WORLDWIND_DOCS='-linkoffline /usr/share/doc/worldwind-doc /usr/share/doc/worldwind-doc'
     else
-	export ANDROIDPATH='/home/benjamin/bin/android-sdk-linux_86/platforms/android-8/android.jar'
+	export ANDROID_ROOT='/home/benjamin/bin/android-sdk-linux_86'
+	export LINKOFFLINE="-linkoffline http://developer.android.com/reference/ $ANDROID_ROOT/docs/reference"
     fi
 fi
+
+export ANDROIDPATH="$ANDROID_ROOT/platforms/android-8/android.jar"
 export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
 
-if [ `hostname` == "alux" ]; then
-export LINKOFFLINE=''
-else
-export LINKOFFLINE='-linkoffline http://developer.android.com/reference/ /home/benjamin/bin/android-sdk-linux_86/docs/reference'
+if [ 'heartless' == "$1" ]; then
+    export HEARTLESS='--heartless'
 fi
 
 OSNAME=`uname`
@@ -33,11 +36,12 @@ clean() {
 run() {
     java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m \
 	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator \
-	-h droidcopter.cs.columbia.edu:7000 -d
+	-h droidcopter.cs.columbia.edu:7000 -d $HEARTLESS
 }
 
 doc() {
-    javadoc -author -version -d doc/ $LINKOFFLINE -classpath $CLASSPATH -sourcepath . \
+    javadoc -author -version -d doc/ $LINKOFFLINE $WORLDWIND_DOCS \
+	-classpath $CLASSPATH -sourcepath . -windowtitle "Robocopter Documentation" \
 	`ls -d org/haldean/chopper/*/ | sed "s/[\/]*$//" | sed "s/\//./g" | xargs`
 }
 
@@ -59,6 +63,8 @@ if [ 'pack' == "$1" ]; then
     tar -czf server.tar.gz org unit
 elif [ 'doc' == "$1" ]; then
     doc
+elif [ 'open-doc' == "$1" ]; then
+    gnome-open doc/index.html &> /dev/null
 elif [ 'check' == "$1" ]; then
     clean
     check

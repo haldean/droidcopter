@@ -8,6 +8,7 @@ public class ServerCreator {
     private static String uri;
     private static Integer dataPort;
     private static Integer imagePort;
+    private static boolean enableHeartbeat = true;
 
     public static String getURI() {
 	return uri;
@@ -25,6 +26,10 @@ public class ServerCreator {
 	return imagePort;
     }
 
+    public static boolean getHeartbeatEnabled() {
+	return enableHeartbeat;
+    }
+
     /** Run the chopper host 
      *  @param args -d enables printing debug information to the command line,
      *  and -h followed by a hostname specifies the hostname to connect to 
@@ -33,14 +38,16 @@ public class ServerCreator {
 	/* Parse command line arguments */
 	String uriString = null;
 	for (int i=0; i<args.length; i++) {
-	    if (args[i].startsWith("-d"))
+	    if (args[i].equals("-d")) {
 		Debug.setEnabled(true);
-	    if (args[i].startsWith("-h")) {
+	    } else if (args[i].startsWith("-h")) {
 		if (args.length - 1 == i) {
 		    System.err.println("You must supply a host:port after the -h flag.");
 		    System.exit(-1);
 		}
 		uriString = args[++i];
+	    } else if (args[i].equals("--heartless")) {
+		enableHeartbeat = false;
 	    }
 	}
 

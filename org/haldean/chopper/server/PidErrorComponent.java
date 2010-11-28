@@ -70,13 +70,18 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	repaint();
     }
 
-    /** Used for TabPanes */
+    /** 
+     *  Used for TabPanes 
+     */
     public String getName() {
 	return "Tuning Errors";
     }
 
-    /** Set the scale of all of the underlying graphs
-     *  @param s The number of samples to show along the X axis */
+    /** 
+     *  Set the scale of all of the underlying graphs
+     *
+     *  @param s The number of samples to show along the X axis
+     */
     public void setScale(int s) {
 	loop1.setSampleCount(s);
 	loop2.setSampleCount(s);
@@ -85,7 +90,9 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	scaleLabel.setText(s + " samples");
     }
 
-    /** Update the look and feel of this component */
+    /** 
+     *  Update the look and feel of this component
+     */
     public void updateUI() {
 	super.updateUI();
 	if (scalePanel != null) {
@@ -96,10 +103,14 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	}
     }
 
-    /** Add a new acceleration data point 
-     *  @param x The x-component of the acceleration
-     *  @param y The y-component of the acceleration
-     *  @param z The z-component of the acceleration */
+    /** 
+     *  Add a new acceleration data point 
+     *
+     *  @param l1 The error in Loop 1
+     *  @param l2 The error in Loop 2
+     *  @param l3 The error in Loop 3
+     *  @param l4 The error in Loop 4
+     */
     public void setErrors(double l1, double l2, double l3, double l4) {
 	loop1.addValue(l1);
 	loop2.addValue(l2);

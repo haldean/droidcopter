@@ -23,7 +23,7 @@ public class Navigator {
    *  This is a convenience class that is never instantiated.
    */
   private Navigator() {
-    // You'll never reach me in here! AAAH HA HAA.
+    /* You'll never reach me in here! AAAH HA HAA. */
   }
 
   /**

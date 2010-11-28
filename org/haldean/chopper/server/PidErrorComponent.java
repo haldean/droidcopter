@@ -1,6 +1,7 @@
 package org.haldean.chopper.server;
 
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.util.LinkedList;
@@ -24,6 +25,7 @@ public class PidErrorComponent extends JPanel implements Updatable {
     private final JLabel scaleLabel;
     /* The default X-axis scale of the graphs */
     private final int defaultScale = 300;
+    private JButton pidButton;
 
     public PidErrorComponent() {
 	super(new BorderLayout());
@@ -51,9 +53,17 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	    });
 	setScale(defaultScale);
 
+	pidButton = new JButton("Change Tuning Parameters");
+	pidButton.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+		    PidTuningComponent.activate();
+		}
+	    });
+
 	scalePanel = new JPanel(new BorderLayout());
 	scalePanel.add(scaleLabel, BorderLayout.EAST);
 	scalePanel.add(scaleChooser, BorderLayout.CENTER);
+	scalePanel.add(pidButton, BorderLayout.WEST);
 
 	add(scalePanel, BorderLayout.SOUTH);
 
@@ -82,6 +92,7 @@ public class PidErrorComponent extends JPanel implements Updatable {
 	    scalePanel.updateUI();
 	    scaleLabel.updateUI();
 	    scaleChooser.updateUI();
+	    pidButton.updateUI();
 	}
     }
 

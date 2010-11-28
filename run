@@ -14,7 +14,7 @@ fi
 export ANDROIDPATH="$ANDROID_ROOT/platforms/android-8/android.jar"
 export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
 
-if [ 'heartless' == "$1" ]; then
+if [ 'heartless' == "$1" ] || [ 'heartless' == "$2" ]; then
     export HEARTLESS='--heartless'
 fi
 
@@ -26,6 +26,7 @@ else
     DOCK='-Xdock:icon=img/logo.png -Xdock:name=HorizonServer'
 fi
 
+
 clean() {
     echo "Clean old classfiles" 1>&2
     rm -f org/haldean/chopper/server/*.class
@@ -36,7 +37,7 @@ clean() {
 run() {
     java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m \
 	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator \
-	-h droidcopter.cs.columbia.edu:7000 -d $HEARTLESS
+	-h $HOSTPORT -d $HEARTLESS
 }
 
 doc() {
@@ -64,16 +65,30 @@ if [ 'pack' == "$1" ]; then
 elif [ 'doc' == "$1" ]; then
     doc
 elif [ 'open-doc' == "$1" ]; then
+    doc
     gnome-open doc/index.html &> /dev/null
 elif [ 'check' == "$1" ]; then
     clean
     check
 elif [ 'nobuild' == "$1" ]; then
+    if [ '' == "$2" ]; then 
+	export HOSTPORT='droidcopter.cs.columbia.edu:7000'
+    else 
+	export HOSTPORT=$2
+    fi
+
     run
 elif [ 'build' == "$1" ]; then
     clean
     build
 else
     clean
+    
+    if [ '' == "$1" ]; then 
+	export HOSTPORT='droidcopter.cs.columbia.edu:7000'
+    else 
+	export HOSTPORT=$1
+    fi
+  
     build && echo "Compiled" 1>&2 && run
 fi

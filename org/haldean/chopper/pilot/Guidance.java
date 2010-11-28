@@ -188,8 +188,7 @@ public class Guidance implements Constants, Receivable {
 															  null);
 												
 									}
-								}
-									
+								}							
 								break;
 							}
 						}

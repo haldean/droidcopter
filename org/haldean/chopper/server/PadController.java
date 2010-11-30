@@ -5,7 +5,7 @@ import javax.swing.*;
 
 /** A thread to take input from a game pad and cue various events in the UI 
  *  @author William Brown */
-public class PadController implements Runnable {
+public class PadController extends UiController {
     private ServerHost ui;
     private Controller ctrl;
     private StatusLabel sl;
@@ -194,7 +194,8 @@ public class PadController implements Runnable {
     private void axesAction() {
 	if (globeMovement) {
 	    float zoom = getAxis(AXIS_L_TRIGGER) - getAxis(AXIS_R_TRIGGER);
-	    ui.lc.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
+	    ui.lc.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), 
+			   zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
 	}
     }
 
@@ -213,7 +214,7 @@ public class PadController implements Runnable {
 	    lastButtonMask = mask;
 
 	    try {
-		Thread.sleep(10);
+		Thread.sleep(POLL_PERIOD);
 	    } catch (Exception e) {
 		e.printStackTrace();
 	    }

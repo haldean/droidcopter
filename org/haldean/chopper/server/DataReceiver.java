@@ -171,8 +171,10 @@ public class DataReceiver implements Runnable {
     }
 
     /** Create a thread to receive an incoming image.
-     *  @param msg The image incoming message. This is necessary because it contains the
-     *             length of the image to be received */
+     *
+     *  @param msg The image incoming message. This is necessary
+     *             because it contains the length of the image to be
+     *             received */
     private void receiveImage(String msg) {
 	try {
 	    /* Create a new ObjectInputStream if it doesn't already exist. */
@@ -230,8 +232,10 @@ public class DataReceiver implements Runnable {
     public void sendln(String s) {
 	Debug.log("Sending: " + s);
 	try {
-	    output.write(s + "\n");
-	    output.flush();
+	    if (output != null) {
+		output.write(s + "\n");
+		output.flush();
+	    }
 	} catch (IOException e) {
 	    e.printStackTrace();
 	}

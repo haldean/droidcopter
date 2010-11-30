@@ -12,7 +12,7 @@ if [ -z "${ANDROIDPATH}" ]; then
 fi
 
 export ANDROIDPATH="$ANDROID_ROOT/platforms/android-8/android.jar"
-export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
+export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:/usr/share/java/j3dcore.jar:/usr/share/java/j3dutils.jar:/usr/share/java/vecmath.jar:.
 
 if [ 'heartless' == "$1" ] || [ 'heartless' == "$2" ]; then
     export HEARTLESS='--heartless'
@@ -54,6 +54,14 @@ build() {
     javac org/haldean/chopper/server/ServerCreator.java -Xlint:deprecation
 }
 
+keyboard() {
+    echo "Enabling keyboard. You may be asked to input your password."
+    echo "The command about to be run is 'sudo chmod o+r /dev/input/*'"
+    echo "This will add read priveleges to all input devices for all users."
+    echo "To revert after running, run 'sudo chmod o-r /dev/input/*'."
+    sudo chmod o+r /dev/input/*
+}
+
 if [ 'clean' == "$1" ]; then
     clean
     exit
@@ -62,6 +70,8 @@ fi
 if [ 'pack' == "$1" ]; then
     echo "Creating archive" 1>&2
     tar -czf server.tar.gz org unit
+elif [ 'enable-keyboard' == "$1" ]; then
+    keyboard
 elif [ 'doc' == "$1" ]; then
     doc
 elif [ 'open-doc' == "$1" ]; then

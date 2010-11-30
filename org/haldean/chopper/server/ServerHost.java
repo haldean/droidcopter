@@ -47,7 +47,7 @@ public class ServerHost extends JFrame {
     public final MotorComponent mc;
 
     /* Custom controllers, mostly because Will is the effing man */
-    private final PadController pad;
+    private final UiController pad;
 
     /** The components to put in the left tab pane in the UI */
     private LinkedList<Component> leftTabPanes;
@@ -132,7 +132,8 @@ public class ServerHost extends JFrame {
 	rightTabPanes.add(sc);
 	rightTabPanes.add(pidc);
 
-	pad = new PadController(this);
+	//pad = new PadController(this);
+	pad = new KeyboardController(this);
     }
 
     /** Start accepting data */

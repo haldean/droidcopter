@@ -157,9 +157,9 @@ public class PidTuningComponent extends JFrame implements Updatable {
 		double i = new Double(iValue.getText());
 		double d = new Double(dValue.getText());
 
-		Navigator.tunePid(loop.ordinal(), 0, p);
-		Navigator.tunePid(loop.ordinal(), 1, i);
-		Navigator.tunePid(loop.ordinal(), 2, d);
+		EnsignCrusher.tunePid(loop.ordinal(), 0, p);
+		EnsignCrusher.tunePid(loop.ordinal(), 1, i);
+		EnsignCrusher.tunePid(loop.ordinal(), 2, d);
 	    } catch (NumberFormatException e) {
 		e.printStackTrace();
 	    }
@@ -173,6 +173,6 @@ public class PidTuningComponent extends JFrame implements Updatable {
     }
 
     public static void updatePID() {
-	Navigator.requestPidValues();
+	EnsignCrusher.requestPidValues();
     }
 }

@@ -82,7 +82,7 @@ public class MotorComponent extends UpdateUiPanel implements Updatable {
 		}
 	    }
 
-	    Navigator.setMotorSpeeds(speeds);
+	    EnsignCrusher.setMotorSpeeds(speeds);
 	} catch (NumberFormatException e) {
 	    try {
 		JOptionPane.showMessageDialog(this, "There was an error setting the motor speeds.\n" + e.toString(),

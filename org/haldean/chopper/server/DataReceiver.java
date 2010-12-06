@@ -55,7 +55,6 @@ public class DataReceiver implements Runnable {
     private LinkedList<Updatable> tied;
     /* The ImagePanel to pass retrieved images to */
     private ImagePanel imageTied;
-    private MessageHookManager hooks;
 
     /* Are we connected to the server? */
     private boolean isConnected;
@@ -102,9 +101,6 @@ public class DataReceiver implements Runnable {
 	    });
 	timeout.setInitialDelay(timeoutLength);
 	timeout.setRepeats(false);
-
-	hooks = new MessageHookManager();
-	hooks.start();
     }
 
     /** Tie the component to a status label.
@@ -135,7 +131,7 @@ public class DataReceiver implements Runnable {
      *  @param msg The received message
      */
     public void updateAll(String msg) {
-	hooks.queue(msg);
+	MessageHookManager.queue(msg);
 
 	/* If this message means there's an incoming image,
 	 * get ready to receive it. */
@@ -238,7 +234,7 @@ public class DataReceiver implements Runnable {
     public void sendln(String s) {
 	try {
 	    if (output != null) {
-		hooks.queue(s);
+		MessageHookManager.queue(s);
 		output.write(s + "\n");
 		output.flush();
 	    }

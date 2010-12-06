@@ -8,25 +8,38 @@ import java.util.Map;
 import java.util.Queue;
 
 public class MessageHookManager extends Thread {
+    private static MessageHookManager instance = null;
+    public static synchronized MessageHookManager getInstance() {
+	if (instance == null) {
+	    instance = new MessageHookManager();
+	    instance.defaultHooks();
+	}
+	return instance;
+    }
+
     List<MessageHook> hooks;
     Map<String, List<MessageHook>> prefixes;
     Queue<String> queue;
 
-    public MessageHookManager() {
+    private MessageHookManager() {
 	setName("Message hook manager");
 
 	hooks = new ArrayList<MessageHook>();
 	prefixes = new HashMap<String, List<MessageHook>>();
 	queue = new LinkedList<String>();
 
-	defaultHooks();
+	start();
     }
 
     public void defaultHooks() {
 	addHook(new PidLogger());
     }
 
-    public void addHook(MessageHook hook) {
+    public static void addHook(MessageHook hook) {
+	getInstance().addHookInternal(hook);
+    }
+
+    private void addHookInternal(MessageHook hook) {
 	hooks.add(hook);
 
 	String[] hookPrefixes = hook.processablePrefixes();
@@ -54,8 +67,8 @@ public class MessageHookManager extends Thread {
 	}
     }
 
-    public void queue(String message) {
-	queue.add(message);
+    public static void queue(String message) {
+	getInstance().queue.add(message);
     }
 
     public void run() {

@@ -28,7 +28,7 @@ import gov.nasa.worldwind.layers.Earth.*;
 /** A component that shows a globe with the chopper's path, along with
  *  some basic following and location-setting controls 
  *  @author William Brown */
-public class WorldWindComponent extends JPanel {
+public class WorldWindComponent extends UpdateUiPanel {
     /* The WorldWind component. */
     private final WorldWindowGLCanvas wwd;
     

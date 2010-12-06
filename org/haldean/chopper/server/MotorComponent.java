@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 import org.haldean.chopper.server.StyleProvider;
 
-public class MotorComponent extends UpdateUiPanel implements Updatable {
+public class MotorComponent extends UpdateUiPanel implements MessageHook {
     private MotorDisplay display;
     private final int MOTOR_MAX = 1;
     private final int MOTOR_MIN = 0;
@@ -50,18 +50,17 @@ public class MotorComponent extends UpdateUiPanel implements Updatable {
 	return "Motor Speeds";
     }
 
-    public void update(String message) {
-	if (!message.startsWith("MOTORSPEED")) return;
+    public String[] processablePrefixes() {
+	return new String[] {"MOTORSPEED"};
+    }
 
-	String[] parts = message.split(":");
-	
+    public void process(Message message) {
 	for (Motor m : Motor.values()) {
 	    int index = 0;
 	    if (m.equals(Motor.YNEG)) index = 1;
 	    if (m.equals(Motor.XPOS)) index = 2;
 	    if (m.equals(Motor.XNEG)) index = 3;
-	    double speed = new Double(parts[index + 1]);
-	    
+	    double speed = new Double(message.getPart(index + 1));
 	    display.setMotorSpeed(m, speed);
 	}
     }

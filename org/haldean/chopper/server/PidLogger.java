@@ -23,10 +23,12 @@ public class PidLogger implements MessageHook {
 	    output = new FileWriter(fileName);
 	    Debug.log("Capturing PID data to " + fileName);
 	    activated = true;
+
 	} catch (IllegalArgumentException e) {
 	    Debug.log("PidLogger disabled: no output file specified.");
 	    activated = false;
 	    return;
+
 	} catch (IOException e) {
 	    Debug.log("PidLogger disabled: " + e.getMessage());
 	    activated = false;

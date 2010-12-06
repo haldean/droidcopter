@@ -8,24 +8,6 @@ package org.haldean.chopper.server;
  */
 public interface MessageHook {
     /**
-     *  Returns whether the implementing class processes incoming
-     *  messages (messages from the chopper).
-     *
-     *  @return True if this class processes incoming messages, or
-     *  false otherwise.
-     */
-    boolean checkIncoming();
-
-    /**
-     *  Returns whether the implementing class processes outgoing
-     *  messages (messages to the chopper).
-     *
-     *  @return True if this class processes outgoing messages, or
-     *  false otherwise.
-     */
-    boolean checkOutgoing();
-
-    /**
      *  Gets the list of string prefixes representing messages that
      *  this class can process.
      *

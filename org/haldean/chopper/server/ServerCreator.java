@@ -1,21 +1,24 @@
 package org.haldean.chopper.server;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class ServerCreator {
+    private static HashMap<String, String> arguments;
+
     private static String uri;
     private static Integer dataPort;
     private static Integer imagePort;
     private static boolean enableHeartbeat = true;
 
-    public static String getURI() {
-	return uri;
+    public static String getUri() {
+	return arguments.get("host");
     }
 
     public static String getServer() {
-	return uri + ":" + dataPort;
+	return getUri() + ":" + dataPort;
     }
 
     public static Integer getDataPort() {
@@ -30,33 +33,39 @@ public class ServerCreator {
 	return enableHeartbeat;
     }
 
+    public static String getArgument(String argumentName) throws IllegalArgumentException {
+	if (! arguments.containsKey(argumentName)) {
+	    throw new IllegalArgumentException(argumentName + 
+					       " was not specified on the command line.");
+	}
+
+	return arguments.get(argumentName);
+    }
+
     /** Run the chopper host 
      *  @param args -d enables printing debug information to the command line,
      *  and -h followed by a hostname specifies the hostname to connect to 
      *  @throws Exception if the provided host name is invalid */
     public static void main(String args[]) {
 	/* Parse command line arguments */
-	String uriString = null;
-	for (int i=0; i<args.length; i++) {
-	    if (args[i].equals("-d")) {
-		Debug.setEnabled(true);
-	    } else if (args[i].startsWith("-h")) {
-		if (args.length - 1 == i) {
-		    System.err.println("You must supply a host:port after the -h flag.");
-		    System.exit(-1);
-		}
-		uriString = args[++i];
-	    } else if (args[i].equals("--heartless")) {
-		enableHeartbeat = false;
+	arguments = new HashMap<String, String>();
+
+	for (String arg : args) {
+	    if (arg.length() > 0) {
+		String[] argparts = arg.split("=", 2);
+		String value = argparts.length == 2 ? argparts[1] : null;
+		arguments.put(argparts[0], value);
 	    }
 	}
+	 
+	if (arguments.containsKey("debug"))
+	    Debug.setEnabled(true);
 
-	String[] uriParts = uriString.split(":");
-	uri = uriParts[0];
-	dataPort = new Integer(uriParts[1]);
-	imagePort = new Integer(uriParts[1]) + 1;
+	dataPort = new Integer(arguments.get("port"));
+	imagePort = dataPort + 1;
+	enableHeartbeat = !arguments.containsKey("heartless");
 
-	DataReceiver.getInstance().initialize(getURI(), getDataPort(), getImagePort());
+	DataReceiver.getInstance().initialize(getUri(), getDataPort(), getImagePort());
 
 	final ServerHost s = new ServerHost();
 	s.osInit();

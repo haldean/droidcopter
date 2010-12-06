@@ -13,9 +13,10 @@ fi
 
 export ANDROIDPATH="$ANDROID_ROOT/platforms/android-8/android.jar"
 export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:/usr/share/java/j3dcore.jar:/usr/share/java/j3dutils.jar:/usr/share/java/vecmath.jar:.
+export PORT=7000
 
 if [ 'heartless' == "$1" ] || [ 'heartless' == "$2" ]; then
-    export HEARTLESS='--heartless'
+    export HEARTLESS='heartless'
 fi
 
 OSNAME=`uname`
@@ -35,9 +36,11 @@ clean() {
 }
 
 run() {
-    java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m \
-	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator \
-	-h $HOSTPORT -d $HEARTLESS
+    CMD="java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m
+	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator
+	host=$HOST port=$PORT debug $HEARTLESS pidlog=pidlog.txt"
+    echo $CMD
+    exec $CMD
 }
 
 doc() {
@@ -82,9 +85,9 @@ elif [ 'check' == "$1" ]; then
     check
 elif [ 'nobuild' == "$1" ]; then
     if [ '' == "$2" ]; then 
-	export HOSTPORT='droidcopter.cs.columbia.edu:7000'
+	export HOST=droidcopter.cs.columbia.edu
     else 
-	export HOSTPORT=$2
+	export HOST=$2
     fi
 
     run
@@ -95,9 +98,9 @@ else
     clean
     
     if [ '' == "$1" ]; then 
-	export HOSTPORT='droidcopter.cs.columbia.edu:7000'
+	export HOST='droidcopter.cs.columbia.edu'
     else 
-	export HOSTPORT=$1
+	export HOST=$1
     fi
   
     build && echo "Compiled" 1>&2 && run

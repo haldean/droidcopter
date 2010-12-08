@@ -1,12 +1,12 @@
-#include <Messenger.h>
-
-#define STATUS_LED 13
+#define BAD_REQUEST "BADREQUEST"
+#define HEARTBEAT_PULSE "PULSE"
+#define MESSAGE_TIMEOUT_CYCLES 100
 #define MOTOR_COUNT 4
+#define SPEED_HEADER "NEWSPEED"
+#define STATUS_LED 13
 #define STATUS_LED_CYCLES 30000
-#define DEBUG_RESPONSE 1
-
-Messenger serial = Messenger();
-unsigned int led_cycles = 0;
+#define WORD_BUFFER_LENGTH 4
+#define WORD_LENGTH 3
 
 struct motor {
   unsigned char pin;
@@ -17,6 +17,10 @@ struct motor {
 struct motor motors[MOTOR_COUNT] = {
   {6, 0, 0}, {9, 0, 0}, {10, 0, 0}, {11, 0, 0}
 };
+
+char buffer[WORD_BUFFER_LENGTH];
+unsigned int led_cycles = 0;
+
 
 /**
  *  Updates the speeds of the motors.
@@ -29,35 +33,13 @@ void write_speeds(void) {
 }
 
 void print_speeds(void) {
-  Serial.print("New speeds: ");
+  Serial.print(SPEED_HEADER);
   for (int i = 0; i < MOTOR_COUNT; i++) {
+    Serial.print(":"
+    );
     Serial.print(motors[i].current_speed);
-    Serial.print(' ');
   }
   Serial.println();
-}
-
-/**
- *  Handle a message from the controller. Sets the speeds then
- *  requests a speed update.
- */
-void handle_message(void) {
-  for (int i = 0; i < MOTOR_COUNT; i++) {
-    if (! serial.available()) {
-      Serial.println("You didn't send me a correctly formatted message.");
-#ifdef DEBUG_RESPONSE
-      print_speeds();
-#endif
-      return;
-    } else {
-      motors[i].next_speed = serial.readInt() % 256;
-    }
-  }
-
-  write_speeds();
-#ifdef DEBUG_RESPONSE
-  print_speeds();
-#endif
 }
 
 /**
@@ -75,22 +57,52 @@ void setup(void) {
 
   /* Initialize serial monitor. */
   Serial.begin(115200);
-  serial.attach(handle_message);
 }
 
 /**
  *  Wait for serial information to come in.
  */
 void loop(void) {
-  while (Serial.available() > 0) {
+  if (Serial.available() >= WORD_LENGTH) {
+    int i, j, timeout;
     led_cycles = 0;
     digitalWrite(STATUS_LED, HIGH);
 
-    serial.process(Serial.read());
+    for (i=0; i<MOTOR_COUNT; i++) {
+      for (timeout=0; timeout < MESSAGE_TIMEOUT_CYCLES; timeout++) {
+        if (Serial.available() >= WORD_LENGTH) break;
+      }
+      
+      if (Serial.available() >= WORD_LENGTH) {
+        for (j=0; j<WORD_LENGTH; j++) {
+          buffer[j] = Serial.read();
+        }
+        
+        buffer[WORD_LENGTH] = '\0';
+        motors[i].next_speed = atoi(buffer);
+      } else {
+        Serial.println(BAD_REQUEST);
+      }
+    }
+      
+    /* Flush serial buffer after reading a line. */
+    while (Serial.available()) {
+      Serial.print("");
+      Serial.read();
+    }
+    
+    write_speeds();
+    print_speeds();
   }
 
   led_cycles++;
   if (led_cycles >= STATUS_LED_CYCLES) {
     digitalWrite(STATUS_LED, LOW);
   }
+  
+  if (led_cycles % 10000 == 0) {
+   // Serial.println(HEARTBEAT_PULSE);
+  }
+  
 }
+

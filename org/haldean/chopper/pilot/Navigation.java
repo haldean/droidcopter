@@ -61,7 +61,7 @@ public class Navigation implements Constants, Receivable {
 	private final AtomicBoolean mAutoPilot = new AtomicBoolean(false);
 	
 	/** Chopper's navigation status */
-	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES);
+	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES - 1);
 	
 	/** Holds all flight plans */
 	private Vector<NavTask> mTravelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
@@ -115,7 +115,7 @@ public class Navigation implements Constants, Receivable {
 		mHandler.removeMessages(EVAL_NAV);
 		if (mAutoPilot.get()) {
 			mHandler.sendEmptyMessage(EVAL_NAV);
-			System.out.println("Autopilot engaged");
+			Log.i(TAG, "Autopilot engaged");
 		}
 	}
 	
@@ -155,8 +155,7 @@ public class Navigation implements Constants, Receivable {
 					setTask(BASIC_AUTO, taskList);
 					setTask(NO_CONN, "{ VEL!0!0!-1!0!10000 }");
 					setTask(LOW_POWER, "{ VEL!0!0!-1!0!10000 }");
-					updateStatus(BASIC_AUTO);
-					autoPilot(true);
+					//autoPilot(true);
 					Looper.loop();
 				}
 			};
@@ -230,6 +229,7 @@ public class Navigation implements Constants, Receivable {
 	 * @param source The source of the message, if a reply is needed.  May be null.
 	 */
 	public void receiveMessage(String msg, Receivable source) {
+		Log.d(TAG, "Receiving " + msg);
 		String[] parts = msg.split(":");
 		if (parts[0].equals("NAV")) {
 			if (parts[1].equals("SET")) {
@@ -266,6 +266,7 @@ public class Navigation implements Constants, Receivable {
 		}
 		if (parts[0].equals("CSYS")) {
 			if (parts[1].equals("NOCONN")) {
+				Log.d(TAG, "no conn in Nav");
 				updateStatus(NO_CONN);
 				autoPilot(true);
 				updateReceivers("GUID:AUTOMATIC");
@@ -339,18 +340,18 @@ public class Navigation implements Constants, Receivable {
 		
 		NavTask myList = mTravelPlans.get(thisStatus);
 		if (myList.isComplete()) {
-			System.out.println("Hovering");
+			Log.i(TAG, "Hovering");
 			hover();
 			return;
 		}
 		myList.getVelocity(mTempTarget);
 		setTarget(mTempTarget);
 		
-		System.out.print("New NAV Vector: ");
+		String newNav = "New Nav Vector: ";
 		for (int i = 0; i < 4; i++) {
-			System.out.print(mTempTarget[i] + " ");
+			newNav += mTempTarget[i] + " ";
 		}
-		System.out.println();
+		Log.i(TAG, newNav);
 		
 		long interval = myList.getInterval();
 		

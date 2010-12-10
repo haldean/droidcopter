@@ -259,9 +259,14 @@ public class Guidance implements Constants, Receivable {
 	private void reviseMotorSpeed() {
 		//Log.v(TAG, "START MOTOR REVISION");
 		long starttime = System.currentTimeMillis();
+		
+		//Copying motor values to temporary array for working purposes.
+		for (int i = 0; i < 4; i++) {
+			mTempMotorSpeed[i] = mMotorSpeed[i];
+		}
+		
 		boolean mStabilizing = false; //initializing value
-		//Retrieve current orientation.
-
+		//Retrieve current orientation.		
 		mAzimuth = mStatus.getReadingFieldNow(AZIMUTH, mAzimuth);
 		mPitchDeg = -mStatus.getReadingFieldNow(PITCH, -mPitchDeg);
 		mRollDeg = mStatus.getReadingFieldNow(ROLL, mRollDeg);
@@ -454,9 +459,6 @@ public class Guidance implements Constants, Receivable {
 					mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
 			}
 			mMotorSpeed[i] = mTempMotorSpeed[i];
-			
-			mTempMotorSpeed[i] = mMotorSpeed[i];	
-			
 		}	
 		
 		//Send motor values to motors here:

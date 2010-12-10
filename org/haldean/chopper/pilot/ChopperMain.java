@@ -61,6 +61,7 @@ public final class ChopperMain extends Activity implements Constants
         //comm.setTelemetrySource(pic);
         comm.registerReceiver(IMAGE, pic);
         comm.registerReceiver(NAV, nav);
+        comm.registerReceiver(CSYS, nav);
         comm.registerReceiver(GUID, guid);
         
         nav.registerReceiver(comm);

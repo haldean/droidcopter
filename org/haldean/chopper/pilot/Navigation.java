@@ -151,8 +151,10 @@ public class Navigation implements Constants, Receivable {
 					/*String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
 						"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
 							" DEST!587!-117.15!32.72!10!600 } } }";*/
-					String taskList = "{ VEL!1!2!3!180!600 }";
+					String taskList = "{ VEL!1!0!0!0!20 VEL!-1!0!0!0!20 VEL!0!1!0!0!20 VEL!0!-1!0!0!20 VEL!0!0!1!0!20 VEL!0!0!-1!0!20 }";
 					setTask(BASIC_AUTO, taskList);
+					setTask(NO_CONN, "{ VEL!0!0!-1!0!10000 }");
+					setTask(LOW_POWER, "{ VEL!0!0!-1!0!10000 }");
 					updateStatus(BASIC_AUTO);
 					autoPilot(true);
 					Looper.loop();
@@ -233,14 +235,19 @@ public class Navigation implements Constants, Receivable {
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("MANUAL")) {
 					autoPilot(false);
-					double[] newTarget = new double[4];
-					for (int i = 0; i < 4; i++) {
-						newTarget[i] = new Double(parts[i + 3]);
+					if (parts.length > 3) {
+						updateReceivers("GUID:AUTOMATIC");
+						double[] newTarget = new double[4];
+						for (int i = 0; i < 4; i++) {
+							newTarget[i] = new Double(parts[i + 3]);
+						}
+						setTarget(newTarget);
 					}
-					setTarget(newTarget);
 				}
-				if (parts[2].equals("AUTOPILOT"))
+				if (parts[2].equals("AUTOPILOT")) {
+					updateReceivers("GUID:AUTOMATIC");
 					autoPilot(true);
+				}
 				if (parts[2].equals("AUTOTASK")) {
 					Integer taskList = new Integer(parts[3]);
 					setTask(taskList, parts[4]);
@@ -261,6 +268,7 @@ public class Navigation implements Constants, Receivable {
 			if (parts[1].equals("NOCONN")) {
 				updateStatus(NO_CONN);
 				autoPilot(true);
+				updateReceivers("GUID:AUTOMATIC");
 			}
 			if (parts[1].equals("LOWPOWER")) {
 				updateStatus(LOW_POWER);

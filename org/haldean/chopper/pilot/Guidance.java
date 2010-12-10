@@ -132,7 +132,7 @@ public class Guidance implements Constants, Receivable {
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 4; i++)
 			for (int j = 0; j < 3; j++)
-				mGain[i][j] = .05;
+				mGain[i][j] = .07;
 	}
 	
 	private String getErrorString() {
@@ -164,6 +164,7 @@ public class Guidance implements Constants, Receivable {
 							switch (msg.what) {
 							case EVAL_MOTOR_SPEED:
 								reviseMotorSpeed();
+								Log.d(TAG, getErrorString());
 								updateReceivers(getErrorString());
 								break;
 							case NEW_PID_VALUE:
@@ -173,8 +174,8 @@ public class Guidance implements Constants, Receivable {
 								Double[] mVector = (Double[])msg.obj;
 								for (int i = 0; i < 4; i++) {
 									mMotorSpeed[i] = mVector[i];
-									updateMotors();
 								}
+								updateMotors();
 								break;
 							case GET_PIDS:
 								Receivable source = (Receivable) msg.obj;
@@ -210,6 +211,7 @@ public class Guidance implements Constants, Receivable {
 	 * @param source The source of the message, if a reply is needed.  May be null.
 	 */
 	public void receiveMessage(String msg, Receivable source) {
+		Log.d(TAG, "Receiving message " + msg);
 		String[] parts = msg.split(":");
 		if (parts[0].equals("GUID")) {
 			if (parts[1].equals("PID")) {
@@ -228,6 +230,7 @@ public class Guidance implements Constants, Receivable {
 			}
 			if (parts[1].equals("AUTOMATIC")) {
 				mHandler.removeMessages(EVAL_MOTOR_SPEED);
+				mHandler.removeMessages(NEW_GUID_VECTOR);
 				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
 			}
 			if (parts[1].equals("VECTOR")) {
@@ -297,8 +300,8 @@ public class Guidance implements Constants, Receivable {
 			if (mNav != null) {
 				try {
 					double[] absTarget = mNav.getTarget();
-					mTarget[0] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
-					mTarget[1] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
+					mTarget[1] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
+					mTarget[0] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
 					mTarget[2] = absTarget[2];
 					mTarget[3] = absTarget[3];
 					
@@ -371,7 +374,6 @@ public class Guidance implements Constants, Receivable {
 			//Calculate changes in output
 			for (int j = 0; j < 3; j++) {
 				dmotor += mErrors[i][j] * mGain[i][j];
-				
 			}
 			double phi = 0;
 			switch (i) {
@@ -401,30 +403,33 @@ public class Guidance implements Constants, Receivable {
 				break;
 			case 3: //Azimuth
 				break;
-			}				
-			mTorques[i] = dmotor;	
+			}
+			
+			mTorques[i] = dmotor;
+			//Log.v(TAG, "Torque " + i + " " + dmotor);
 		}
 		mLastUpdate = thistime;
 		
 		if ((!mHorizontalDrift) || (mStabilizing)) { //if horizontal drift is on, motor speeds give full efficiency to altitude control
 		//but if the chopper is stabilizing, under no circumstances ignore torques 0, 1
 			//changes torques to motor values
-			mTempMotorSpeed[0] -= mTorques[1] / 2F;
-			mTempMotorSpeed[1] += mTorques[1] / 2F;
+			mTempMotorSpeed[0] -= mTorques[1] / 2.0;
+			mTempMotorSpeed[1] += mTorques[1] / 2.0;
 			
-			mTempMotorSpeed[2] -= mTorques[0] / 2F;
-			mTempMotorSpeed[3] += mTorques[0] / 2F;
+			//Log.v(TAG, "Temp 1 " + mTempMotorSpeed[2] + "\nTemp 2 " + mTempMotorSpeed[3]);
+			mTempMotorSpeed[2] -= mTorques[0] / 2.0;
+			mTempMotorSpeed[3] += mTorques[0] / 2.0;
 			
 			
 			
-			double spintorque = mTorques[3] / 4F;
+			double spintorque = mTorques[3] / 4.0;
 			mTempMotorSpeed[0] += spintorque;
 			mTempMotorSpeed[1] += spintorque;
 			mTempMotorSpeed[2] -= spintorque;
 			mTempMotorSpeed[3] -= spintorque;
 		}
 		
-		double dalttorque = mTorques[2] / 4F;
+		double dalttorque = mTorques[2] / 4.0;
 		for (int i = 0; i < 4; i++) {
 			mTempMotorSpeed[i] += dalttorque;
 		}
@@ -448,12 +453,11 @@ public class Guidance implements Constants, Receivable {
 				else if (diff < 0)
 					mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
 			}
-			//Linearizes system with regard to prop thrust, not prop RPMs
-			mMotorSpeed[i] = Math.sqrt(mMotorSpeed[i]);
+			mMotorSpeed[i] = mTempMotorSpeed[i];
 			
 			mTempMotorSpeed[i] = mMotorSpeed[i];	
-		}
-	
+			
+		}	
 		
 		//Send motor values to motors here:
 		updateMotors();
@@ -483,7 +487,7 @@ public class Guidance implements Constants, Receivable {
 		synchronized (mRec) {
 			ListIterator<Receivable> myList = mRec.listIterator();
 			while (myList.hasNext()) {
-				//myList.next().receiveMessage(str, this);
+				myList.next().receiveMessage(str, this);
 			}
 		}
 	}

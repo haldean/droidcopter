@@ -399,7 +399,7 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 	public void onLocationChanged(Location loc) {
 		if (loc != null && mGps != null) {
 			if (!loc.hasAltitude()) {
-				loc.setAltitude(300.0);
+			//	loc.setAltitude(300.0);
 				Log.w(TAG, "No altitude fix");
 			}
 			double newalt = loc.getAltitude();
@@ -534,11 +534,18 @@ public final class ChopperStatus implements SensorEventListener, Constants, Loca
 		final double[] speeds = mySpeeds.clone();
 		mMutatorPool.submit(new Runnable() {
 			public void run() {
+				//Log.v(TAG, "Changing motorspeeds:");
+				
 				mMotorLock.lock();
 				for (int i = 0; i < 4; i++) {
 					mMotorSpeed[i] = speeds[i];
 				}
+				/*Log.v(TAG, "vector " + mMotorSpeed[0] + ", "
+									 + mMotorSpeed[1] + ", "
+									 + mMotorSpeed[2] + ", "
+									 + mMotorSpeed[3]);*/
 				mMotorLock.unlock();
+				//Log.v(TAG, "Done changing motorspeeds");
 			}
 		});
 	}

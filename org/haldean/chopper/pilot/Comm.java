@@ -59,7 +59,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 	public static final int FIRST_PULSE = 30000;
 	
 	/** How long (in ms) to wait for subsequent PULSE signals before assuming connectivity failure. */
-	public static final int PULSE_RATE = 15000;
+	public static final int PULSE_RATE = 10000;
 	
 	/** Tag for logging */
 	public static final String TAG = "chopper.Comm";	
@@ -283,7 +283,6 @@ public final class Comm implements Runnable, Receivable, Constants {
 			return;
 		}
 		else {
-		//	Log.v(TAG, "Sending msg: " + message);
 			mPool.submit(new Runnable() {
 				public void run() {
 					try {

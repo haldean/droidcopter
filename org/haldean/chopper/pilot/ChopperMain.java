@@ -58,12 +58,14 @@ public final class ChopperMain extends Activity implements Constants
         Navigation nav = new Navigation(status);
         Guidance guid = new Guidance(status, nav);
         
-        comm.setTelemetrySource(pic);
+        //comm.setTelemetrySource(pic);
         comm.registerReceiver(IMAGE, pic);
         comm.registerReceiver(NAV, nav);
+        comm.registerReceiver(CSYS, nav);
         comm.registerReceiver(GUID, guid);
         
         nav.registerReceiver(comm);
+        nav.registerReceiver(guid);
         
         status.registerReceiver(nav);
         
@@ -74,7 +76,7 @@ public final class ChopperMain extends Activity implements Constants
         new PersistentThread(comm).start();
         status.getPersistentThreadInstance().start();
         new PersistentThread(reporter).start();
-        pic.getPersistentThreadInstance().start();
+       // pic.getPersistentThreadInstance().start();
     	nav.getPersistentThreadInstance().start();
     	guid.getPersistentThreadInstance().start();
 	}

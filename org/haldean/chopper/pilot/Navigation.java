@@ -61,7 +61,7 @@ public class Navigation implements Constants, Receivable {
 	private final AtomicBoolean mAutoPilot = new AtomicBoolean(false);
 	
 	/** Chopper's navigation status */
-	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES);
+	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES - 1);
 	
 	/** Holds all flight plans */
 	private Vector<NavTask> mTravelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
@@ -115,7 +115,7 @@ public class Navigation implements Constants, Receivable {
 		mHandler.removeMessages(EVAL_NAV);
 		if (mAutoPilot.get()) {
 			mHandler.sendEmptyMessage(EVAL_NAV);
-			System.out.println("Autopilot engaged");
+			Log.i(TAG, "Autopilot engaged");
 		}
 	}
 	
@@ -151,10 +151,11 @@ public class Navigation implements Constants, Receivable {
 					/*String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
 						"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
 							" DEST!587!-117.15!32.72!10!600 } } }";*/
-					String taskList = "{ VEL!1!2!3!180!600 }";
+					String taskList = "{ VEL!1!0!0!0!20 VEL!-1!0!0!0!20 VEL!0!1!0!0!20 VEL!0!-1!0!0!20 VEL!0!0!1!0!20 VEL!0!0!-1!0!20 }";
 					setTask(BASIC_AUTO, taskList);
-					updateStatus(BASIC_AUTO);
-					autoPilot(true);
+					setTask(NO_CONN, "{ VEL!0!0!-1!0!10000 }");
+					setTask(LOW_POWER, "{ VEL!0!0!-1!0!10000 }");
+					//autoPilot(true);
 					Looper.loop();
 				}
 			};
@@ -228,19 +229,25 @@ public class Navigation implements Constants, Receivable {
 	 * @param source The source of the message, if a reply is needed.  May be null.
 	 */
 	public void receiveMessage(String msg, Receivable source) {
+		Log.d(TAG, "Receiving " + msg);
 		String[] parts = msg.split(":");
 		if (parts[0].equals("NAV")) {
 			if (parts[1].equals("SET")) {
 				if (parts[2].equals("MANUAL")) {
 					autoPilot(false);
-					double[] newTarget = new double[4];
-					for (int i = 0; i < 4; i++) {
-						newTarget[i] = new Double(parts[i + 3]);
+					if (parts.length > 3) {
+						updateReceivers("GUID:AUTOMATIC");
+						double[] newTarget = new double[4];
+						for (int i = 0; i < 4; i++) {
+							newTarget[i] = new Double(parts[i + 3]);
+						}
+						setTarget(newTarget);
 					}
-					setTarget(newTarget);
 				}
-				if (parts[2].equals("AUTOPILOT"))
+				if (parts[2].equals("AUTOPILOT")) {
+					updateReceivers("GUID:AUTOMATIC");
 					autoPilot(true);
+				}
 				if (parts[2].equals("AUTOTASK")) {
 					Integer taskList = new Integer(parts[3]);
 					setTask(taskList, parts[4]);
@@ -259,8 +266,10 @@ public class Navigation implements Constants, Receivable {
 		}
 		if (parts[0].equals("CSYS")) {
 			if (parts[1].equals("NOCONN")) {
+				Log.d(TAG, "no conn in Nav");
 				updateStatus(NO_CONN);
 				autoPilot(true);
+				updateReceivers("GUID:AUTOMATIC");
 			}
 			if (parts[1].equals("LOWPOWER")) {
 				updateStatus(LOW_POWER);
@@ -331,18 +340,18 @@ public class Navigation implements Constants, Receivable {
 		
 		NavTask myList = mTravelPlans.get(thisStatus);
 		if (myList.isComplete()) {
-			System.out.println("Hovering");
+			Log.i(TAG, "Hovering");
 			hover();
 			return;
 		}
 		myList.getVelocity(mTempTarget);
 		setTarget(mTempTarget);
 		
-		System.out.print("New NAV Vector: ");
+		String newNav = "New Nav Vector: ";
 		for (int i = 0; i < 4; i++) {
-			System.out.print(mTempTarget[i] + " ");
+			newNav += mTempTarget[i] + " ";
 		}
-		System.out.println();
+		Log.i(TAG, newNav);
 		
 		long interval = myList.getInterval();
 		

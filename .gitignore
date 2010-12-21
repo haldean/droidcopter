@@ -3,3 +3,7 @@
 *.html
 doc
 *~
+*.aux
+*.log
+*.toc
+*.dvi

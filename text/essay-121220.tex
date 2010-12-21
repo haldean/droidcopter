@@ -1,0 +1,80 @@
+%Basic Math or Computer Science Template
+
+\documentclass[letterpaper]{article}
+\author{Benjamin Bardin \and William Brown 
+  \and Dr. Paul Blaer (Advisor)}
+\title{Stable Quadricopter Flight and 
+  Telepresence using the Android Platform}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Motivation}
+\subsection{Objectives}
+When we started this project, we had many different use cases for the
+helicopter -- automatic target tracking, panaroma creation from the
+video stream, even getting it to bring forgotten homework assignments
+from our apartment to class. However, for the first iteration of both
+the hardware and the software, we set our sights on more
+immediately-acheivable goals: telepresence and stable flight
+control. For telepresence, we wanted to be able to visualize the
+Android device's location, orientation, acceleration and velocity in
+real-time, as well as receive a video stream that compensated for
+network latency and low bandwidth. For stable flight control, we
+wanted a system that could maintain a hovering state within a narrow
+radius of a given point (our target radius was ten feet) and could
+respond to commands sent from a host computer.
+
+\subsection{Progress}
+To date, we've accomplished two major things. We have telepresence
+between an Android device and a desktop or laptop computer, using our
+Android application and our Java program, and we have an entire stack
+of software ready to control and stabilize a
+helicopter. Unfortunately, due to unexpected hardware failure (which
+will be discussed in section \ref{sec:failure}), we were unable to get
+the hardware to a functional state before the end of the
+semester. However, the helicopter is fully constructed and, when we
+receive the missing part, we will have a helicopter that is ready to
+fly.
+
+\subsection{Future Goals}
+The first goal is to acheive stable hovering. This will require a fair
+amount of debugging, considering how much of our stability and
+navigation software remains untested in the field, as well as manual
+tuning of PID values (as will be discussed in section
+\ref{sec:pilot}), which will no doubt be a lengthy process.
+
+We have also discussed various uses of the helicopter platform we have
+created. Currently, we would like to implement blob tracking to allow
+the helicopter to track objects as they move. This would allow the
+helicopter to track us as we walk around a field, or take a video of
+of a skiier, or even to act as a robotic sherpa to follow us while
+carrying light objects. We would also like to implement dynamic
+panorama creation, in which the helicopter performs a series of
+predefined acrobatics to take photos which cover a solid angle of 180
+degrees. From this, we can create a panorama from the helicopter's
+current location; such birds-eye panoramas would be unusual, if not
+unique, and would be both creatively and technically interesting to
+generate.
+
+\section{Hardware}
+\subsection{Design of the Chassis}
+The chassis was designed to be as modular as possible. 
+
+\subsection{Hardware Selection}
+
+\subsection{Hardware Usage}
+
+\subsection{Hardware Failure}
+\label{sec:failure}
+
+\section{Pilot Android Application}
+\label{sec:pilot}
+
+\section{Server Software}
+
+\section{Communication}
+
+\end{document}

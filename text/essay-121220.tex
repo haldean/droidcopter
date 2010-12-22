@@ -6,6 +6,8 @@
 \title{Stable Quadricopter Flight and 
   Telepresence using the Android Platform}
 
+\usepackage{graphicx}
+
 \begin{document}
 \maketitle
 \tableofcontents
@@ -59,22 +61,239 @@ current location; such birds-eye panoramas would be unusual, if not
 unique, and would be both creatively and technically interesting to
 generate.
 
-\section{Hardware}
-\subsection{Design of the Chassis}
-The chassis was designed to be as modular as possible. 
-
-\subsection{Hardware Selection}
-
-\subsection{Hardware Usage}
-
-\subsection{Hardware Failure}
-\label{sec:failure}
-
 \section{Pilot Android Application}
 \label{sec:pilot}
+The Pilot program has two core functionalities.‭ ‬The first is the
+actual robotic control of the quadrocopter itself‭; ‬the second is
+communication with the control server.‭ ‬The parallel processing
+required in these distinct tasks is complicated by the performance
+requirements of the program.‭ ‬Flight control processing must take place
+in real time -- or an extremely close approximation.‭ ‬Communication with
+the control server need not,‭ ‬and in fact must yield priority to flight
+control.‭ ‬Consequently,‭ ‬a great deal of effort went into prioritizing
+inter-thread communications and access of shared data.‭ ‬For flight
+control algorithms,‭ ‬blocking on locked data is unacceptable,‭ ‬since
+timely performance is essential‭; ‬instead of blocking,‭ ‬they will use
+the most recent,‭ ‬locally stored version of the data requested.‭ ‬For
+communication algorithms,‭ ‬accessing flawed data is unacceptable‭; ‬the
+control server must not receive out-of-date information portrayed as
+
+\subsection{Flight Control}
+Flight control itself is divided into two main components:‭ ‬navigation and guidance.
+	
+\subsubsection{Navigation}
+Navigation determines a desired velocity vector for the quadrocopter.‭
+‬In‭ “‬manual‭” ‬mode,‭ ‬it simply accepts this vector from the control
+server.‭ ‬In‭ “‬autopilot‭” ‬mode,‭ ‬or when the connection is lost,‭ ‬autopilot
+subroutines determine the desired velocity vector.‭ ‬It's determination
+is based on two factors.‭ ‬The first is its current location.‭ ‬The second
+is either previously transmitted autopilot instructions,‭ ‬or
+pre-programmed safeties‭ (‬for low power,‭ ‬bad network,‭ ‬etc.‭).
+
+\subsubsection{Guidance}
+Guidance takes the desired velocity from Navigation,‭ ‬and uses PID
+loops to adjust individual motor speeds to achieve and maintain that
+vector.‭  ‬To improve the performance of the PID loop,‭ ‬the system is
+transformed into an approximately linear one.‭  ‬The transformation
+accounts both for the quadratic relationship between motor speed and
+thrust,‭ ‬and for changing effects of motor thrust as its orientation
+changes.
 
 \section{Server Software}
 
+\section{Hardware}
+A list of parts used is supplied in Appendix \ref{tab:parts}.
+
+\subsection{Design of the Chassis}
+The chassis is the part whose design has fluctuated the most over the
+process. While the software stack was fairly well-thought-out early
+on, we wrote it to be hardware-independent. At first, the plan was to
+use a kit chassis and buy our own components, as this would mean that
+all of the components would be guaranteed to work together. However,
+as time went on, we realized that the added cost of a robust chassis
+was higher than the value we were getting out of it, and we decided to
+build our own.
+
+Using a 3D printer, we were able to print whatever plastic parts we
+desired out of ABS plastic. ABS is a rigid and strong plastic -- it is
+best known for being the raw form of a Lego brick -- and is very cheap
+to buy in large quantities. Will owns a Makerbot that is capable of
+printing objects up to 10cm by 10cm by 13cm, so it wasn't large enough
+to build the entire helicopter in one go. Our design, therefore, had
+to account for the fact that no individual custom-made part could be
+larger than this.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.4]{figures/brock_assembly.eps}
+  \caption{(Brock) The center assembly upon which the electronics and
+    Android device are mounted.}
+  \label{fig:brock}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.4]{figures/fred.eps}
+  \caption{(Fred) A motor mount on the end of a pipe.}
+  \label{fig:fred}
+\end{figure}
+
+We opted for a design that is slightly different from most
+commercially-available quadricopter designs for both pragmatic and
+strength reasons. Our design features a large block in the middle made
+of sandwiched layers, each of which holds a narrow-gauge brass pipe in
+place. A rendering of this component can be seen in Figure
+\ref{fig:brock}. These brass pipes extend 25 cm out either side of this
+center block. On the end of each pipe is a motor unit, consisting of
+two sandwiched ABS pieces that attach the motor to the pipe. This can
+be seen in Figure \ref{fig:fred}.
+
+Both the center layers (collectively called Brock) and the outer motor
+mounting pieces (called Freds) require a stiff connection with the
+brass pipes. However, we wanted to make this modular so we could
+rebuild and redesign incrementally, and thus we didn't want to attach
+the pipes directly to these pieces. Instead, we took a twofold
+approach to ensuring the pipes would not slip. Firstly, we lined each
+contact point between the model and the pipes with thin but
+compressable foam, which is adhered to the plastic pieces. This foam
+is both cheap and has a high coefficient of friction when in contact
+with smooth surfaces, so it was perfect for this application. In
+addition, we machined the pipes to have holes approximately 2.5 cm
+from each end. The Fred pieces have holes placed so that a machine
+screw can pass through Fred and the pipe, locking them together.
+
+In order to create the requisite tension to hold the pipes in place in
+Brock, we used four large machine screws through the center of the
+piece. These provide the structural support for Brock. In addition,
+the first and last layer of Brock each have eight mounting holes
+with a captive nut locked in between the outer layer and next
+layer. This allows us complete modularity in terms of hardware
+attachments without ever having to reprint Brock -- all we must do is
+make sure it is compatible with the mounting screws already built in,
+and we can hotswap our hardware safely.
+
+\subsection{Electronics Design}
+In designing the electronics, we went for as much redundancy as
+possible, and only used parts that had ratings at least 50\% over our
+estimated needs. We estimated that the helicopter would have a weight
+of approximately 1 kg (which ended up being a bit lower than the
+actual weight) so each motor-propeller pair needed to be rated to
+carry at minimum 500 grams. In addition, we wanted to be able to put
+different payloads on the helicopter in the future (if we wanted to
+add a video camera, for example) so we ended up going with
+motor-propeller pairs that are capable of a very large range of
+possible thrusts, from around 50 grams to about 1.5 kg per motor.
+
+For our control hardware, we chose to use an Arduino because we had
+experience coding for the Arduino software stack, and it provides many
+libraries that are helpful for motor control and sensor
+readings. While the sensor reading libraries will not be used in this
+first iteration, in later iterations we plan on using rangefinding
+sensors for landing and real-time distance map creation, so we wanted
+to make sure we had the capability to hook that in to the existing
+system.
+
+We chose our other parts based on online reviews and price. One of our
+goals was to keep this project as cheap as possible for two reasons;
+firstly, we wanted to be able to pay for the thing, and secondly, we
+were interested in seeing just how cheaply this could be done. In the
+end, we managed to keep the cost low -- \$380 before tax and shipping,
+for a per-person cost of only \$190.
+
+We did make one fairly nonconventional decision in terms of
+electronics design. While many designs use only one battery to power
+the entire system, we chose instead to have four batteries -- one for
+each motor. This has the disadvantage that we have to monitor four
+battery capacities instead of one, the wiring is slightly more
+complex, and the batteries can discharge at different rates. However,
+having the four batteries has two distinct advantages: stability and
+increased longetivity. The batteries are placed on the arms of the
+helicopter, and the addition of the weight on these arms will help to
+keep the helicopter more stable. It would be difficult to place a
+single rectangular battery on our design without moving the
+helicopter's center of gravity. Also, having all four batteries means
+we can stay flying for longer, which is a clear advantage.
+
+\subsection{Hardware Failure}
+\label{sec:failure}
+Before we even were able to take off, we had a dramatic hardware
+failure that prevented us from being able to fly this semester. Each
+motor requires a very specific input signal to rotate at the correct
+rate. This is handled by devices called Brushless Electronic Speed
+Controllers, or BESCs. These devices operate at extremely high
+currents and temperatures, and thus have the potential to be extremely
+dangerous when they malfunction. Because of this danger, and because
+of the fact that if one were to fail while we were flying, the
+helicopter will no doubt be broken or destroyed, we tested them
+thoroughly before attaching them to the chassis of the helicopter.
+
+All of them performed admirably with the exception of one, which had a
+faulty chip inside. When plugged in, it smoked profusely. Assuming
+that there was a short somewhere inside, we opened it up to take a
+look, and plugged it back in to see if we could see where the smoke
+was coming from (also, we grabbed a fire extinguisher and put it on a
+flameproof mat). As soon as it was plugged in, one of the
+microcontrollers burst into flame, which, while dramatic and pretty
+cool, suggested that perhaps that BESC shouldn't be used on our
+helicopter. Two weeks later, and we are still waiting for the
+replacement part from the retailer -- as soon as we receive this part
+in the mail, we'll be able to start testing and flying.
+
 \section{Communication}
+Communication is composed of two main components:‭ ‬telemetry and
+commands/data.‭ ‬Each is relayed on separate ports,‭ ‬since commands must
+be relayed as synchronously as possible and telemetry will be
+asynchronous.
+
+\subsection{Telemetry}
+The telemetry modules continuously run the Android's preview
+functionality,‭ ‬at‭ ‬5fps.‭  ‬Each frame is saved to a buffer as it is
+available,‭ ‬overwriting the previous frame.‭  ‬When the Android has
+finished sending one frame to the control server,‭ ‬it immediately
+copies the buffer and starts sending the frame.‭  ‬The result is real
+time telepresence,‭ ‬at approximately‭ ‬1-2‭ ‬fps and a lag of‭ ‬1‭ ‬frame.
+
+\subsection{Commands and Data}
+Commands and data are relayed in the form of strings over standard
+Java sockets.‭ ‬When the connection is lost,‭ ‬the Android immediately
+tries to reconnect,‭ ‬continuing to do so indefinitely.‭ ‬While the
+connection is lost,‭ ‬autopilot is enabled and the‭ “‬communication lost‭”
+‬pre-programmed instruction set is engaged.
+
+\subsection{Message Formats}
+‏Messages between the Android and the control server are sent as
+strings,‭ ‬delimited by colons.‭ ‬The strings from the control
+server―commands―contain the instruction itself,‭ ‬prefixed by a sequence
+of meta-data describing the instruction.‭ ‬Similarly,‭ ‬data from the
+Android contain not just the data,‭ ‬but also a prefix tag describing
+the data.‭ ‬This enables somewhat efficient analysis on each end:‭
+‬messages can be routed only to those components that are registered to
+process a given prefix tag.  Messages are not transmitted directly
+between the Android and the control server.‭ ‬Instead,‭ ‬they are routed
+through a separate,‭ ‬dedicated broker server.‭ ‬This enables the control
+server itself to operate easily from different IP addresses,‭ ‬and hence
+from various locations. It also allows for easy logging and playback
+of sessions -- the broker server logs all data and commands, and can
+replay a session so we can analyze what happened.
+
+\newpage
+\appendix
+\section{Parts and Prices}
+\label{tab:parts}
+\begin{tabular}{llll}
+  \textbf{Item} & \textbf{Supplier}
+  & \textbf{Quantity} & \textbf{Price} \\
+
+  Chassis Hardware & McMaster-Carr & N/A & \$32.60 \\
+  Turnigy 2217 Brushless Motors & HobbyKing & 4 & \$14.04 \\
+  Counterforce Propeller Pair & NG Hobbies & 5 & \$6.95 \\
+  Arduino Microcontroller & SparkFun & 1 & \$29.95 \\
+  Turnigy 15 Amp ESC Controller & HobbyKing & 4 & \$10.58 \\
+  BlueSmirf Gold Bluetooth Modem & SparkFun & 1 & \$64.95 \\
+  Turnigy 2200mAh 3S LiPoly Battery & HobbyKing & 5 & \$11.96 \\
+  Arduino ProtoShield Layout PCB & SparkFun & 1 & \$16.95 \\
+  HobbyKing Fast Battery Charger & HobbyKing & 1 & \$39.99 \\
+  
+\end{tabular}
 
 \end{document}

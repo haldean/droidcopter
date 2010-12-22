@@ -1,0 +1,34 @@
+#!/bin/bash
+
+dvi() {
+    figures
+    find . -name "*.tex" | xargs -t -Itexfile latex texfile
+}
+
+pdf() {
+    figures
+    find . -name "*.tex" | xargs -t -Itexfile pdflatex texfile
+}
+
+clean() {
+    find . -name "*.tex" | sed s/\.tex//g | xargs -Ibase -t rm base.log base.dvi base.aux base.pdf
+    find figures -name "*.dot" | sed s/\.dot$//g | xargs -t -Idotfile rm dotfile.pdf dotfile.eps
+}
+
+case "$1" in
+    'dvi')
+        dvi
+	;;
+    'pdf')
+	pdf
+	;;
+    'clean')
+	clean
+	;;
+    *)
+	figures
+	dvi
+	pdf
+	;;
+esac
+    

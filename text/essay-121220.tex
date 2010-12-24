@@ -7,6 +7,7 @@
   Telepresence using the Android Platform}
 
 \usepackage{graphicx}
+\newcommand\imgext{.eps}
 
 \begin{document}
 \maketitle
@@ -100,6 +101,81 @@ thrust,‭ ‬and for changing effects of motor thrust as its orientation
 changes.
 
 \section{Server Software}
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=0.3]{figures/globe-screenshot}
+  \caption{A screen capture of the chopper control software.}
+  \label{fig:globe}
+\end{figure}
+
+The software is designed for two purposes: control and
+telepresence. We have implemented a system which allows us to monitor
+acceleration, orientation, temperature, location and even magnetic
+flux. We also are streaming video from the helicopter to the server
+software, which is displayed in the UI. We have a control subsystem
+that allows us to control the helicopter from a mouse-based system, a
+keyboard based system or a Microsoft XBOX controller. 
+
+\subsection{Message Handling}
+Sensor readings from the phone are transmitted to the server using
+very simple strings, as is described in Section \ref{sec:msgs}. These
+are received and placed into a message queue which handles all
+subsequent processing. The various components of the UI and backend
+are all programmed as plugins to this message queue handler. Each
+plugin registers a list of prefixes with the message queue -- these
+define the messages that that plugin is capable of processing. For
+example, the orientation component handles only messages with the
+prefix ``ORIENT'', while the PID tuning component handles anything
+that starts with ``GUID'' or ``NAV'' (for guidance and navigation,
+respectively). The appropriate messages then get passed onto these
+components who handle the messages themselves.
+
+The message handler receives a huge firehose of information, and only
+about 10\% of the plugins need to respond to any given message. In
+early implementations, every plugin received every message, which
+meant that about 90\% of the work on each message was useless. In
+instrumenting early builds using
+VisualVM\footnote{http://openjdk.java.net/projects/visualvm/}, we
+found that about 60\% of the processing done by the sever was trying
+to handle each of the messages, and often the queue would fill faster
+than it was emptying. The result was poor; there was a high latency
+between sensor readings and display in the UI, and other components of
+the server, such as the globe interface, always felt jerky because so
+much processing power was devoted to message handling. Two fixes
+improved this: the prefix-based handling (which cut down on processor
+usage) and multithreaded plugins. Some of the plugins were blocking
+the processing of later messages because the plugins were given new
+messages synchronously -- switching to an asynchonous update mechanism
+for some of the heavier plugins allowed us to decrease latency in
+sensor readings and other easier-to-process messages.
+
+\subsection{Telepresence}
+The main thing we tried to accomplish in designing the UI was to make
+it as easy to understand what the helicopter was doing as possible,
+and be able to access all of the data the Android platform was capable
+of giving us. We also wanted it to be easy to detect error conditions
+at a glance for faster operator response to emergencies.
+
+We eventually decided that, for many sensors, graphing them was the
+most intuitive way to do this. To graph them, we rolled our own
+graphic package (which was later released as SimpleGraph, a standalone
+Java line graph library). For three, however, there were more
+intuitive ways of displaying our data. For orientation, we used a 3D
+representation of the helicopter that accurately mirrors the
+orientation of the actual phone, which is easier to read than trying
+to apply three rotations in your head. We used the
+Java3D\footnote{https://java3d.dev.java.net/} game library for this,
+which we chose because it was the most resource-efficient in our
+testing. For location, we chose to mimic the Google Earth interface
+and used NASA's World
+Wind\footnote{http://worldwind.arc.nasa.gov/java/} mapping
+software. This is an extraordinarily powerful library, and the only
+one we could find of its kind. While poorly documented, the fact that
+it was open source and very easy to use meant that we dropped this
+into our UI quickly and seamlessly. The last visualization we used was
+a very simple top-down view of the helicopter for the motor speeds, in
+which each ``motor'' is given a color from red to green, denoting the
+current speed of the motor.
 
 \section{Hardware}
 A list of parts used is supplied in Appendix \ref{tab:parts}.
@@ -125,7 +201,7 @@ larger than this.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[scale=0.4]{figures/brock_assembly.eps}
+  \includegraphics[scale=0.4]{figures/brock_assembly}
   \caption{(Brock) The center assembly upon which the electronics and
     Android device are mounted.}
   \label{fig:brock}
@@ -133,7 +209,7 @@ larger than this.
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[scale=0.4]{figures/fred.eps}
+  \includegraphics[scale=0.4]{figures/fred}
   \caption{(Fred) A motor mount on the end of a pipe.}
   \label{fig:fred}
 \end{figure}
@@ -261,6 +337,7 @@ connection is lost,‭ ‬autopilot is enabled and the‭ “‬communication lo
 ‬pre-programmed instruction set is engaged.
 
 \subsection{Message Formats}
+\label{sec:msgs}
 ‏Messages between the Android and the control server are sent as
 strings,‭ ‬delimited by colons.‭ ‬The strings from the control
 server―commands―contain the instruction itself,‭ ‬prefixed by a sequence
@@ -293,7 +370,12 @@ replay a session so we can analyze what happened.
   Turnigy 2200mAh 3S LiPoly Battery & HobbyKing & 5 & \$11.96 \\
   Arduino ProtoShield Layout PCB & SparkFun & 1 & \$16.95 \\
   HobbyKing Fast Battery Charger & HobbyKing & 1 & \$39.99 \\
-  
 \end{tabular}
+
+\section{Code Repository}
+A single github repository is used for version control of the server,
+client and broker, as well as this essay.
+
+http://github.com/haldean/droidcopter
 
 \end{document}

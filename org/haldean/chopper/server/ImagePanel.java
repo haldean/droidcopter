@@ -1,10 +1,11 @@
 package org.haldean.chopper.server;
 
-import javax.swing.*;
-import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import javax.swing.*;
+import javax.swing.event.*;
 
 /** A component to show an image along with image quality controls 
  *  @author William Brown */
@@ -107,10 +108,10 @@ public class ImagePanel extends JPanel implements Updatable {
     }
 
     /** Set the image shown in the preview pane
-     *  @param _image The JPEG-encoded byte array representing the image 
+     *  @param image The JPEG-encoded byte array representing the image 
      *  @see org.haldean.chopper.server.ImageComponent#setImage */
-    public void setImage(byte _image[]) {
-	image.setImage(_image);
+    public void setImage(BufferedImage newImage) {
+	image.setImage(newImage);
     }
 
     /** Listens for the available size signal from the image capture device 

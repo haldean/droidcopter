@@ -1,4 +1,6 @@
+# -*- mode: org -*-
 #+TODO: TODO PROGRESS | DONE IGNORE
+
 * TODO First Programming Iteration
 ** DONE Automatic Frame Rate Compensation			  :Ben:
    CLOSED: [2010-05-03 Mon 22:18]*
@@ -14,12 +16,18 @@
 *** DONE Code for full automatic telemetry reset (upon failure)	       :Will:
 ** TODO Flight control						 :Will:
 *** TODO Manual control of velocity via 360 controller    
-*** TODO Manual control of velocity via keyboard(/mouse) 
+*** DONE Manual control of velocity via keyboard(/mouse) 
 *** TODO Interface droidcopter's autopilot subroutines    
 **** TODO Turn autopilot on/off                         
 **** TODO Locally create flight plan, submit to autopilot              
 **** TODO Query autopilot for current flight plans      
 **** TODO Visualization for autopilot interface          
+** TODO Misc Fixes
+*** TODO Don't send repeat commands for navigation
+*** TODO Implement diagonal movement correctly
+*** TODO Store JPEGs upon arrival
+- Optionally, this could be on droidcopter, and the video stitching
+  could be offloaded there.
 * TODO Stability					          :Ben:
 ** TODO Tune PID loops
    After doing more research, we've decided this can and should be
@@ -54,11 +62,12 @@
 *** DONE Create design
 *** DONE Order hardware
 *** PROGRESS Construct chopper
-**** PROGRESS Print chopper parts
-**** TODO Chopper assembly
+**** DONE Print chopper parts
+**** DONE Physical assembly
+**** PROGRESS Electronics assembly
 ** TODO Arduino control of motors 				       :Will:
 ** PROGRESS Bluetooth connection from Arduino to Droid		       :Will:
-** PROGRESS Buy electronics 					       :Both:
+** DONE Buy electronics						       :Both:
 ** IGNORE Pressure sensor
 ** IGNORE Ultrasonic rangefinder				       :Will:
 * TODO Second Hardware Iteration				       :Will:

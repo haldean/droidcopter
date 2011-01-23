@@ -2,10 +2,10 @@ package org.haldean.chopper.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class MessageHookManager extends Thread {
     private static MessageHookManager instance = null;
@@ -26,7 +26,7 @@ public class MessageHookManager extends Thread {
 
 	hooks = new ArrayList<MessageHook>();
 	prefixes = new HashMap<String, List<MessageHook>>();
-	queue = new LinkedList<String>();
+	queue = new LinkedBlockingQueue<String>();
 
 	start();
     }

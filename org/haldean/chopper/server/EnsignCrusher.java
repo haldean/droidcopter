@@ -21,7 +21,8 @@ public class EnsignCrusher {
     private static double bearing = 0;
 
     /* In meters per second (we hope.) */
-    public static final int VELOCITY = 2;
+    public static final int MAX_VELOCITY = 2;
+    public static final int VELOCITY = 0.25 * MAX_VELOCITY;
 
     /**
      *  This is a convenience class that is never instantiated.

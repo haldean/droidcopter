@@ -197,6 +197,10 @@ public class PadController extends UiController {
 	    ui.lc.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), 
 			   zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
 	}
+	else {
+		
+		
+	}
     }
 
     /** Run the thread that takes input from the game pad. The thread

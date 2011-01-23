@@ -36,7 +36,7 @@ public class KeyboardController extends UiController {
 	    Debug.log("Keyboard controller initialized.");
 	}
     }
-
+    
     private void getKeyboards() {
 	keyboards = new ArrayList<Keyboard>();
 	Controller[] controllers = 
@@ -97,9 +97,8 @@ public class KeyboardController extends UiController {
     }
 
     private void setVelocity(double[] velocities, double bearing) {
-	if (dryRun) {
-	    System.out.println(Arrays.toString(velocities) + ", " + bearing);
-	} else {
+	Debug.log("New velocity: " + Arrays.toString(velocities) + ", " + bearing);
+	if (!dryRun) {
 	    EnsignCrusher.manualVelocity(velocities, bearing);
 	}
     }

@@ -234,9 +234,9 @@ public class Guidance implements Constants, Receivable {
 				}
 			}
 			if (parts[1].equals("AUTOMATIC")) {
-				mHandler.removeMessages(EVAL_MOTOR_SPEED);
 				mHandler.removeMessages(NEW_GUID_VECTOR);
-				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+				if (!mHandler.hasMessages(EVAL_MOTOR_SPEED))
+					mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
 			}
 			if (parts[1].equals("LOCALVEC")) {
 				mAbsVec = false;

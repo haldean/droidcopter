@@ -6,7 +6,7 @@ if [ -z "${ANDROIDPATH}" ]; then
 	export LINKOFFLINE="-linkoffline $ANDROID_ROOT/docs/reference $ANDROID_ROOT/docs/reference"
 	export WORLDWIND_DOCS='-linkoffline /usr/share/doc/worldwind-doc /usr/share/doc/worldwind-doc'
     else
-	export ANDROID_ROOT='/home/benjamin/bin/android-sdk-linux_86'
+	export ANDROID_ROOT='/usr/share/bin/android-sdk-linux_86'
 	export LINKOFFLINE="-linkoffline http://developer.android.com/reference/ $ANDROID_ROOT/docs/reference"
     fi
 fi

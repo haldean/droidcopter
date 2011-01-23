@@ -13,7 +13,7 @@ Required libraries:
 
 - Java3D Java3D is not included in the distribution. It can be
   downloaded at http://java.sun.com/javase/technologies/desktop/java3d
-  Horizon Server will not start unless the java3d core, java3d utils
+  Robocopter Server will not start unless the java3d core, java3d utils
   and vecmath jarfiles are in the classpath. It also expects
   libj3dcore-ogl to be present in /lib. If your libj3dcore is in a
   different directory, you can change this in the run script by adding

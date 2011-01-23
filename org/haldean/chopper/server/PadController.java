@@ -40,7 +40,10 @@ public class PadController extends UiController {
     private int lastButtonMask = 0;
 
     private boolean globeMovement = false;
-
+    
+    private double lastAxesVec[];
+    private final double minDiff = .0025;
+    
     /** Create a new PadController 
      *  @param _ui The ServerHost to act upon */
     public PadController(ServerHost _ui) {
@@ -71,7 +74,8 @@ public class PadController extends UiController {
 	buttons = new Component[BUTTON_COUNT];
 	axes = new Component[AXIS_COUNT];
 	lastAxisValue = new float[AXIS_COUNT];
-
+	lastAxesVec = new double[3];
+	
 	for (Component c : components) {
 	    if (!c.isAnalog() && !c.isRelative()) {
 		Component.Identifier id = c.getIdentifier();
@@ -202,12 +206,26 @@ public class PadController extends UiController {
 		vels[0] = getAxis(AXIS_L_H);
 		vels[1] = getAxis(AXIS_L_V);
 		vels[2] = getAxis(AXIS_R_V);
-		//3.0 is the value of the maximum normal vector
-		double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
-		for (v : vels) {
-			v *= adjustment;
+		
+		boolean updateVec = false;
+		for (int i = 0; i < 3; i++) {
+			if ( Math.abs(vels[i] - lastAxesVec[i]) > minDiff) {
+				updateVec = true;
+			}
 		}
-		EnsignCrusher.manualVelocity(vels);
+		
+		if (updateVec) {
+			for (int i = 0; i < 3; i++) {
+				lastAxesVec[i] = vels[i];
+			}
+			//3.0 is the value of the maximum normal vector
+			double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
+			for (double v : vels) {
+				v *= adjustment;
+			}
+			EnsignCrusher.manualVelocity(vels);
+			
+		}
 	}
     }
 

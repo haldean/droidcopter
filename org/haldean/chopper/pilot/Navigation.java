@@ -225,7 +225,6 @@ public class Navigation implements Constants, Receivable {
 	
 	/**
 	 * Receive a message.
-	 * @param msg The message to process.
 	 * @param source The source of the message, if a reply is needed.  May be null.
 	 */
 	public void receiveMessage(String msg, Receivable source) {
@@ -324,11 +323,14 @@ public class Navigation implements Constants, Receivable {
 		final double[] myCopy = newTarget.clone();
 		new Thread() {
 			public void run() {
+			String newNav = "New Nav Vector: ";
 			mTargetLock.lock();
 			for (int i = 0; i < 4; i++) {
 				mTarget[i] = myCopy[i];
+				newNav += myCopy[i] + " ";
 			}
 			mTargetLock.unlock();
+			Log.i(TAG, newNav);
 			}
 		}.start();
 	}
@@ -349,11 +351,7 @@ public class Navigation implements Constants, Receivable {
 		myList.getVelocity(mTempTarget);
 		setTarget(mTempTarget);
 		
-		String newNav = "New Nav Vector: ";
-		for (int i = 0; i < 4; i++) {
-			newNav += mTempTarget[i] + " ";
-		}
-		Log.i(TAG, newNav);
+		
 		
 		long interval = myList.getInterval();
 		

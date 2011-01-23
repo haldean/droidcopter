@@ -22,7 +22,7 @@ public class EnsignCrusher {
 
     /* In meters per second (we hope.) */
     public static final int MAX_VELOCITY = 2;
-    public static final int VELOCITY = (int) (0.25 * MAX_VELOCITY);
+    public static final int VELOCITY = 1;
 
     /**
      *  This is a convenience class that is never instantiated.
@@ -58,13 +58,23 @@ public class EnsignCrusher {
      */
     public static void manualVelocity(double[] velocities, double bearing) {
 	EnsignCrusher.bearing = bearing;
+	manualVelocity(velocities);
+    }
+
+    /**
+     *  Set a new velocity without changing the target bearing.
+     *
+     *  @param velocities An array whose values correspond to dx, dy
+     *  and dz in meters per second.
+     */
+    public static void manualVelocity(double[] velocities) {
 	String command = navGoToManual;
 
 	for (double v : velocities) {
 	    command += ":" + v;
 	}
 	DataReceiver.sendToDefault(command + ":" + bearing);
-    }
+    }	
 
     /**
      *  Tell the helicopter to travel to a specific location.

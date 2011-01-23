@@ -8,5 +8,7 @@ doc
 *.toc
 *.dvi
 *.dex
+*.apk
 video
+Pilot/bin
 pidlog.txt

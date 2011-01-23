@@ -198,8 +198,16 @@ public class PadController extends UiController {
 			   zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
 	}
 	else {
-		
-		
+		double[] vels = new double[3];
+		vels[0] = getAxis(AXIS_L_H);
+		vels[1] = getAxis(AXIS_L_V);
+		vels[2] = getAxis(AXIS_R_V);
+		//3.0 is the value of the maximum normal vector
+		double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
+		for (v : vels) {
+			v *= adjustment;
+		}
+		EnsignCrusher.manualVelocity(vels);
 	}
     }
 

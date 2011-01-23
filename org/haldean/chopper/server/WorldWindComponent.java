@@ -15,6 +15,7 @@ import gov.nasa.worldwind.awt.*;
 import gov.nasa.worldwind.event.*;
 import gov.nasa.worldwind.exception.*;
 import gov.nasa.worldwind.geom.*;
+import gov.nasa.worldwind.globes.Globe;
 import gov.nasa.worldwind.render.*;
 import gov.nasa.worldwind.util.*;
 import gov.nasa.worldwind.view.*;
@@ -45,10 +46,11 @@ public class WorldWindComponent extends UpdateUiPanel {
     private JPanel followPane;
     private JCheckBox follow;
     private double followAltitude = 1000;
-    private final JTextField altField;
-
-    /* Displays status messages */
-    private JButton statusLabel;
+    private JTextField altField;
+    private JTextField velocity;
+    private JTextField radius;
+    private JLabel positionLabel;
+    private JButton gotoButton;
 
     private final int maxMovePixels = 15;
 
@@ -68,13 +70,16 @@ public class WorldWindComponent extends UpdateUiPanel {
 		    /* Button 3 is the right click button */
 		    if (e.getButton() == MouseEvent.BUTTON3) {
 			/* clickPosition now holds the position under the mouse cursor */
-			Position clickPosition = wwd.getView().computePositionFromScreenPoint(e.getX(), e.getY());
+			Position clickPosition = 
+			    wwd.getView().computePositionFromScreenPoint(e.getX(), e.getY());
 			/* Move the green circle */
 			clickLocation.setCenter(clickPosition);
+
 			/* Update the button */
-			statusLabel.setText("Send to (" + 
-					    Math.round(1000 * clickPosition.getLatitude().getDegrees()) / 1000.0 + "\u00B0, " +
-					    Math.round(1000 * clickPosition.getLongitude().getDegrees()) / 1000.0 + "\u00B0)");
+			positionLabel.setText("(" + 
+					      Math.round(1000 * clickPosition.getLatitude().getDegrees()) / 1000.0 + "\u00B0, " +
+					      Math.round(1000 * clickPosition.getLongitude().getDegrees()) / 1000.0 + "\u00B0)");
+			gotoButton.setText("Send Chopper");
 		    }
 		}
 	    });
@@ -101,8 +106,9 @@ public class WorldWindComponent extends UpdateUiPanel {
 	chopperTargetOuter.setRadius(500);
 
 	attributes.setOutlineMaterial(new Material(Color.GREEN));
+	attributes.setOutlineWidth(18);
 	clickLocation = new SurfaceCircle(attributes);
-	clickLocation.setRadius(100);
+	clickLocation.setRadius(10);
 
 	/* Set the path color to a slightly-transparent red */
 	pathLine.setColor(new Color(255, 0, 0, 200));
@@ -131,8 +137,11 @@ public class WorldWindComponent extends UpdateUiPanel {
 	layers.add(polyLayer);
 	layers.add(shapeLayer);
 
+	add(createStatusPane(), BorderLayout.SOUTH);
+    }
+
+    private JComponent createStatusPane() {
 	/* Follow pane holds the check box and the textarea */
-	followPane = new JPanel(new FlowLayout());
 	follow = new JCheckBox("Follow Altitude: ");
 	altField = new JTextField(new Double(followAltitude).toString());
 	/* When the text is changed, automatically update the
@@ -147,18 +156,42 @@ public class WorldWindComponent extends UpdateUiPanel {
 		}
 	    });
 	
-	followPane.add(follow);
-	followPane.add(altField);
-
 	/* Status button is in the bottom right */
-	statusLabel = new JButton("Right click to select location");
+	gotoButton = new JButton("Select Location");
+	gotoButton.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent event) {
+		    newDestination();
+		}
+	    });
+
+	velocity = new JTextField(new Double(EnsignCrusher.VELOCITY).toString());
+
+	radius = new JTextField("10");
+	radius.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent event) {
+		    try {
+			double r = new Double(radius.getText());
+			clickLocation.setRadius(r);
+		    } catch (Exception e) {
+			;
+		    }
+		}
+	    });
+
+	positionLabel = new JLabel();
 
 	/* Status pane holds everything that is not the globe */
-	statusPane = new JPanel(new BorderLayout());
-	statusPane.add(followPane, BorderLayout.WEST);
-	statusPane.add(statusLabel, BorderLayout.EAST);
+	statusPane = new JPanel(new GridLayout(2,4));
+	statusPane.add(follow);
+	statusPane.add(new JLabel("Velocity"));
+	statusPane.add(new JLabel("Target Radius"));
+	statusPane.add(positionLabel);
+	statusPane.add(altField);
+	statusPane.add(velocity);
+	statusPane.add(radius);
+	statusPane.add(gotoButton);
 
-	add(statusPane, BorderLayout.SOUTH);
+	return statusPane;
     }
 
     /** Used for TabPanes */
@@ -210,18 +243,11 @@ public class WorldWindComponent extends UpdateUiPanel {
 	    wwd.getView().goTo(_w, _w.getElevation() + followAltitude);
     }
 
-    /** Update the look and feel of this component */
-    public void updateUI() {
-	if (statusPane != null)
-	    statusPane.updateUI();
-	if (follow != null)
-	    follow.updateUI();
-	if (altField != null)
-	    altField.updateUI();
-	if (statusLabel != null)
-	    statusLabel.updateUI();
-	if (followPane != null)
-	    followPane.updateUI();
+    /**
+     * Create a new task for the chopper.
+     */
+    private void newDestination() {
+	
     }
 
     /** Test code that simulates a flight in which the chopper 

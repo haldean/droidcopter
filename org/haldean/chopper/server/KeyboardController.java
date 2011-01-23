@@ -4,15 +4,24 @@ import net.java.games.input.*;
 import static net.java.games.input.Component.Identifier.Key;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import javax.swing.JOptionPane;
 
 public class KeyboardController extends UiController {
-    private ArrayList<Keyboard> keyboards;
     private boolean enable = true;
+    private boolean dryRun = false;
+
+    private ArrayList<Keyboard> keyboards;
     private HashMap<Key, Long> keypresses;
     private ServerHost ui;
+
+    private double[] lastVelocities;
+    private double theta = 0;
 	
+    private int POLL_PERIOD = 40;
+    private int SLEEP_TIME = 500;
+
     public KeyboardController(ServerHost ui) {
 	this.ui = ui;
 	keypresses = new HashMap<Key, Long>();
@@ -59,31 +68,40 @@ public class KeyboardController extends UiController {
 	    k.poll();
 	}
 
-	/* WASD for forward-left-back-right */
-	if (isKeyPressed(Key.W, true))
-	    EnsignCrusher.engage();
-	else if (isKeyPressed(Key.S, true))
-	    EnsignCrusher.engageReverse();
+	double[] newVelocities = new double[3];
 
-	/* QE for up-down */
-	if (isKeyPressed(Key.Q, true))
-	    EnsignCrusher.ascend();
-	else if (isKeyPressed(Key.E, true))
-	    EnsignCrusher.descend();
+	/* WASD for forward-left-back-right. I miss Lisp. */
+	newVelocities[0] = 
+	    isKeyPressed(Key.W, true) && isKeyPressed(Key.S, true) ? 0 :
+	    (isKeyPressed(Key.W, true) ? EnsignCrusher.VELOCITY :
+	     (isKeyPressed(Key.S, true) ? -EnsignCrusher.VELOCITY : 0));
 
-	if (isKeyPressed(Key.A, true))
-	    EnsignCrusher.toPort();
-	else if (isKeyPressed(Key.D, true))
-	    EnsignCrusher.toStarboard();
+	newVelocities[1] =
+	    isKeyPressed(Key.A, true) && isKeyPressed(Key.D, true) ? 0 :
+	    (isKeyPressed(Key.D, true) ? EnsignCrusher.VELOCITY :
+	     (isKeyPressed(Key.A, true) ? -EnsignCrusher.VELOCITY : 0));
+
+	newVelocities[2] =
+	    isKeyPressed(Key.Q, true) && isKeyPressed(Key.E, true) ? 0 :
+	    (isKeyPressed(Key.Q, true) ? EnsignCrusher.VELOCITY :
+	     (isKeyPressed(Key.E, true) ? -EnsignCrusher.VELOCITY : 0));
 
 	/* Rotation */
-	if (isKeyPressed(Key.R))
-	    getRotation();
+	boolean newRotation = isKeyPressed(Key.R);
+	if (newRotation) getRotation();
 
-	if (keyReleased(Key.W) || keyReleased(Key.S) ||
-	    keyReleased(Key.D) || keyReleased(Key.A) ||
-	    keyReleased(Key.Q) || keyReleased(Key.E))
-	    EnsignCrusher.fullStop();
+	if (! Arrays.equals(newVelocities, lastVelocities) || newRotation) {
+	    setVelocity(newVelocities, theta);
+	    lastVelocities = newVelocities;
+	}
+    }
+
+    private void setVelocity(double[] velocities, double bearing) {
+	if (dryRun) {
+	    System.out.println(Arrays.toString(velocities) + ", " + bearing);
+	} else {
+	    EnsignCrusher.manualVelocity(velocities, bearing);
+	}
     }
 
     private void getRotation() {
@@ -94,7 +112,7 @@ public class KeyboardController extends UiController {
 	    if (theta < 0 || theta >= 360) {
 		throw new NumberFormatException("Bearing must be between 0 and 360.");
 	    }
-	    EnsignCrusher.setCourseFor(theta);
+	    this.theta = theta;
 	} catch (NumberFormatException e) {
 	    JOptionPane.showMessageDialog(ui, e.toString(), "Rotation Command Failed",
 					  JOptionPane.ERROR_MESSAGE);
@@ -107,7 +125,7 @@ public class KeyboardController extends UiController {
 	return isKeyPressed(key, false);
     }
 
-    private boolean keyReleased(Key key) {
+    private boolean isKeyReleased(Key key) {
 	for (Keyboard k : keyboards) {
 	    if (k.isKeyDown(key)) {
 		return false;
@@ -142,6 +160,7 @@ public class KeyboardController extends UiController {
 
     public static void main(String args[]) {
 	KeyboardController k = new KeyboardController(null);
+	k.dryRun = true;
 	k.run();
     }
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export CLASSPATH=$CLASSPATH:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:.
+export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:/usr/share/java/j3dcore.jar:/usr/share/java/j3dutils.jar:/usr/share/java/vecmath.jar:.
 
 if [ -z "$1" ]; then
     echo "Must supply a class to test" 1>&2
@@ -8,5 +8,6 @@ else
     echo "Running test for class $1" 1>&2
     javac -cp $CLASSPATH "org/haldean/chopper/server/$1.java" && \
 	echo "Compiled" 1>&2 && \
-	java -Djava.library.path=jars/worldwind/:/lib/ -cp $CLASSPATH "org.haldean.chopper.server.$1"
+	java -Djava.library.path=jars/worldwind/:/lib/:jars/ \
+	-cp $CLASSPATH "org.haldean.chopper.server.$1"
 fi

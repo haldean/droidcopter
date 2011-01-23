@@ -21,9 +21,7 @@ public class EnsignCrusher {
     private static double bearing = 0;
 
     /* In meters per second (we hope.) */
-    private static final int VELOCITY = 2;
-    /* In seconds */
-    private static final int STEP_DURATION = 1000;
+    public static final int VELOCITY = 2;
 
     /**
      *  This is a convenience class that is never instantiated.
@@ -34,7 +32,7 @@ public class EnsignCrusher {
 
     /**
      *  Tell the helicopter to go at a specific velocity in a specific
-     *  direction.
+     *  direction, for a specific amount of time.
      *
      *  @param velocities An array whose values correspond to the North,
      *  South, East and West portions of the desired velocity.
@@ -129,43 +127,5 @@ public class EnsignCrusher {
 	DataReceiver.sendToDefault(navGoToAutomatic);
 	DataReceiver.sendToDefault(task.toString());
 	Debug.log("Sent new navigation task: " + task.toString());
-    }
-
-    private static double[] velocityFor(int i, boolean positive) {
-	double[] v = new double[]{0, 0, 0};
-	v[i] = positive ? VELOCITY : -VELOCITY;
-	return v;
-    }
-
-    public static void engage() {
-	manualVelocity(velocityFor(0, true), bearing); 
-    }
-
-    public static void engageReverse() {
-	manualVelocity(velocityFor(0, false), bearing); 
-    }
-
-    public static void toPort() {
-	manualVelocity(velocityFor(1, false), bearing);
-    }
-
-    public static void toStarboard() {
-	manualVelocity(velocityFor(1, true), bearing);
-    }
-
-    public static void ascend() {
-	manualVelocity(velocityFor(2, true), bearing);
-    }
-
-    public static void descend() {
-	manualVelocity(velocityFor(2, false), bearing);
-    }
-
-    public static void fullStop() {
-	manualVelocity(new double[]{0, 0, 0}, bearing);
-    }
-
-    public static void setCourseFor(double theta) {
-	manualVelocity(new double[]{0, 0, 0}, theta);
     }
 }

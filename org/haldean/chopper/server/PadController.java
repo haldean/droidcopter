@@ -74,7 +74,6 @@ public class PadController extends UiController {
 	buttons = new Component[BUTTON_COUNT];
 	axes = new Component[AXIS_COUNT];
 	lastAxisValue = new float[AXIS_COUNT];
-	lastAxesVec = new double[3];
 	
 	for (Component c : components) {
 	    if (!c.isAnalog() && !c.isRelative()) {

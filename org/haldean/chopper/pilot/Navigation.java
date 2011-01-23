@@ -236,6 +236,7 @@ public class Navigation implements Constants, Receivable {
 				if (parts[2].equals("MANUAL")) {
 					autoPilot(false);
 					if (parts.length > 3) {
+						updateReceivers("GUID:LOCALVEC");
 						updateReceivers("GUID:AUTOMATIC");
 						double[] newTarget = new double[4];
 						for (int i = 0; i < 4; i++) {
@@ -245,6 +246,7 @@ public class Navigation implements Constants, Receivable {
 					}
 				}
 				if (parts[2].equals("AUTOPILOT")) {
+					updateReceivers("GUID:ABSVEC");
 					updateReceivers("GUID:AUTOMATIC");
 					autoPilot(true);
 				}

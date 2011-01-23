@@ -25,6 +25,8 @@ import android.util.Log;
  *          GET
  *      AUTOMATIC
  *      VECTOR:&lt;north_motor_speed&gt;:&lt;south_motor_speed&gt;:&lt;east_motor_speed&gt;:&lt;west_motor_speed&gt;
+ * 		LOCALVEC
+ * 		ABSVEC
  * 
  * </pre>
  * 
@@ -115,6 +117,9 @@ public class Guidance implements Constants, Receivable {
 	/** Hides Runnability, ensures singleton-ness */
 	private Runnable mRunner;
 	private static PersistentThread sThread;
+	
+	/** Controls whether N/S and E/W commands refer to absolute vectors or local **/
+	private boolean mAbsVec = true;
 	
 	/**
 	 * Constructs a Guidance object
@@ -233,6 +238,12 @@ public class Guidance implements Constants, Receivable {
 				mHandler.removeMessages(NEW_GUID_VECTOR);
 				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
 			}
+			if (parts[1].equals("LOCALVEC")) {
+				mAbsVec = false;
+			}
+			if (parts[1].equals("ABSVEC")) {
+				mAbsVec = true;
+			}
 			if (parts[1].equals("VECTOR")) {
 				mHandler.removeMessages(EVAL_MOTOR_SPEED);
 				Double[] myVector = new Double[4];
@@ -305,10 +316,17 @@ public class Guidance implements Constants, Receivable {
 			if (mNav != null) {
 				try {
 					double[] absTarget = mNav.getTarget();
-					mTarget[1] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
-					mTarget[0] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
-					mTarget[2] = absTarget[2];
-					mTarget[3] = absTarget[3];
+					if (mAbsVec) {
+						mTarget[0] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
+						mTarget[1] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
+						mTarget[2] = absTarget[2];
+						mTarget[3] = absTarget[3];
+					}
+					else {
+						for (int i = 0; i < 4; i++) {
+							mTarget[i] = absTarget[i];
+						}
+					}
 					
 					//Calculate recorded velocity; reduce, if necessary, to MAXVEL
 					double myVel = 0;
@@ -339,12 +357,12 @@ public class Guidance implements Constants, Receivable {
 		//Transform current velocity from absolute to relative
 		
 		//CHECK SIGN HERE:
-		mGpsBearing = mStatus.getGpsFieldNow(BEARING, mGpsBearing); 
+		mGpsBearing = mStatus.getGpsFieldNow(BEARING, mGpsBearing);
 		double theta = (mGpsBearing - mAzimuth) * Math.PI / 180.0;
 		
 		mGpsSpeed = mStatus.getGpsFieldNow(SPEED, mGpsSpeed);
-		mCurrent[0] = mGpsSpeed * Math.cos(theta);
-		mCurrent[1] = mGpsSpeed * Math.sin(theta);
+		mCurrent[0] = mGpsSpeed * Math.sin(theta);
+		mCurrent[1] = mGpsSpeed * Math.cos(theta);
 		
 		mGpsDalt = mStatus.getGpsFieldNow(dALT, mGpsDalt);
 		mCurrent[2] = mGpsDalt;

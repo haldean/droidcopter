@@ -23,12 +23,11 @@
 **** TODO Query autopilot for current flight plans      
 **** TODO Visualization for autopilot interface          
 ** TODO Misc Fixes
-*** TODO Don't send repeat commands for navigation
-*** TODO Implement diagonal movement correctly
-*** TODO Store JPEGs upon arrival
+*** DONE Don't send repeat commands for navigation
+*** DONE Implement diagonal movement correctly
+*** DONE Store JPEGs upon arrival
 - Optionally, this could be on droidcopter, and the video stitching
   could be offloaded there.
-* TODO Stability					          :Ben:
 ** TODO Tune PID loops
    After doing more research, we've decided this can and should be
    done by hand.

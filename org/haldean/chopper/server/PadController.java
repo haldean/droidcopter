@@ -41,8 +41,8 @@ public class PadController extends UiController {
 
     private boolean globeMovement = false;
     
-    private double lastAxesVec[];
-    private final double minDiff = .0025;
+    private final double minDiff = 200; //ms
+    private long lastAxesUpdate;
     
     /** Create a new PadController 
      *  @param _ui The ServerHost to act upon */
@@ -208,16 +208,12 @@ public class PadController extends UiController {
 		vels[2] = getAxis(AXIS_R_V);
 		
 		boolean updateVec = false;
-		for (int i = 0; i < 3; i++) {
-			if ( Math.abs(vels[i] - lastAxesVec[i]) > minDiff) {
-				updateVec = true;
-			}
+		if ( System.currentTimeMillis() - lastAxesUpdate > minDiff) {
+			updateVec = true;
 		}
 		
 		if (updateVec) {
-			for (int i = 0; i < 3; i++) {
-				lastAxesVec[i] = vels[i];
-			}
+			lastAxesUpdate = System.currentTimeMillis();
 			//3.0 is the value of the maximum normal vector
 			double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
 			for (double v : vels) {

@@ -158,6 +158,7 @@ public class KeyboardController extends UiController {
     }
 
     public static void main(String args[]) {
+	Debug.setEnabled(true);
 	KeyboardController k = new KeyboardController(null);
 	k.dryRun = true;
 	k.run();

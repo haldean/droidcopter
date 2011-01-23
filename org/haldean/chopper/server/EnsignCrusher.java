@@ -22,7 +22,7 @@ public class EnsignCrusher {
 
     /* In meters per second (we hope.) */
     public static final int MAX_VELOCITY = 2;
-    public static final int VELOCITY = 0.25 * MAX_VELOCITY;
+    public static final int VELOCITY = (int) (0.25 * MAX_VELOCITY);
 
     /**
      *  This is a convenience class that is never instantiated.

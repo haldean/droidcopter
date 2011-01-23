@@ -1,6 +1,9 @@
 package org.haldean.chopper.server;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.LinkedList;
+
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -47,7 +50,7 @@ public class ServerHost extends JFrame {
     public final MotorComponent mc;
 
     /* Custom controllers, mostly because Will is the effing man */
-    private final UiController pad;
+    private final List<UiController> pads;
 
     /** The components to put in the left tab pane in the UI */
     private LinkedList<Component> leftTabPanes;
@@ -133,8 +136,9 @@ public class ServerHost extends JFrame {
 	rightTabPanes.add(sc);
 	rightTabPanes.add(pidc);
 
-	//pad = new PadController(this);
-	pad = new KeyboardController(this);
+	pads = new ArrayList<UiController>();
+	pads.add(new PadController(this));
+	pads.add(new KeyboardController(this));
     }
 
     /** Start accepting data */
@@ -247,6 +251,8 @@ public class ServerHost extends JFrame {
 	pack();
 	setVisible(true);
 
-	new Thread(pad).start();
+	for (UiController pad : pads) {
+	    new Thread(pad).start();
+	}
     }
 }

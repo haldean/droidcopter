@@ -38,8 +38,6 @@ public class ServerHost extends JFrame {
     /** An Updatable that receives all messages from the chopper
      *  @see EchoUpdatable */
     public final Updatable status;
-    /** The text area where debug information is printed */
-    public final UpdatableTextArea debug;
     /** The component responsible for displaying sensor
      *  data that isn't displayed by one of the other components */
     public final SensorComponent sc;
@@ -89,14 +87,10 @@ public class ServerHost extends JFrame {
 	pidc = new PidErrorComponent();
 	sc = new SensorComponent();
 	status = new EchoUpdatable();
-	debug = new UpdatableTextArea("Debug");
 	mc = new MotorComponent();
 
 	sl = new StatusLabel();
 	r.setStatusLabel(sl);
-
-	/* Sets the output for all the glorious error messages */
-	Debug.setDebugOut(debug);
 
 	/* Create the sensor parser and tell it where to
 	 * find all of the appropriate components */
@@ -123,11 +117,10 @@ public class ServerHost extends JFrame {
 	leftTabPanes = new LinkedList<Component>();
 	rightTabPanes = new LinkedList<Component>();
 
-	/* The left tab pane has the globe, the tilt and the debug feed */
+	/* The left tab pane has the globe and the tilt */
 	if (allowGlobe)
 	    leftTabPanes.add(lc);
 	leftTabPanes.add(tc);
-	leftTabPanes.add(debug);
 	leftTabPanes.add(mc);
 
 	/* The right has the telemetry, the acceleration and the sensor data */
@@ -159,7 +152,6 @@ public class ServerHost extends JFrame {
     public void start() {
 	/* Update the Look and Feel of components created
 	 * in the constructor */
-	debug.updateUI();
 	ac.updateUI();
 	sc.updateUI();
 	lc.updateUI();

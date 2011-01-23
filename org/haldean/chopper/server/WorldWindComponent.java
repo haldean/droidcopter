@@ -210,16 +210,18 @@ public class WorldWindComponent extends UpdateUiPanel {
 	BasicOrbitView currentView = (BasicOrbitView) wwd.getView();
 	Position moveToPos = currentView.computePositionFromScreenPoint((int) (componentSize.getWidth() / 2 + dx * maxMovePixels),
 									(int) (componentSize.getHeight() / 2 + dy * maxMovePixels));
-	currentView.addCenterAnimator(currentView.getCenterPosition(), moveToPos, 20, true);
+	if (moveToPos != null) {
+	    currentView.addCenterAnimator(currentView.getCenterPosition(), moveToPos, 20, true);
 	
-	double zoom = currentView.getZoom();
-	currentView.addZoomAnimator(zoom, zoom * (1 + 3 * dz));
+	    double zoom = currentView.getZoom();
+	    currentView.addZoomAnimator(zoom, zoom * (1 + 3 * dz));
 
-	Angle heading = Angle.fromDegrees(currentView.getHeading().getDegrees() + 45.0 * dp);
-	Angle pitch = Angle.fromDegrees(currentView.getPitch().getDegrees() + 30.0 * dt);
-	currentView.addHeadingPitchAnimator(currentView.getHeading(), heading, currentView.getPitch(), pitch);
+	    Angle heading = Angle.fromDegrees(currentView.getHeading().getDegrees() + 45.0 * dp);
+	    Angle pitch = Angle.fromDegrees(currentView.getPitch().getDegrees() + 30.0 * dt);
+	    currentView.addHeadingPitchAnimator(currentView.getHeading(), heading, currentView.getPitch(), pitch);
 
-	wwd.redrawNow();
+	    wwd.redrawNow();
+	}
     }
 
     /** Invert the follow variable and check box status */

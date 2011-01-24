@@ -67,9 +67,10 @@ public class ServerCreator {
 	 
 	if (arguments.containsKey("debug")) {
 	    Debug.setEnabled(true);
-	    if (arguments.containsKey("debugout")) {
+	    if (arguments.containsKey("debuglog")) {
 		try {
-		    Debug.setOutputStream(new FileWriter(getArgument("debuglog")));
+		    FileWriter w = new FileWriter(getArgument("debuglog"));
+		    Debug.setOutputStream(w);
 		} catch (IOException e) {
 		    Debug.log("Could not write to the provided debug log");
 		}

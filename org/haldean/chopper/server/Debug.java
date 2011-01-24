@@ -48,10 +48,13 @@ public class Debug {
 	/* Send it to the updatable if set */
 	if (writer != null) {
 	    try {
-		writer.write(s);
+		writer.write(s + "\n");
+		writer.flush();
 	    } catch (IOException e) {
 		System.err.println("Failed to write to debug log.");
 	    }
+	} else {
+	    System.out.println("No writer specified.");
 	}
     }
 }

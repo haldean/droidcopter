@@ -190,7 +190,7 @@ public class PadController extends UiController {
 	if (Math.abs(axes[axis].getPollData()) < 0.2)
 	    return 0;
 	else
-	    return 1.25 * (axes[axis].getPollData() - 0.2);
+	    return 1.25F * (axes[axis].getPollData() - 0.2F);
     }
 
     /** Trigger events based on the values of the axes */

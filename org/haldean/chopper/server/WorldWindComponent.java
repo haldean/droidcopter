@@ -39,6 +39,7 @@ public class WorldWindComponent extends UpdateUiPanel {
     private SurfaceCircle chopperTargetInner;
     private SurfaceCircle chopperTargetOuter;
     private final SurfaceCircle clickLocation;
+    private Position targetPosition;
 
     /* Used to have the component follow the last position
      * of the chopper */
@@ -70,15 +71,15 @@ public class WorldWindComponent extends UpdateUiPanel {
 		    /* Button 3 is the right click button */
 		    if (e.getButton() == MouseEvent.BUTTON3) {
 			/* clickPosition now holds the position under the mouse cursor */
-			Position clickPosition = 
+			targetPosition = 
 			    wwd.getView().computePositionFromScreenPoint(e.getX(), e.getY());
 			/* Move the green circle */
-			clickLocation.setCenter(clickPosition);
+			clickLocation.setCenter(targetPosition);
 
 			/* Update the button */
 			positionLabel.setText("(" + 
-					      Math.round(1000 * clickPosition.getLatitude().getDegrees()) / 1000.0 + "\u00B0, " +
-					      Math.round(1000 * clickPosition.getLongitude().getDegrees()) / 1000.0 + "\u00B0)");
+					      Math.round(1000 * targetPosition.getLatitude().getDegrees()) / 1000.0 + "\u00B0, " +
+					      Math.round(1000 * targetPosition.getLongitude().getDegrees()) / 1000.0 + "\u00B0)");
 			gotoButton.setText("Send Chopper");
 		    }
 		}
@@ -249,7 +250,19 @@ public class WorldWindComponent extends UpdateUiPanel {
      * Create a new task for the chopper.
      */
     private void newDestination() {
-	
+	try {
+	    EnsignCrusher.setTargetLocation(targetPosition, 
+					    new Double(velocity.getText()),
+					    new Double(radius.getText()));
+	} catch (NullPointerException e) {
+	    JOptionPane.
+		showMessageDialog(this, "You must select a destination", "Error",
+				  JOptionPane.ERROR_MESSAGE);
+	} catch (Exception e) {
+	    JOptionPane.
+		showMessageDialog(this, "Velocity and radius must be floating point numbers",
+				  "Error", JOptionPane.ERROR_MESSAGE);
+	}
     }
 
     /** Test code that simulates a flight in which the chopper 

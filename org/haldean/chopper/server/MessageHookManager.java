@@ -60,7 +60,6 @@ public class MessageHookManager extends Thread {
 	for (String prefix : prefixes.keySet()) {
 	    if (m.prefixMatches(prefix)) {
 		for (MessageHook hook : prefixes.get(prefix)) {
-		    Debug.log(hook.getClass().toString());
 		    hook.process(m);
 		}
 	    }

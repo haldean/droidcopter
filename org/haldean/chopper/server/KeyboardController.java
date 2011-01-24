@@ -24,7 +24,6 @@ public class KeyboardController extends UiController {
 
     public KeyboardController(ServerHost ui) {
 	this.ui = ui;
-	enable = false;
 
 	keypresses = new HashMap<Key, Long>();
 	keyboards = new ArrayList<Keyboard>();

@@ -41,7 +41,7 @@ public class PadController extends UiController {
 
     private boolean globeMovement = false;
     
-    private final double minDiff = 200; //ms
+    private final double minDiff = 250; //ms
     private long lastAxesUpdate;
     
     /** Create a new PadController 
@@ -190,7 +190,7 @@ public class PadController extends UiController {
 	if (Math.abs(axes[axis].getPollData()) < 0.2)
 	    return 0;
 	else
-	    return axes[axis].getPollData();
+	    return 1.25 * (axes[axis].getPollData() - 0.2);
     }
 
     /** Trigger events based on the values of the axes */
@@ -205,6 +205,13 @@ public class PadController extends UiController {
 		vels[0] = getAxis(AXIS_L_H);
 		vels[1] = getAxis(AXIS_L_V);
 		vels[2] = getAxis(AXIS_R_V);
+		
+		System.out.println("");
+		System.out.println(getAxis(AXIS_L_H));
+		System.out.println(getAxis(AXIS_L_V));
+		System.out.println(getAxis(AXIS_R_H));
+		System.out.println(getAxis(AXIS_R_V));
+		System.out.println("");
 		
 		boolean updateVec = false;
 		if ( System.currentTimeMillis() - lastAxesUpdate > minDiff) {

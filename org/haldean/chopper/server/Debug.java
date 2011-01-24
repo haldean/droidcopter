@@ -1,5 +1,6 @@
 package org.haldean.chopper.server;
 
+import java.io.IOException;
 import java.io.Writer;
 
 /** 
@@ -45,7 +46,12 @@ public class Debug {
 	if (enable)
 	    System.err.println(s);
 	/* Send it to the updatable if set */
-	if (writer != null)
-	    writer.write(s);
+	if (writer != null) {
+	    try {
+		writer.write(s);
+	    } catch (IOException e) {
+		System.err.println("Failed to write to debug log.");
+	    }
+	}
     }
 }

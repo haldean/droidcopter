@@ -1,6 +1,7 @@
 package org.haldean.chopper.server;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import javax.swing.SwingUtilities;

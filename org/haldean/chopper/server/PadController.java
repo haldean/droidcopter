@@ -10,32 +10,34 @@ public class PadController extends UiController {
     private Controller ctrl;
     private StatusLabel sl;
 
+    private boolean enabled = true;
+
     /* The array of buttons and the array index for each */
     private Component buttons[];
-    private final int BUTTON_A = 0;
-    private final int BUTTON_B = 1;
-    private final int BUTTON_X = 2;
-    private final int BUTTON_Y = 3;
-    private final int BUTTON_L = 4;
-    private final int BUTTON_R = 5;
-    private final int BUTTON_START = 6;
-    private final int BUTTON_XBOX = 7;
-    private final int BUTTON_BACK = 8;
-    private final int JOYSTICK_L = 9;
-    private final int JOYSTICK_R = 10;
-    private final int BUTTON_COUNT = 11;
+    public final int BUTTON_A = 0;
+    public final int BUTTON_B = 1;
+    public final int BUTTON_X = 2;
+    public final int BUTTON_Y = 3;
+    public final int BUTTON_L = 4;
+    public final int BUTTON_R = 5;
+    public final int BUTTON_START = 6;
+    public final int BUTTON_XBOX = 7;
+    public final int BUTTON_BACK = 8;
+    public final int JOYSTICK_L = 9;
+    public final int JOYSTICK_R = 10;
+    public final int BUTTON_COUNT = 11;
 
     /* The array of axes and the array index for each */
     private Component axes[];
-    private float lastAxisValue[];
-    private final int AXIS_L_H = 0;
-    private final int AXIS_L_V = 1;
-    private final int AXIS_L_TRIGGER = 2;
-    private final int AXIS_R_H = 3;
-    private final int AXIS_R_V = 4;
-    private final int AXIS_R_TRIGGER = 5;
-    private final int D_PAD = 6;
-    private final int AXIS_COUNT = 7;
+    public float lastAxisValue[];
+    public final int AXIS_L_H = 0;
+    public final int AXIS_L_V = 1;
+    public final int AXIS_L_TRIGGER = 2;
+    public final int AXIS_R_H = 3;
+    public final int AXIS_R_V = 4;
+    public final int AXIS_R_TRIGGER = 5;
+    public final int D_PAD = 6;
+    public final int AXIS_COUNT = 7;
 
     private int lastButtonMask = 0;
 
@@ -120,6 +122,15 @@ public class PadController extends UiController {
 	}
     }
 
+    /**
+     * Enable or disable the pad controller. This will not stop it
+     * from polling the controller, but it will stop it from acting on
+     * any button or controller inputs.
+     */
+    public void setEnabled(boolean enabled) {
+	this.enabled = enabled;
+    }
+
     /** Get an integer bitmask representing each of the buttons */
     private int buttonMask() {
 	int mask = 0;
@@ -135,6 +146,15 @@ public class PadController extends UiController {
      *  @return True if the button is depressed, false if not */
     private boolean buttonIsSet(int mask, int button) {
 	return ((mask >> button) & 1) == 1;
+    }
+
+    /**
+     * Check to see if a button was pressed in the last poll.
+     *
+     * @param button The index of the button
+     */
+    public boolean buttonIsSet(int button) {
+	return buttonIsSet(lastButtonMask, button);
     }
 
     /** Perform an action based on the status of the buttons
@@ -186,7 +206,7 @@ public class PadController extends UiController {
     /** Get the value of a joystick axis, filtering out noisy results 
      *  @param axis The index of the axis to check
      *  @return A number from -1 to 1 representing the value of the joystick */
-    private float getAxis(int axis) {
+    public float getAxis(int axis) {
 	if (Math.abs(axes[axis].getPollData()) < 0.2)
 	    return 0;
 	else
@@ -199,35 +219,27 @@ public class PadController extends UiController {
 	    float zoom = getAxis(AXIS_L_TRIGGER) - getAxis(AXIS_R_TRIGGER);
 	    ui.lc.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), 
 			   zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
-	}
-	else {
-		double[] vels = new double[3];
-		vels[0] = getAxis(AXIS_L_H);
-		vels[1] = getAxis(AXIS_L_V);
-		vels[2] = getAxis(AXIS_R_V);
+	} else {
+	    double[] vels = new double[3];
+	    vels[0] = getAxis(AXIS_L_H);
+	    vels[1] = getAxis(AXIS_L_V);
+	    vels[2] = getAxis(AXIS_R_V);
 		
-		System.out.println("");
-		System.out.println(getAxis(AXIS_L_H));
-		System.out.println(getAxis(AXIS_L_V));
-		System.out.println(getAxis(AXIS_R_H));
-		System.out.println(getAxis(AXIS_R_V));
-		System.out.println("");
+	    boolean updateVec = false;
+	    if (System.currentTimeMillis() - lastAxesUpdate > minDiff) {
+		updateVec = true;
+	    }
 		
-		boolean updateVec = false;
-		if ( System.currentTimeMillis() - lastAxesUpdate > minDiff) {
-			updateVec = true;
+	    if (updateVec) {
+		lastAxesUpdate = System.currentTimeMillis();
+		//3.0 is the value of the maximum normal vector
+		double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
+		for (double v : vels) {
+		    v *= adjustment;
 		}
-		
-		if (updateVec) {
-			lastAxesUpdate = System.currentTimeMillis();
-			//3.0 is the value of the maximum normal vector
-			double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
-			for (double v : vels) {
-				v *= adjustment;
-			}
-			EnsignCrusher.manualVelocity(vels);
-			
-		}
+
+		EnsignCrusher.manualVelocity(vels);
+	    }
 	}
     }
 
@@ -236,14 +248,17 @@ public class PadController extends UiController {
     public void run() {
 	while (ctrl != null) {
 	    ctrl.poll();
-	    axesAction();
+
 	    int mask = buttonMask();
 	    int newButtons = (mask ^ lastButtonMask) & mask;
-	    if (newButtons != 0) {
-		buttonAction(newButtons);
-	    }
-
 	    lastButtonMask = mask;
+
+	    if (enabled) {
+		axesAction();
+		if (newButtons != 0) {
+		    buttonAction(newButtons);
+		}
+	    }
 
 	    try {
 		Thread.sleep(POLL_PERIOD);

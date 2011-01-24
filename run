@@ -38,7 +38,8 @@ clean() {
 run() {
     CMD="java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m
 	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator
-	host=$HOST port=$PORT debug $HEARTLESS pidlog=pidlog.txt imgdir=video/"
+	host=$HOST port=$PORT debug $HEARTLESS pidlog=pidlog.txt imgdir=video/
+        debuglog=debug.txt"
     echo $CMD
     exec $CMD
 }

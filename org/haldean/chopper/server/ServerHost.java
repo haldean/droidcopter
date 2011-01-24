@@ -134,6 +134,13 @@ public class ServerHost extends JFrame {
 	pads.add(new KeyboardController(this));
     }
 
+    public <T extends UiController> T getController(Class<T> controllerClass) {
+	for (UiController c : pads)
+	    if (controllerClass.isInstance(c))
+		return controllerClass.cast(c);
+	return null;
+    }
+
     /** Start accepting data */
     public void accept() {
 	/* Start the DataReceiver thread */

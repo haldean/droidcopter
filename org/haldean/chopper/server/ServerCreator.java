@@ -1,5 +1,6 @@
 package org.haldean.chopper.server;
 
+import java.io.FileWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import javax.swing.SwingUtilities;
@@ -7,11 +8,16 @@ import javax.swing.UIManager;
 
 public class ServerCreator {
     private static HashMap<String, String> arguments;
+    private static ServerHost serverHost;
 
     private static String uri;
     private static Integer dataPort;
     private static Integer imagePort;
     private static boolean enableHeartbeat = true;
+
+    public static ServerHost getServerHost() {
+	return serverHost;
+    }
 
     public static String getUri() {
 	return arguments.get("host");
@@ -58,8 +64,16 @@ public class ServerCreator {
 	    }
 	}
 	 
-	if (arguments.containsKey("debug"))
+	if (arguments.containsKey("debug")) {
 	    Debug.setEnabled(true);
+	    if (arguments.containsKey("debugout")) {
+		try {
+		    Debug.setOutputStream(new FileWriter(getArgument("debuglog")));
+		} catch (IOException e) {
+		    Debug.log("Could not write to the provided debug log");
+		}
+	    }
+	}
 
 	dataPort = new Integer(arguments.get("port"));
 	imagePort = dataPort + 1;
@@ -67,8 +81,8 @@ public class ServerCreator {
 
 	DataReceiver.getInstance().initialize(getUri(), getDataPort(), getImagePort());
 
-	final ServerHost s = new ServerHost();
-	s.osInit();
+	serverHost = new ServerHost();
+	serverHost.osInit();
 
 	try {
 	    SwingUtilities.invokeAndWait(new Runnable() {
@@ -78,7 +92,7 @@ public class ServerCreator {
 			} catch (Exception e) {
 			    System.out.println("Unable to set LaF: " + e.toString());
 			}
-			s.start();
+			serverHost.start();
 		    }
 		});
 	} catch (InterruptedException e) {
@@ -88,6 +102,6 @@ public class ServerCreator {
 	    System.out.println("Unable to invoke target: " + e.toString());
 	}
 
-	s.accept();
+	serverHost.accept();
     }
 }

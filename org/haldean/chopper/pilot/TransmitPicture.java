@@ -49,7 +49,7 @@ public final class TransmitPicture implements Receivable, Constants
 	
 	/** Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
 	 * This flags whether or not to try to use them. */
-	private static final boolean NEWCOMPRESSMETHOD = false;
+	private static final boolean NEWCOMPRESSMETHOD = true;
 	
 	/** Output stream */
 	private ObjectOutputStream mDataOut;
@@ -244,7 +244,6 @@ public final class TransmitPicture implements Receivable, Constants
 		{
 			YuvImage sourcePic = null;
 			try {
-				
 				sourcePic = new YuvImage(picFrame, myMakePic.getPreviewFormat(), frameSize[0], frameSize[1], null);
 			}
 			catch (Throwable t)
@@ -254,15 +253,15 @@ public final class TransmitPicture implements Receivable, Constants
 			
 			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
 		
-			System.out.println("Compressing to jpeg");
+			//System.out.println("Compressing to jpeg");
 			try {
 				sourcePic.compressToJpeg(new Rect(0, 0, frameSize[0], frameSize[1]), mPrevQuality.get(), mBaos);
 			}
 			catch (Throwable t) {
-				System.out.println("Compress fail");
+				Log.e(TAG,"Compress fail");
 				t.printStackTrace();
 			}
-			System.out.println("Finished compressing");
+			//System.out.println("Finished compressing");
 		}
 		else {
 			//System.out.println("Bitmap compression");
@@ -278,7 +277,7 @@ public final class TransmitPicture implements Receivable, Constants
 		byte[] sendPic = mBaos.toByteArray();
 		mBaos.reset();
 		long endtime = System.currentTimeMillis();
-    	Log.v(TAG, "Pic Processing took " + (endtime - starttime));
+    	//Log.v(TAG, "Pic Processing took " + (endtime - starttime));
     	return sendPic;
 	}
 	

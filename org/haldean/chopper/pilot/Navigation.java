@@ -45,7 +45,7 @@ public class Navigation implements Constants, Receivable {
 	
 	/** How long (in ms) Navigation should instruct the chopper to hover
 	 * when autopilot has run out of NavTasks */
-	public static final int HOVER_PAUSE = 10000;
+	public static final int HOVER_PAUSE = 1000;
 	
 	/** Velocity to achieve.  Must be locked on each read/write. */
 	private double[] mTarget = new double[4];
@@ -153,8 +153,8 @@ public class Navigation implements Constants, Receivable {
 							" DEST!587!-117.15!32.72!10!600 } } }";*/
 					String taskList = "{ VEL!1!0!0!0!20 VEL!-1!0!0!0!20 VEL!0!1!0!0!20 VEL!0!-1!0!0!20 VEL!0!0!1!0!20 VEL!0!0!-1!0!20 }";
 					setTask(BASIC_AUTO, taskList);
-					setTask(NO_CONN, "{ VEL!0!0!-1!0!10000 }");
-					setTask(LOW_POWER, "{ VEL!0!0!-1!0!10000 }");
+					setTask(NO_CONN, "{ VEL!0!0!-1!0!1000 }");
+					setTask(LOW_POWER, "{ VEL!0!0!-1!0!0000 }");
 					//autoPilot(true);
 					Looper.loop();
 				}
@@ -232,6 +232,8 @@ public class Navigation implements Constants, Receivable {
 		String[] parts = msg.split(":");
 		if (parts[0].equals("NAV")) {
 			if (parts[1].equals("SET")) {
+				Log.v(TAG, "Updating Nav Status");
+				mNavStatus.set(BASIC_AUTO);				
 				if (parts[2].equals("MANUAL")) {
 					autoPilot(false);
 					if (parts.length > 3) {
@@ -274,6 +276,8 @@ public class Navigation implements Constants, Receivable {
 			}
 			if (parts[1].equals("LOWPOWER")) {
 				updateStatus(LOW_POWER);
+				autoPilot(true);
+				updateReceivers("GUID:AUTOMATIC");
 			}
 		}
 	}
@@ -301,6 +305,8 @@ public class Navigation implements Constants, Receivable {
 			
 			//Confirm change to server:
 			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+			if (mAutoPilot.get())
+				evalNextVector();
 		}
 	}
 	
@@ -354,7 +360,7 @@ public class Navigation implements Constants, Receivable {
 		
 		
 		long interval = myList.getInterval();
-		
+		Log.v(TAG, "Nav Interval is " + interval);
 		//Send the current NavList to the server, in case any tasks have been completed
 		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
 		

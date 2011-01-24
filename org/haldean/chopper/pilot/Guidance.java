@@ -35,7 +35,7 @@ import android.util.Log;
 public class Guidance implements Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 20;
+	public int PIDREPS = 1;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;
@@ -239,9 +239,11 @@ public class Guidance implements Constants, Receivable {
 					mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
 			}
 			if (parts[1].equals("LOCALVEC")) {
+				Log.v(TAG, "Setting mabsvec to false");
 				mAbsVec = false;
 			}
 			if (parts[1].equals("ABSVEC")) {
+				Log.v(TAG, "Setting mabsvec to true");
 				mAbsVec = true;
 			}
 			if (parts[1].equals("VECTOR")) {
@@ -317,12 +319,14 @@ public class Guidance implements Constants, Receivable {
 				try {
 					double[] absTarget = mNav.getTarget();
 					if (mAbsVec) {
+						Log.v(TAG, "Abs vectors");
 						mTarget[0] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
 						mTarget[1] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
 						mTarget[2] = absTarget[2];
 						mTarget[3] = absTarget[3];
 					}
 					else {
+						Log.v(TAG, "Local vectors");
 						for (int i = 0; i < 4; i++) {
 							mTarget[i] = absTarget[i];
 						}

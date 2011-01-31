@@ -20,13 +20,12 @@ struct motor {
 };
 
 struct motor motors[MOTOR_COUNT] = {
-  {6, 0, 0, NULL}, {9, 0, 0, NULL}, 
-  {10, 0, 0, NULL}, {11, 0, 0, NULL}
+  {6, 0, 0, SoftwareServo()}, {9, 0, 0, SoftwareServo()}, 
+  {10, 0, 0, SoftwareServo()}, {11, 0, 0, SoftwareServo()}
 };
 
 char buffer[WORD_BUFFER_LENGTH];
 unsigned int led_cycles = 0;
-
 
 /**
  *  Updates the speeds of the motors.

@@ -1,6 +1,8 @@
 #define BAD_REQUEST "BADREQUEST"
 #define HEARTBEAT_PULSE "PULSE"
 #define MESSAGE_TIMEOUT_CYCLES 100
+#define MOTOR_ARM_TIME 5000
+#define MOTOR_ARM_VALUE 20
 #define MOTOR_COUNT 4
 #define SPEED_HEADER "NEWSPEED"
 #define STATUS_LED 13
@@ -8,14 +10,18 @@
 #define WORD_BUFFER_LENGTH 4
 #define WORD_LENGTH 3
 
+#include <SoftwareServo.h>
+
 struct motor {
   unsigned char pin;
   unsigned int current_speed;
   unsigned int next_speed;
+  SoftwareServo ctrl;
 };
 
 struct motor motors[MOTOR_COUNT] = {
-  {6, 0, 0}, {9, 0, 0}, {10, 0, 0}, {11, 0, 0}
+  {6, 0, 0, NULL}, {9, 0, 0, NULL}, 
+  {10, 0, 0, NULL}, {11, 0, 0, NULL}
 };
 
 char buffer[WORD_BUFFER_LENGTH];
@@ -28,18 +34,36 @@ unsigned int led_cycles = 0;
 void write_speeds(void) {
   for (int i = 0; i < MOTOR_COUNT; i++) {
     motors[i].current_speed = motors[i].next_speed;
-    analogWrite(motors[i].pin, motors[i].current_speed);
+    motors[i].ctrl.write(motors[i].current_speed);
   }
 }
 
+/**
+ *  Print the speeds of the motors to serial.
+ */
 void print_speeds(void) {
   Serial.print(SPEED_HEADER);
   for (int i = 0; i < MOTOR_COUNT; i++) {
-    Serial.print(":"
-    );
+    Serial.print(":");
     Serial.print(motors[i].current_speed);
   }
   Serial.println();
+}
+
+/**
+ *  Initialize and arm motors
+ */
+void init_motors(void) {
+  for (int i = 0; i < MOTOR_COUNT; i++) {
+    motors[i].ctrl.attach(motors[i].pin);
+  }
+
+  long time = millis();
+  while (millis() - time < MOTOR_ARM_TIME) {
+    for (int i = 0; i < MOTOR_COUNT; i++) {
+      motors[i].ctrl.write(MOTOR_ARM_VALUE);
+    }
+  }
 }
 
 /**
@@ -50,10 +74,7 @@ void setup(void) {
   pinMode(STATUS_LED, OUTPUT);
 
   /* Initialize the motor controllers. */
-  for (int i = 0; i < MOTOR_COUNT; i++) {
-    pinMode(motors[i].pin, OUTPUT);
-    analogWrite(motors[i].pin, 0);
-  }
+  init_motors();
 
   /* Initialize serial monitor. */
   Serial.begin(115200);

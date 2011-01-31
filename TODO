@@ -14,15 +14,16 @@
 *** DONE Finish heartbeat chopper-side					:Ben:
 *** DONE Code for possibly unreliable pices-server connection	       :Will:
 *** DONE Code for full automatic telemetry reset (upon failure)	       :Will:
-** TODO Flight control						 :Will:
+** PROGRESS Flight control					       :Will:
 *** TODO Manual control of velocity via 360 controller    
-*** DONE Manual control of velocity via keyboard(/mouse) 
+*** PROGRESS Manual control of velocity via keyboard(/mouse)
+**** TODO Add a flag to switch keyboard control on and off
 *** TODO Interface droidcopter's autopilot subroutines    
-**** TODO Turn autopilot on/off                         
-**** TODO Locally create flight plan, submit to autopilot              
+**** DONE Turn autopilot on/off                         
+**** DONE Locally create flight plan, submit to autopilot              
 **** TODO Query autopilot for current flight plans      
-**** TODO Visualization for autopilot interface          
-** TODO Misc Fixes
+**** PROGRESS Visualization for autopilot interface          
+** DONE Misc Fixes
 *** DONE Don't send repeat commands for navigation
 *** DONE Implement diagonal movement correctly
 *** DONE Store JPEGs upon arrival
@@ -56,6 +57,7 @@
 ** DONE Visualize battery data					 :Will:
    CLOSED: [2010-09-11 SAT 21:41]
 
+
 * TODO First Hardware Iteration					       :Will:
 ** PROGRESS Build chopper					       :Will:
 *** DONE Create design
@@ -64,13 +66,15 @@
 **** DONE Print chopper parts
 **** DONE Physical assembly
 **** PROGRESS Electronics assembly
-** TODO Arduino control of motors 				       :Will:
+** PROGRESS Arduino control of motors				       :Will:
 ** PROGRESS Bluetooth connection from Arduino to Droid		       :Will:
 ** DONE Buy electronics						       :Both:
 ** IGNORE Pressure sensor
 ** IGNORE Ultrasonic rangefinder				       :Will:
+
 * TODO Second Hardware Iteration				       :Will:
 ** TODO Ultrasonic or laser rangefinder
 ** TODO Structural pins for shear force in Brock		       :Will:
+
 * TODO Second Software Iteration
 ** TODO Use rangefinder for landing					:Ben:

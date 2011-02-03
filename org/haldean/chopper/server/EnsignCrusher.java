@@ -1,8 +1,8 @@
 package org.haldean.chopper.server;
 
-import org.haldean.chopper.nav.NavDest;
-import org.haldean.chopper.nav.NavTask;
-import org.haldean.chopper.nav.NavVel;
+import org.haldean.chopper.server.nav.DrawNavDest;
+import org.haldean.chopper.server.nav.NavData;
+import org.haldean.chopper.server.nav.DrawNavVel;
 
 import gov.nasa.worldwind.geom.Position;
 
@@ -43,7 +43,7 @@ public class EnsignCrusher {
      *  hovering.
      */
     public static void setVelocity(double[] velocities, long duration) {
-	makeItSo(NavVel.taskFor(velocities, duration));
+	makeItSo(DrawNavVel.taskFor(velocities, duration));
     }
 
     /**
@@ -80,7 +80,7 @@ public class EnsignCrusher {
      */
     public static void setTargetLocation(Position location, double velocity,
 					 double targetRadius) {
-	makeItSo(NavDest.taskFor(location.getElevation(), 
+	makeItSo(DrawNavDest.taskFor(location.getElevation(), 
 				 location.getLongitude().getDegrees(),
 				 location.getLatitude().getDegrees(), 
 				 velocity, targetRadius));
@@ -131,7 +131,7 @@ public class EnsignCrusher {
      *
      *  @param task The task to issue.
      */
-    public static void makeItSo(NavTask task) {
+    public static void makeItSo(NavData task) {
 	DataReceiver.sendToDefault(navGoToAutomatic);
 	DataReceiver.sendToDefault("NAV:SET:AUTOTASK:1:" + task.toString());
 	Debug.log("Sent new navigation task: " + task.toString());

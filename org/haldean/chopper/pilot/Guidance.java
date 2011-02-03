@@ -135,9 +135,12 @@ public class Guidance implements Constants, Receivable {
 		mRec = new LinkedList<Receivable>();
 		
 		//Temporary: need real tuning values at some point. Crap.
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
-				mGain[i][j] = .07;
+				mGain[i][j] = .05;
+		for (int j = 0; j < 3; j++) {
+			mGain[3][j] = .0005;
+		}
 	}
 	
 	private String getErrorString() {

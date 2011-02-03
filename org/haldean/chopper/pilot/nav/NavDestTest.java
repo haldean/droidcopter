@@ -1,4 +1,4 @@
-package org.haldean.chopper.nav;
+package org.haldean.chopper.pilot.nav;
 
 import junit.framework.TestCase;
 

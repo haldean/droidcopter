@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.haldean.chopper.nav.NavList;
-import org.haldean.chopper.nav.NavTask;
+import org.haldean.chopper.pilot.nav.NavList;
+import org.haldean.chopper.pilot.nav.NavTask;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -154,7 +154,7 @@ public class Navigation implements Constants, Receivable {
 					String taskList = "{ VEL!1!0!0!0!20 VEL!-1!0!0!0!20 VEL!0!1!0!0!20 VEL!0!-1!0!0!20 VEL!0!0!1!0!20 VEL!0!0!-1!0!20 }";
 					setTask(BASIC_AUTO, taskList);
 					setTask(NO_CONN, "{ VEL!0!0!-1!0!1000 }");
-					setTask(LOW_POWER, "{ VEL!0!0!-1!0!0000 }");
+					setTask(LOW_POWER, "{ VEL!0!0!-1!0!1000 }");
 					//autoPilot(true);
 					Looper.loop();
 				}
@@ -232,8 +232,7 @@ public class Navigation implements Constants, Receivable {
 		String[] parts = msg.split(":");
 		if (parts[0].equals("NAV")) {
 			if (parts[1].equals("SET")) {
-				Log.v(TAG, "Updating Nav Status");
-				mNavStatus.set(BASIC_AUTO);				
+				Log.v(TAG, "Updating Nav Status");				
 				if (parts[2].equals("MANUAL")) {
 					autoPilot(false);
 					if (parts.length > 3) {
@@ -247,12 +246,14 @@ public class Navigation implements Constants, Receivable {
 					}
 				}
 				if (parts[2].equals("AUTOPILOT")) {
+					mNavStatus.set(BASIC_AUTO);
 					updateReceivers("GUID:ABSVEC");
 					updateReceivers("GUID:AUTOMATIC");
 					autoPilot(true);
 				}
 				if (parts[2].equals("AUTOTASK")) {
 					Integer taskList = new Integer(parts[3]);
+					Log.v(TAG, "Nav setting index " + taskList + " to " + parts[4]);
 					setTask(taskList, parts[4]);
 				}
 			}
@@ -298,15 +299,25 @@ public class Navigation implements Constants, Receivable {
 	 * @param myTask The new flight plan
 	 */
 	public void setTask(int whichPlan, String myTask) {
-		NavList myList = NavList.fromString(myTask, mStatus);
+		Log.v(TAG, "Nav about to myList");
+		NavList myList = null;
+		try {
+			myList = NavList.fromString(myTask, mStatus);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Log.v(TAG, "Nav myList is " + myList);
 		if (myList != null) {
 			//Make change:
 			mTravelPlans.set(whichPlan, myList);
-			
+			Log.i(TAG, "Nav set index " + whichPlan + " to task " + myList);
 			//Confirm change to server:
 			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
 			if (mAutoPilot.get())
 				evalNextVector();
+		}
+		else {
+			Log.e(TAG, "Nav received invalid task!");
 		}
 	}
 	
@@ -349,8 +360,9 @@ public class Navigation implements Constants, Receivable {
 		int thisStatus = mNavStatus.get();
 		
 		NavTask myList = mTravelPlans.get(thisStatus);
+		Log.v(TAG, "Nav using index " + thisStatus + ", task " + myList.toString());
 		if (myList.isComplete()) {
-			Log.i(TAG, "Hovering");
+			Log.i(TAG, "Nav is Hovering");
 			hover();
 			return;
 		}

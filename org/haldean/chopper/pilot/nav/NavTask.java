@@ -1,4 +1,4 @@
-package org.haldean.chopper.nav;
+package org.haldean.chopper.pilot.nav;
 
 /**
  * Contains instructions for calculating a target velocity vector.

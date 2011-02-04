@@ -30,6 +30,7 @@ import android.util.Log;
  *         MANUAL:&lt;north_south_vel&gt;:&lt;east_west_vel&gt;:&lt;up_down_vel&gt;:&lt;orientation&gt;
  *         AUTOPILOT
  *         AUTOTASK:&lt;travel_plan_index&gt;:&lt;serialized_NavTask&gt;
+ *         FLIGHTPLAN:&lt;new_plan&gt;
  *     GET:AUTOTASKS
  * CSYS:
  *      NOCONN
@@ -119,6 +120,39 @@ public class Navigation implements Constants, Receivable {
 		}
 	}
 	
+	/** Evaluates a new navigation vector, based on current status and the relevant NavTask */
+	private void evalNextVector() {
+
+		/*Determine what the current task should be.  Copies to a local variable in case
+		 * 'status'	changes during execution of the method */
+		int thisStatus = mNavStatus.get();
+		
+		NavTask myList = mTravelPlans.get(thisStatus);
+		Log.v(TAG, "Nav using index " + thisStatus + ", task " + myList.toString());
+		if (myList.isComplete()) {
+			Log.i(TAG, "Nav is Hovering");
+			hover();
+			return;
+		}
+		myList.getVelocity(mTempTarget);
+		setTarget(mTempTarget);
+		
+		
+		
+		long interval = myList.getInterval();
+		Log.v(TAG, "Nav Interval is " + interval);
+		//Send the current NavList to the server, in case any tasks have been completed
+		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
+		
+		mHandler.removeMessages(EVAL_NAV);
+		if (interval > 0) {
+			mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
+		}
+		else {
+			mHandler.sendEmptyMessage(EVAL_NAV);
+		}
+	}
+	
 	/**
 	 * Obtains the thread that runs the Navigation routines.
 	 * On first call to this method, the PersistentThread is created.
@@ -153,8 +187,8 @@ public class Navigation implements Constants, Receivable {
 							" DEST!587!-117.15!32.72!10!600 } } }";*/
 					String taskList = "{ VEL!1!0!0!0!20 VEL!-1!0!0!0!20 VEL!0!1!0!0!20 VEL!0!-1!0!0!20 VEL!0!0!1!0!20 VEL!0!0!-1!0!20 }";
 					setTask(BASIC_AUTO, taskList);
-					setTask(NO_CONN, "{ VEL!0!0!-1!0!1000 }");
-					setTask(LOW_POWER, "{ VEL!0!0!-1!0!1000 }");
+					setTask(NO_CONN, "{ VEL!0!0!-1!0!1000000 }");
+					setTask(LOW_POWER, "{ VEL!0!0!-1!0!1000000 }");
 					//autoPilot(true);
 					Looper.loop();
 				}
@@ -223,6 +257,18 @@ public class Navigation implements Constants, Receivable {
 		return myTasks;
 	}
 	
+	/** Orders the chopper to remain in place */
+	private void hover() {
+		
+		for (int i = 0; i < 3; i++) {
+			mTempTarget[i] = 0;
+		}
+		mTempTarget[3] = mStatus.getReadingFieldNow(AZIMUTH, mTempTarget[3]);
+		setTarget(mTempTarget);
+		mHandler.removeMessages(EVAL_NAV);
+		mHandler.sendEmptyMessageDelayed(EVAL_NAV, HOVER_PAUSE);
+	}
+	
 	/**
 	 * Receive a message.
 	 * @param source The source of the message, if a reply is needed.  May be null.
@@ -255,6 +301,9 @@ public class Navigation implements Constants, Receivable {
 					Integer taskList = new Integer(parts[3]);
 					Log.v(TAG, "Nav setting index " + taskList + " to " + parts[4]);
 					setTask(taskList, parts[4]);
+				}
+				if (parts[2].equals("FLIGHTPLAN")) {
+					mNavStatus.set(new Integer(parts[3]));
 				}
 			}
 			if (parts[1].equals("GET")) {
@@ -293,42 +342,6 @@ public class Navigation implements Constants, Receivable {
 		}
 	}
 	
-	/** 
-	 * Sets a supplied NavList as flight plan for the specified Nav status.
-	 * @param whichPlan The Nav status for which to set the new flight plan
-	 * @param myTask The new flight plan
-	 */
-	public void setTask(int whichPlan, String myTask) {
-		Log.v(TAG, "Nav about to myList");
-		NavList myList = null;
-		try {
-			myList = NavList.fromString(myTask, mStatus);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Log.v(TAG, "Nav myList is " + myList);
-		if (myList != null) {
-			//Make change:
-			mTravelPlans.set(whichPlan, myList);
-			Log.i(TAG, "Nav set index " + whichPlan + " to task " + myList);
-			//Confirm change to server:
-			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
-			if (mAutoPilot.get())
-				evalNextVector();
-		}
-		else {
-			Log.e(TAG, "Nav received invalid task!");
-		}
-	}
-	
-	/**
-	 * Compares the supplied status with the current status; stores the most important.
-	 * @param newstatus The new (potential) status
-	 */
-	public void updateStatus(int newstatus) {
-		mNavStatus.set(Math.min(mNavStatus.get(), newstatus));
-	}
-	
 	/**
 	 * Sets the navigation target vector to the values contained by the supplied array (length must be at least 4).
 	 * @param newTarget The new target vector.
@@ -352,49 +365,32 @@ public class Navigation implements Constants, Receivable {
 		}.start();
 	}
 	
-	/** Evaluates a new navigation vector, based on current status and the relevant NavTask */
-	private void evalNextVector() {
-
-		/*Determine what the current task should be.  Copies to a local variable in case
-		 * 'status'	changes during execution of the method */
-		int thisStatus = mNavStatus.get();
-		
-		NavTask myList = mTravelPlans.get(thisStatus);
-		Log.v(TAG, "Nav using index " + thisStatus + ", task " + myList.toString());
-		if (myList.isComplete()) {
-			Log.i(TAG, "Nav is Hovering");
-			hover();
-			return;
+	/** 
+	 * Sets a supplied NavList as flight plan for the specified Nav status.
+	 * @param whichPlan The Nav status for which to set the new flight plan
+	 * @param myTask The new flight plan
+	 */
+	private void setTask(int whichPlan, String myTask) {
+		Log.v(TAG, "Nav about to myList");
+		NavList myList = null;
+		try {
+			myList = NavList.fromString(myTask, mStatus);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		myList.getVelocity(mTempTarget);
-		setTarget(mTempTarget);
-		
-		
-		
-		long interval = myList.getInterval();
-		Log.v(TAG, "Nav Interval is " + interval);
-		//Send the current NavList to the server, in case any tasks have been completed
-		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
-		
-		mHandler.removeMessages(EVAL_NAV);
-		if (interval > 0) {
-			mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
+		Log.v(TAG, "Nav myList is " + myList);
+		if (myList != null) {
+			//Make change:
+			mTravelPlans.set(whichPlan, myList);
+			Log.i(TAG, "Nav set index " + whichPlan + " to task " + myList);
+			//Confirm change to server:
+			updateReceivers("NAV:AUTOTASK:" + whichPlan + ":" + myList.toString());
+			if (mAutoPilot.get())
+				evalNextVector();
 		}
 		else {
-			mHandler.sendEmptyMessage(EVAL_NAV);
+			Log.e(TAG, "Nav received invalid task!");
 		}
-	}
-	
-	/** Orders the chopper to remain in place */
-	private void hover() {
-		
-		for (int i = 0; i < 3; i++) {
-			mTempTarget[i] = 0;
-		}
-		mTempTarget[3] = mStatus.getReadingFieldNow(AZIMUTH, mTempTarget[3]);
-		setTarget(mTempTarget);
-		mHandler.removeMessages(EVAL_NAV);
-		mHandler.sendEmptyMessageDelayed(EVAL_NAV, HOVER_PAUSE);
 	}
 	
 	/**
@@ -408,5 +404,13 @@ public class Navigation implements Constants, Receivable {
 				myList.next().receiveMessage(str, this);
 			}
 		}
+	}
+	
+	/**
+	 * Compares the supplied status with the current status; stores the most important.
+	 * @param newstatus The new (potential) status
+	 */
+	private void updateStatus(int newstatus) {
+		mNavStatus.set(Math.min(mNavStatus.get(), newstatus));
 	}
 }

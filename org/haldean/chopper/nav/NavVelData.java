@@ -1,9 +1,17 @@
 package org.haldean.chopper.nav;
 
+/**
+ * Stores NavVel data, and (de)serialization methods.
+ */
 public class NavVelData {
+	/* Parameters */
     protected double[] velocity = new double[4];
 	protected long timeToExecute;
     protected String name;
+    
+    /** Empty constructor for subclasses **/
+    protected NavVelData() {
+	}
     
     /**
 	 * Constructs/deserializes a NavVelData from a String.
@@ -27,8 +35,8 @@ public class NavVelData {
 			throw new IllegalArgumentException();
 		}
 	}
-    
-    /**
+	
+	/**
 	 * Serializes a NavVel to a String.
 	 * @return The NavVel in serialized form.
 	 */
@@ -42,8 +50,5 @@ public class NavVelData {
 		me = me.concat(Long.toString(timeToExecute));
         me = me.concat("!" + name);
 		return me;
-	}
-	
-	protected NavVelData() {
 	}
 }

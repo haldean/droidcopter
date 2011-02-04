@@ -3,6 +3,9 @@ package org.haldean.chopper.server.nav;
 import java.awt.*;
 import java.util.*;
 
+/**
+ * An interface for server-side Navigation tasks.
+ */
 public interface NavData extends Cloneable {
 	public static final int FONTSIZE = 12;
     public static final int BUFFER = 20;

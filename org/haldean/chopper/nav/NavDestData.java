@@ -1,5 +1,8 @@
 package org.haldean.chopper.nav;
 
+/**
+ * Stores NavDest data, and (de)serialization methods.
+ */
 public class NavDestData {
 	/* Destination parameters */
 	protected double altitude;
@@ -17,6 +20,12 @@ public class NavDestData {
     
     /* Human-readable descriptive label */
     protected String name;
+	
+    /**
+     * Empty constructor for subclasses.
+     */
+	protected NavDestData() {
+	}
 	
 	/**
 	 *  Creates/deserializes a NavDestData from a String.  The String should be of the format DEST!altitude!longitude!latitude!velocity!minimumDistance
@@ -46,12 +55,9 @@ public class NavDestData {
 		reallyClose = false;
 	}
 	
-	protected NavDestData() {
-		
-	}
 	/**
-	 * Serializes a NavDest to a String.
-	 * @return The NavDest in serialized form.
+	 * Serializes a NavDestData to a String.
+	 * @return The NavDestData in serialized form.
 	 */
 	public String toString() {
 		return "DEST" +

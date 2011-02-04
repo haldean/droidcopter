@@ -3,46 +3,79 @@ package org.haldean.chopper.server.nav;
 import java.util.*;
 import java.awt.*;
 
+/**
+ * Stores, draws NavList data.
+ */
 public class DrawNavList extends LinkedList<NavData> implements NavData {
     
     private boolean selected = false;
     private boolean highlighted = false;
     private boolean expanded = true;
     private String name;
+    
+    /** yRange[0] is the list-start block, and yRange[1] is the list-end block
+     *  yRange[i][0] is the start point of the on-screen representation, and yRange[i][1] is the end point.
+     */
     private int yRange[][] = new int[2][2];
     
+    /**
+     * Constructs the list.
+     */
     private DrawNavList() {
         this("Godzilla");
     }
     
+    /**
+     * Constructs the list.
+     * @param str The name of the list.
+     */
     private DrawNavList(String str) {
         super();
         name = str;
     }
     
+    /**
+     * Clones the list.
+     */
     public DrawNavList clone() {
         DrawNavList newList = fromString(toString());
         return newList;
     }
     
-    public void switchExpanded() {
-        expanded = !expanded;
-    }
-    
+    /**
+     * Determines if the task is selected.
+     * @param k The desired selection-state.
+     */
     public void setSelected(boolean k) {
         selected = k;
     }
     
+    /**
+     * Determines if the task is highlighted.
+     * @param k The desired highlighted-state.
+     */
     public void setHighlighted(boolean k) {
         highlighted = k;
     }    
     
+    /**
+     * If the task is expanded, de-expands it; if it's not expanded, expands it.
+     */
+    public void switchExpanded() {
+        expanded = !expanded;
+    }
+    
+    /**
+     * Obtains the 2D array of the y-values the object occupied when last drawn to screen.
+     * yRange[0][0] is the start point, and yRange[0][1] is the end point.
+     * @return The array.
+     */
     public int[][] getYRange() {
         return yRange.clone();
     }
     
     /**
-	 * Serializes the NavList to String form.
+	 * Serializes the DrawNavList to String form.
 	 */
 	public String toString() {
 		String me = new String();
@@ -55,7 +88,16 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
 		return me;
 	}
     
+    /**
+     * Draws the list and, recursively, all its elements.
+     * @param g2 The object to which to draw the list.
+     * @param xpos The x-coordinate at which to start drawing the list.
+     * @param ypos The y-coordinate at which to start drawing the list.
+     * @param xSize The permissible width of the list.
+     * @param registry The registry of currently drawn NavDatas, to which to add this list.
+     */
     public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<NavData> registry) {
+        //list-start block:
         yRange[0][0] = ypos;
         yRange[0][1] = ypos + 2 * FONTSIZE;
         
@@ -79,19 +121,21 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
             g2.drawString(name + " List", xpos, yRange[0][0] + FONTSIZE);
         
         
-        //reassigned later, when the actual end of last block in the list is known, if expanded.
+        //if expanded, reassigned later, when the actual end of last block in the list is known.
         yRange[1][0] = yRange[0][0];
         yRange[1][1] = yRange[0][1];
         
         registry.add(this);
         
+        //Draw the lists' objects
         if (expanded) {
             ListIterator<NavData> i1 = listIterator();
-            while (i1.hasNext()) {
-                int lastY = getDeepestY(registry);
-                i1.next().drawMe(g2, xpos, lastY + BUFFER, xSize, registry);
+            while (i1.hasNext()) { //iterate through each object
+                int lastY = getDeepestY(registry); //find the position of the previous task
+                i1.next().drawMe(g2, xpos, lastY + BUFFER, xSize, registry); //draw this item there.
             }
-        
+            
+            //Draw the list-end block:
             int lastY = getDeepestY(registry);
             
             yRange[1][0] = lastY + BUFFER;
@@ -101,7 +145,6 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
                 g2.setColor(Color.CYAN);
                 g2.fillRect(xpos, yRange[1][0], xSize, yRange[1][1] - yRange[1][0]);
             }
-            
             if (selected) {
                 g2.setColor(Color.BLUE);
                 g2.fillRect(xpos, yRange[1][0], xSize, yRange[1][1] - yRange[1][0]);
@@ -114,6 +157,11 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
         }
     }
     
+    /**
+     * Returns the end-position of the deepest task in the supplied registry.
+     * @param registry The registry to examine.
+     * @return The y-position of the deepest task.
+     */
     private static int getDeepestY(Vector<NavData> registry) {
         int maxY = 0;
         for (int i = 0; i < registry.size(); i++) {
@@ -128,8 +176,6 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
     /**
 	 * Deserializes a NavList from valid serialized String form.
 	 * @param msg Serialized form of the NavList
-	 * @param cs The ChopperStatus with which to construct NavDests.
-	 * May be null, in which case null we be passed to the NavDest constructor. 
 	 * @return The newly-deserialized NavList
 	 */
 	public static DrawNavList fromString(String msg) {

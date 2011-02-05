@@ -33,7 +33,7 @@ import android.util.Log;
  * 
  * @author Benjamin Bardin
  */
-public final class TransmitPicture implements Receivable, Constants
+public final class TransmitPicture implements Runnable, Receivable, Constants
 {	
 	/**
 	 * Handles thread scheduling, instructions from other threads
@@ -60,16 +60,14 @@ public final class TransmitPicture implements Receivable, Constants
 	/** Used as part of the YUV --> JPEG coding process if NEWCOMPRESSMETHOD is false */
 	private int[] rgb = new int[0];
 	
+	private byte[] mPicFrame; 
+	
 	/** Tag for logging */
 	private static final String TAG = "chopper.TransmitPicture";
 	
 	/** Handle to other chopper components */
 	private MakePicture myMakePic;
 	private Comm mComm;
-	
-	/** Hides runnability, ensures singleton-ness */
-	private Runnable mRunner;
-	private static PersistentThread sThread;
 	
 	/**
 	 * Constructs the TransmitPicture thread.
@@ -122,56 +120,39 @@ public final class TransmitPicture implements Receivable, Constants
 	}
 	
 	/**
-	 * Obtains the thread that runs the telemetry transmission routines.
-	 * On first call to this method, the PersistentThread is created.
-	 * But since two or more instances of TransmitPicture should not be run concurrently,
-	 * subsequent calls to this method return only that first thread.
-	 * @return The PersistentThread that runs TransmitPicture.
+	 * Runs the thread.
 	 */
-	public PersistentThread getPersistentThreadInstance() {
-		final TransmitPicture mTp = this;
-		if (mRunner == null) {
-			mRunner = new Runnable() {
-				/**
-				 * Runs the thread.
-				 */
-				public void run()
-				{
-					Looper.prepare();
-					
-					Thread.currentThread().setName("TransmitPicture");
-					mHandler = new Handler() {
-			            public void handleMessage(Message msg)
-			            {
-			                switch (msg.what) {
-			                case SEND_PIC:
-			                	try	{
-			                		transmit();
-			                	}
-			                	catch (IOException e) {
-			                		System.out.println("Connection failed, reconnecting in " + Comm.CONNECTION_INTERVAL);
-			                		//Does not actually try to reconnect; it is assumed that chopperStatus will also fail and give the command to reconnect.
-			                		e.printStackTrace();
-			                	}
-			                	break;
-			                }
-			            }
-			        };
-			        Log.d(TAG, "Handler initialized");
-			        mComm.registerReceiver(IMAGE, mTp);
-					if (mDataOut == null) //For debugging only; should not happen
-						System.out.println("Null dataout");
-					
-					mHandler.sendEmptyMessageDelayed(SEND_PIC, CAMERA_INTERVAL);//Send first picture, after giving the camera time to warm up.
-					Looper.loop();
-				}
-			};
-		}
-		if (sThread == null) {
-			sThread = new PersistentThread(mRunner);
-		}
-		return sThread;
+	public void run()
+	{
+		Looper.prepare();
+		
+		Thread.currentThread().setName("TransmitPicture");
+		mHandler = new Handler() {
+            public void handleMessage(Message msg)
+            {
+                switch (msg.what) {
+                case SEND_PIC:
+                	try	{
+                		transmit();
+                	}
+                	catch (IOException e) {
+                		System.out.println("Connection failed, reconnecting in " + Comm.CONNECTION_INTERVAL);
+                		//Does not actually try to reconnect; it is assumed that chopperStatus will also fail and give the command to reconnect.
+                		e.printStackTrace();
+                	}
+                	break;
+                }
+            }
+        };
+        Log.d(TAG, "Handler initialized");
+        mComm.registerReceiver(IMAGE, this);
+		if (mDataOut == null) //For debugging only; should not happen
+			System.out.println("Null dataout");
+		
+		mHandler.sendEmptyMessageDelayed(SEND_PIC, CAMERA_INTERVAL);//Send first picture, after giving the camera time to warm up.
+		Looper.loop();
 	}
+
 	/**
 	 * Obtains the JPEG compression quality of each transmitted frame.
 	 * @return The quality.
@@ -288,16 +269,18 @@ public final class TransmitPicture implements Receivable, Constants
 	private void transmit() throws IOException {
 		if (!myMakePic.isFrameNew()) {
 			mHandler.sendEmptyMessageDelayed(SEND_PIC, CAMERA_INTERVAL); //wait a bit, try again later.
-			System.out.println("Same pic");
+			//System.out.println("Same pic");
 			return;
 		}
 		int[] frameSize = myMakePic.getFrameSize();
-		byte[] picFrame = myMakePic.getBufferCopy(); //create a new copy.
-		byte[] temppic = encodePic(picFrame, frameSize);
+		if ((mPicFrame == null) || (mPicFrame.length != myMakePic.getFrameArrayLength()))
+				mPicFrame = new byte[myMakePic.getFrameArrayLength()];
+		myMakePic.getBufferCopy(mPicFrame); //create a new copy.
+		byte[] temppic = encodePic(mPicFrame, frameSize);
 		myMakePic.setFrameNewnessTo(false);
 		
 		//System.out.println("Retrieved frame");
-		if (picFrame.length == 0)
+		if (mPicFrame.length == 0)
 		{
 			System.out.println("temppic unprocessed");
 			mHandler.sendEmptyMessageDelayed(SEND_PIC, Comm.CONNECTION_INTERVAL); //wait a bit, try again later.

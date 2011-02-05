@@ -32,10 +32,10 @@ import android.util.Log;
  * 
  * @author Benjamin Bardin
  */
-public class Guidance implements Constants, Receivable {
+public class Guidance implements Runnable, Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 1;
+	public int PIDREPS = 20;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;
@@ -53,7 +53,7 @@ public class Guidance implements Constants, Receivable {
 	public static final String TAG = new String("chopper.Guidance");
 	
 	/** Used when a really big number is needed, still small enough to prevent overflow. */
-	private static final double sReallyBig = 10000;
+	private static final double sReallyBig = 10;
 	
 	/** Handles messages for the thread */
 	private Handler mHandler;
@@ -114,10 +114,6 @@ public class Guidance implements Constants, Receivable {
 	private ChopperStatus mStatus;
 	private Navigation mNav;
 	
-	/** Hides Runnability, ensures singleton-ness */
-	private Runnable mRunner;
-	private static PersistentThread sThread;
-	
 	/** Controls whether N/S and E/W commands refer to absolute vectors or local **/
 	private boolean mAbsVec = true;
 	
@@ -151,66 +147,49 @@ public class Guidance implements Constants, Receivable {
 	}
 	
 	/**
-	 * Obtains the thread that runs the Guidance routine.
-	 * On first call to this method, the PersistentThread is created.
-	 * But since two or more instances of Guidance should not be run concurrently,
-	 * subsequent calls to this method return only that first thread.
-	 * @return The PersistentThread that runs Guidance routine.
+	 * Starts the guidance thread
 	 */
-	public PersistentThread getPersistentThreadInstance() {
-		if (mRunner == null) {
-			mRunner = new Runnable() {
-				/**
-				 * Starts the guidance thread
-				 */
-				public void run() {
-					Looper.prepare();
-					Thread.currentThread().setName("Guidance");
-					Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-					mHandler = new Handler() {
-						public void handleMessage(Message msg) {
-							switch (msg.what) {
-							case EVAL_MOTOR_SPEED:
-								reviseMotorSpeed();
-								Log.d(TAG, getErrorString());
-								updateReceivers(getErrorString());
-								break;
-							case NEW_PID_VALUE:
-								mGain[msg.arg1][msg.arg2] = (Double)msg.obj;
-								break;
-							case NEW_GUID_VECTOR:
-								Double[] mVector = (Double[])msg.obj;
-								for (int i = 0; i < 4; i++) {
-									mMotorSpeed[i] = mVector[i];
-								}
-								updateMotors();
-								break;
-							case GET_PIDS:
-								Receivable source = (Receivable) msg.obj;
-								
-								//Send each PID value to the requesting object
-								for (int i = 0; i < 4; i++) {
-									for (int j = 0; j < 3; j++) {
-										source.receiveMessage("GUID:PID:VALUE:" +
-															  i + ":" + j + ":" +
-															  mGain[i][j],
-															  null);
-												
-									}
-								}							
-								break;
-							}
+	public void run() {
+		Looper.prepare();
+		Thread.currentThread().setName("Guidance");
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+		mHandler = new Handler() {
+			public void handleMessage(Message msg) {
+				switch (msg.what) {
+				case EVAL_MOTOR_SPEED:
+					reviseMotorSpeed();
+					//Log.d(TAG, getErrorString());
+					updateReceivers(getErrorString());
+					break;
+				case NEW_PID_VALUE:
+					mGain[msg.arg1][msg.arg2] = (Double)msg.obj;
+					break;
+				case NEW_GUID_VECTOR:
+					Double[] mVector = (Double[])msg.obj;
+					for (int i = 0; i < 4; i++) {
+						mMotorSpeed[i] = mVector[i];
+					}
+					updateMotors();
+					break;
+				case GET_PIDS:
+					Receivable source = (Receivable) msg.obj;
+					
+					//Send each PID value to the requesting object
+					for (int i = 0; i < 4; i++) {
+						for (int j = 0; j < 3; j++) {
+							source.receiveMessage("GUID:PID:VALUE:" +
+												  i + ":" + j + ":" +
+												  mGain[i][j],
+												  null);
+									
 						}
-					};
-					mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
-					Looper.loop();
+					}							
+					break;
 				}
-			};
-		}
-		if (sThread == null) {
-			sThread = new PersistentThread(mRunner);
-		}
-		return sThread;
+			}
+		};
+		mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+		Looper.loop();
 	}
 	
 	/**
@@ -322,14 +301,14 @@ public class Guidance implements Constants, Receivable {
 				try {
 					double[] absTarget = mNav.getTarget();
 					if (mAbsVec) {
-						Log.v(TAG, "Abs vectors");
+						//Log.v(TAG, "Abs vectors");
 						mTarget[0] = absTarget[0] * Math.cos(theta) - absTarget[1] * Math.sin(theta);
 						mTarget[1] = absTarget[0] * Math.sin(theta) + absTarget[1] * Math.cos(theta);
 						mTarget[2] = absTarget[2];
 						mTarget[3] = absTarget[3];
 					}
 					else {
-						Log.v(TAG, "Local vectors");
+						//Log.v(TAG, "Local vectors");
 						for (int i = 0; i < 4; i++) {
 							mTarget[i] = absTarget[i];
 						}
@@ -342,7 +321,7 @@ public class Guidance implements Constants, Receivable {
 					}
 					myVel = Math.sqrt(myVel);
 					if (myVel > MAX_VEL) {
-						Log.v(TAG, "Reducing requested velocity");
+						//Log.v(TAG, "Reducing requested velocity");
 						double adjustment = MAX_VEL / myVel;
 						for (int i = 0; i < 3; i++) {
 							mTarget[i] *= adjustment;
@@ -489,7 +468,7 @@ public class Guidance implements Constants, Receivable {
 		//Send motor values to motors here:
 		updateMotors();
 		
-		Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
+		//Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
 		long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);
 		if (timetonext > 0)

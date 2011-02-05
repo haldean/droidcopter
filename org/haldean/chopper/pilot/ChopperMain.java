@@ -15,6 +15,8 @@ public final class ChopperMain extends Activity implements Constants
 	/** Tag for logging */
 	public static final String TAG = "chopper.ChopperMain";
 	
+	private static boolean mFirstRun = true;
+	
 	/**
 	 * Holds the wakelock; needed to keep the camera preview rendering on
 	 * certain phones/android OS versions
@@ -43,6 +45,9 @@ public final class ChopperMain extends Activity implements Constants
         mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
         mWakeLock.acquire();
         
+        if (!mFirstRun) {
+			return;
+        }
 		
         /* Camera stuff */
         setContentView(R.layout.main);
@@ -59,7 +64,7 @@ public final class ChopperMain extends Activity implements Constants
         Guidance guid = new Guidance(status, nav);
         
         
-        //comm.setTelemetrySource(pic);
+        comm.setTelemetrySource(pic);
         comm.registerReceiver(IMAGE, pic);
         comm.registerReceiver(NAV, nav);
         comm.registerReceiver(CSYS, nav);
@@ -73,13 +78,22 @@ public final class ChopperMain extends Activity implements Constants
         reporter.registerReceiver(comm);
         pic.registerReceiver(comm);
         guid.registerReceiver(comm);
+        
+        new Thread(comm).start();
+        new Thread(status).start();
+        new Thread(reporter).start();
+        new Thread(pic).start();
+        new Thread(nav).start();
+        new Thread(guid).start();
+        
+        mFirstRun = false;
 	}
-	
+	/*
 	/**
 	 * Releases the wakelock, destroys activity.
-	 */
+	 
 	protected void onDestroy() {
-		mWakeLock.release();
+		//mWakeLock.release();
 		super.onDestroy();
-	} 
+	} */
 }

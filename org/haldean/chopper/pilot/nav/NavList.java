@@ -1,4 +1,4 @@
-package org.haldean.chopper.nav;
+package org.haldean.chopper.pilot.nav;
 
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -24,12 +24,20 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 	/** Task currently being performed */
 	private NavTask currentTask;
 	
+    private String name;
+    
 	/**
 	 * Creates a NavList.
 	 */
 	public NavList() {
 		super();
+        name = "";
 	}
+    
+    public NavList(String myName) {
+        super();
+        name = new String(myName);
+    }
 	
 	/**
 	 * Deserializes a NavList from valid serialized String form.
@@ -57,17 +65,27 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 				}
 			}
 			else {
-				NavList myList = new NavList();
+				NavList myList = new NavList(tokens[i].substring(0, tokens[i].length() - 1));
 				NavTask myTask;
 				while ((myTask = myStack.pop()) != null)
 					myList.addFirst(myTask);
 				myStack.push(myList);
 			}
 		}
-		if (myStack.empty())
+		if (myStack.empty()) {
 			return null;
-		else
-			return (NavList) myStack.pop();
+		}
+		else {
+			NavTask result = myStack.pop();
+			if (result instanceof NavList) {
+				return (NavList) result;
+			}
+			else {
+				NavList mL = new NavList();
+				mL.add(result);
+				return mL;
+			}
+		}
 	}
 	
 	/**
@@ -134,7 +152,7 @@ public class NavList extends LinkedList<NavTask> implements NavTask, Constants {
 		while (iterator.hasNext()) {
 			me = me.concat(" ").concat(iterator.next().toString());
 		}
-		me = me.concat(" }");
+		me = me.concat(" " + name + "}");
 		return me;
 	}
 }

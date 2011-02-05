@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry including="org/haldean/chopper/nav/|org/haldean/chopper/pilot/" kind="src" path="src"/>
+	<classpathentry excluding="org/haldean/chopper/pilot/nav/NavVelTest.java|org/haldean/chopper/pilot/nav/NavListTest.java" including="org/haldean/chopper/nav/|org/haldean/chopper/pilot/" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="output" path="bin"/>

@@ -238,7 +238,7 @@ public final class TransmitPicture implements Receivable, Constants
 	 */
 	private byte[] encodePic(byte[] picFrame, int[] frameSize) {
 		
-		long starttime = System.currentTimeMillis();
+		//long starttime = System.currentTimeMillis();
 		
 		if (NEWCOMPRESSMETHOD)
 		{
@@ -276,7 +276,7 @@ public final class TransmitPicture implements Receivable, Constants
 			System.out.println("bad stream");
 		byte[] sendPic = mBaos.toByteArray();
 		mBaos.reset();
-		long endtime = System.currentTimeMillis();
+		//long endtime = System.currentTimeMillis();
     	//Log.v(TAG, "Pic Processing took " + (endtime - starttime));
     	return sendPic;
 	}

@@ -1,6 +1,6 @@
-package org.haldean.chopper.nav;
+package org.haldean.chopper.pilot.nav;
 
-import org.haldean.chopper.nav.NavTask;
+import org.haldean.chopper.nav.NavDestData;
 import org.haldean.chopper.pilot.ChopperStatus;
 import org.haldean.chopper.pilot.Constants;
 
@@ -9,53 +9,14 @@ import android.util.Log;
 /**
  * A NavTask that determines target velocity based on a desired destination.
  */
-public class NavDest implements NavTask, Constants {
+public class NavDest extends NavDestData implements NavTask, Constants {
 	/* Used to access Android location methods */
 	private Location currentLoc;
 	private Location destination;
 	
-	/* Destination parameters */
-	private double altitude;
-	private double longitude;
-	private double latitude;
-	
-	/* Travel speed */
-	private double myVelocity;
-	
-	/* Evaluate vectors faster when arriving */
-	private boolean reallyClose;
-	
-	/* Maximum tolerable distance from destination to declare task complete */
-	private double destDist;
-	
 	private static String TAG = "nav.NavDest";
 	
 	private ChopperStatus myCs;
-
-	/**
-	 *  Create a NavDest for a given set of parameters.
-	 *
-	 *  @param altitude The target altitude.
-	 *  @param longitude The target longitude.
-	 *  @param latitude The target latitude.
-	 *  @param velocity The velocity at which to move to the target.
-	 *  @param destDist The radius around the target at which we
-	 *  will consider this task complete.
-	 */
-	public static NavDest taskFor(double altitude, double longitude, double latitude,
-				      double velocity, double destDist) {
-		NavDest n = new NavDest();
-		n.altitude = altitude;
-		n.longitude = longitude;
-		n.latitude = latitude;
-		n.myVelocity = velocity;
-		n.destDist = destDist;
-		return n;
-	}
-
-	private NavDest() {
-		/* This is here so that we can use the static NavDest builder. */
-	}
 		
 	/**
 	 *  Creates/deserializes a NavDest from a String.  The String should be of the format DEST!altitude!longitude!latitude!velocity!minimumDistance
@@ -63,24 +24,7 @@ public class NavDest implements NavTask, Constants {
 	 * @throws IllegalArgumentException If the supplied String is not valid.
 	 */
 	public NavDest(String myString, ChopperStatus Cs) throws IllegalArgumentException {
-		//altitude, longitude, latitude, travelspeed, destDist
-		if (myString.startsWith("DEST!"))
-			myString = myString.substring(5, myString.length());
-		String[] params = myString.split("!");
-		if (params.length < 5)
-			throw new IllegalArgumentException();
-		try {
-			altitude = new Double(params[0]);
-			longitude = new Double(params[1]);
-			latitude = new Double(params[2]);
-			
-			myVelocity = new Double(params[3]);
-			destDist = new Double(params[4]);
-		}
-		catch (NumberFormatException e) {
-			throw new IllegalArgumentException();
-		}
-		reallyClose = false;
+		super(myString);
 		myCs = Cs;
 	}
 	
@@ -169,17 +113,6 @@ public class NavDest implements NavTask, Constants {
 			return false;
 	}
 	
-	/**
-	 * Serializes a NavDest to a String.
-	 * @return The NavDest in serialized form.
-	 */
-	public String toString() {
-		return "DEST" +
-				"!" + altitude +
-				"!" + longitude +
-				"!" + latitude +
-				"!" + myVelocity +
-				"!" + destDist;
-	}
+	
 
 }

@@ -81,7 +81,7 @@ public class HeartbeatThread implements Runnable, Updatable {
      *  Reads in a heartbeat response and calculates the last round trip time.
      */
     public void update(String message) {
-	if (message.startsWith("COMM:PULSE:")) {
+	if (message.startsWith("COMM:PULSE:") && messageTimes != null) {
 	    roundTripTime = System.currentTimeMillis() - messageTimes.remove(message);
 	    DataReceiver.getInstance().updateAll("PING:" + roundTripTime);
 	}

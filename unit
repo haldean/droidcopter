@@ -6,6 +6,7 @@ if [ -z "$1" ]; then
     echo "Must supply a class to test" 1>&2
 else
     echo "Running test for class $1" 1>&2
+    rm org/haldean/chopper/server/{,nav/}*.class
     javac -cp $CLASSPATH "org/haldean/chopper/server/$1.java" && \
 	echo "Compiled" 1>&2 && \
 	java -Djava.library.path=jars/worldwind/:/lib/:jars/ \

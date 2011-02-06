@@ -39,7 +39,7 @@ import android.util.Log;
  * 
  * @author Benjamin Bardin
  */
-public class Navigation implements Constants, Receivable {
+public class Navigation implements Runnable, Constants, Receivable {
 	
 	/** Tag for logging */
 	public static final String TAG = "chopper.Navigation";
@@ -77,10 +77,6 @@ public class Navigation implements Constants, Receivable {
 	
 	/** Handles messages */
 	private Handler mHandler;
-	
-	/** Hides Runnability, ensures singleton-ness */
-	private Runnable mRunner;
-	private static PersistentThread sThread;
 	
 	/** Registered receivers */
 	private LinkedList<Receivable> mRec;
@@ -154,50 +150,33 @@ public class Navigation implements Constants, Receivable {
 	}
 	
 	/**
-	 * Obtains the thread that runs the Navigation routines.
-	 * On first call to this method, the PersistentThread is created.
-	 * But since two or more instances of Navigation should not be run concurrently,
-	 * subsequent calls to this method return only that first thread.
-	 * @return The PersistentThread that runs Navigation.
+	 * Starts the navigation thread
 	 */
-	public PersistentThread getPersistentThreadInstance() {
-		if (mRunner == null) {
-			mRunner = new Runnable(){
-				/**
-				 * Starts the navigation thread
-				 */
-				public void run() {
-					Looper.prepare();
-					Thread.currentThread().setName("Navigation");
-					mHandler = new Handler() {
-						public void handleMessage(Message msg)
-			            {
-			                switch (msg.what) {
-			                case EVAL_NAV:
-			                	if (mAutoPilot.get())
-			                		evalNextVector();
-			                	break;
-			                }
-			            }
-					};
+	public void run() {
+		Looper.prepare();
+		Thread.currentThread().setName("Navigation");
+		mHandler = new Handler() {
+			public void handleMessage(Message msg)
+            {
+                switch (msg.what) {
+                case EVAL_NAV:
+                	if (mAutoPilot.get())
+                		evalNextVector();
+                	break;
+                }
+            }
+		};
 
-					//FOR TESTING ONLY:
-					/*String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
-						"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
-							" DEST!587!-117.15!32.72!10!600 } } }";*/
-					String taskList = "{ VEL!1!0!0!0!20 VEL!-1!0!0!0!20 VEL!0!1!0!0!20 VEL!0!-1!0!0!20 VEL!0!0!1!0!20 VEL!0!0!-1!0!20 }";
-					setTask(BASIC_AUTO, taskList);
-					setTask(NO_CONN, "{ VEL!0!0!-1!0!1000000 }");
-					setTask(LOW_POWER, "{ VEL!0!0!-1!0!1000000 }");
-					//autoPilot(true);
-					Looper.loop();
-				}
-			};
-		}
-		if (sThread == null) {
-			sThread = new PersistentThread(mRunner);
-		}
-		return sThread;
+		//FOR TESTING ONLY:
+		/*String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
+			"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
+				" DEST!587!-117.15!32.72!10!600 } } }";*/
+		String taskList = "{ VEL!1!0!0!0!20!name1 VEL!-1!0!0!0!20!name1 VEL!0!1!0!0!20!name1 VEL!0!-1!0!0!20!name1 VEL!0!0!1!0!20!name1 VEL!0!0!-1!0!20!name1 }";
+		setTask(BASIC_AUTO, taskList);
+		setTask(NO_CONN, "{ VEL!0!0!-1!0!1000000!No_Conn }");
+		setTask(LOW_POWER, "{ VEL!0!0!-1!0!1000000!Low_Power }");
+		//autoPilot(true);
+		Looper.loop();
 	}
 	
 	/**

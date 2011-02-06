@@ -38,7 +38,7 @@ import android.view.SurfaceHolder;
  * 
  * @author Benjamin Bardin
  */
-public final class MakePicture implements Constants, Receivable {
+public final class MakePicture implements Runnable, Constants, Receivable {
 	
 	/** Desired compression rate of a high-quality jpeg image */
 	public static final int HIGH_Q_JPEG = 85;
@@ -81,10 +81,6 @@ public final class MakePicture implements Constants, Receivable {
 	private SurfaceHolder mPreviewHolder;
 	private SurfaceHolder.Callback mSurfaceCallback;
 	
-	/** Hides Runnability, ensures singleton-ness */
-	private Runnable mRunner;
-	private static PersistentThread myThread;
-	
 	/** Registered receivers */
 	private LinkedList<Receivable> mRec;
 	
@@ -101,10 +97,19 @@ public final class MakePicture implements Constants, Receivable {
 	 * Gets a copy of the last preview frame.
 	 * @return The frame copy.
 	 */
-	public byte[] getBufferCopy() {
+	public void getBufferCopy(byte[] copyTo) {
 		synchronized (mStoreFrame) {
-			return mStoreFrame.clone();
+			for (int i = 0; i < mStoreFrame.length; i++) {
+				copyTo[i] = mStoreFrame[i];
+			}
 		}
+	}
+	
+	/**
+	 * Gets the length of the array storing preview frames 
+	 */
+	public int getFrameArrayLength() {
+		return mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8;
 	}
 	
 	/**
@@ -117,58 +122,41 @@ public final class MakePicture implements Constants, Receivable {
 	}
 	
 	/**
-	 * Obtains the thread that runs the MakePicture routines.
-	 * On first call to this method, the PersistentThread is created.
-	 * But since two or more instances of MakePicture should not be run concurrently,
-	 * subsequent calls to this method return only that first thread.
-	 * @return The PersistentThread that runs MakePicture.
+	 * Starts the thread--specifically, initializes camera callbacks and starts capturing camera preview.
 	 */
-	public PersistentThread getPersistentThreadInstance() {
-		if (mRunner == null) {
-			mRunner = new Runnable() {
-				/**
-				 * Starts the thread--specifically, initializes camera callbacks and starts capturing camera preview.
-				 */
-				public void run() {
-					Thread.currentThread().setName("MakePicture");
-					
-					Looper.prepare();
-					System.out.println("MakePicture run() thread ID " + Thread.currentThread().getId());
-					
-					
-					
-					//Handles incoming messages
-					mHandler = new Handler() {
-			            public void handleMessage(Message msg)
-			            {
-			                switch (msg.what) {
-			                case TAKE_GOOD_PIC:
-			                	mCamera.takePicture(null, null, mGoodPic); //takes the pic
-			                	break;
-			                case START_PREVIEW:
-			                	if (mCamera != null)
-			                		mCamera.startPreview();
-			                	break;
-			                case SEND_SIZES:
-			                	sendSizes();
-			                	break;
-			                
-			                }
-			            }
-			        };
-			        initParams();
-					initCallbacks();
-					
-					//Get to work!
-			        mHandler.sendEmptyMessage(START_PREVIEW);
-					Looper.loop();
-				}
-			};
-		}
-		if (myThread == null) {
-			myThread = new PersistentThread(mRunner);
-		}
-		return myThread;
+	public void run() {
+		Thread.currentThread().setName("MakePicture");
+		
+		Looper.prepare();
+		System.out.println("MakePicture run() thread ID " + Thread.currentThread().getId());
+		
+		
+		
+		//Handles incoming messages
+		mHandler = new Handler() {
+            public void handleMessage(Message msg)
+            {
+                switch (msg.what) {
+                case TAKE_GOOD_PIC:
+                	mCamera.takePicture(null, null, mGoodPic); //takes the pic
+                	break;
+                case START_PREVIEW:
+                	if (mCamera != null)
+                		mCamera.startPreview();
+                	break;
+                case SEND_SIZES:
+                	sendSizes();
+                	break;
+                
+                }
+            }
+        };
+        initParams();
+		initCallbacks();
+		
+		//Get to work!
+        mHandler.sendEmptyMessage(START_PREVIEW);
+		Looper.loop();
 	}
 	
 	/**
@@ -278,7 +266,7 @@ public final class MakePicture implements Constants, Receivable {
 			mYprev.set(mNextY.get());
 			Log.v(TAG, "Init prev array: " + mXprev.get() + ", " + mYprev.get());
 			synchronized (mStoreFrame) {
-				mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+				mStoreFrame = new byte[getFrameArrayLength()];
 				Log.e(TAG, "Array size: " + mStoreFrame.length);
 			}
 			initPrevCallback();
@@ -416,7 +404,7 @@ public final class MakePicture implements Constants, Receivable {
 		mCamera.setPreviewCallbackWithBuffer(precall);
 		
 		synchronized (mStoreFrame) {
-			mStoreFrame = new byte[mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8];
+			mStoreFrame = new byte[getFrameArrayLength()];
 			mCamera.addCallbackBuffer(mStoreFrame);
 		}
 		//Inner class defs done

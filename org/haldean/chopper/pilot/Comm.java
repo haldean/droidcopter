@@ -172,10 +172,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 					
 					if (mPic == null) { //First time being run
 						mPic = new TransmitPicture(mDataOut, mTelemSrc, mComm);
-						PersistentThread mTransPicThread = mPic.getPersistentThreadInstance();
-						if (!mTransPicThread.isAlive()) {
-							mTransPicThread.start();
-						}
+						new Thread(mPic).start();
 					}
 					else { //Thread has already been started, simply being reset
 						synchronized (mDataOut) {

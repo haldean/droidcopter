@@ -80,10 +80,10 @@ public class EnsignCrusher {
      */
     public static void setTargetLocation(Position location, double velocity,
 					 double targetRadius) {
-	makeItSo(DrawNavDest.taskFor(location.getElevation(), 
-				 location.getLongitude().getDegrees(),
-				 location.getLatitude().getDegrees(), 
-				 velocity, targetRadius));
+	makeItSo(DrawNavDest.taskFor("Destination", location.getElevation(), 
+				     location.getLongitude().getDegrees(),
+				     location.getLatitude().getDegrees(), 
+				     velocity, targetRadius));
     }
 
     /**

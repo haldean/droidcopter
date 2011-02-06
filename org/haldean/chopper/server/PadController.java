@@ -50,7 +50,7 @@ public class PadController extends UiController {
      *  @param _ui The ServerHost to act upon */
     public PadController(ServerHost _ui) {
 	ui = _ui;
-	sl = ui.sl;
+	sl = ui.statusLabel;
 	
 	ControllerEnvironment env = ControllerEnvironment.getDefaultEnvironment();
 	Controller controllers[] = env.getControllers();
@@ -200,7 +200,7 @@ public class PadController extends UiController {
 
 	/* In Globe Mode, B activates or disactivates follow mode */
 	if (globeMovement && buttonIsSet(mask, BUTTON_B))
-	    ui.lc.toggleFollow();
+	    ui.globeComponent.toggleFollow();
     }
 
     /** Get the value of a joystick axis, filtering out noisy results 
@@ -217,8 +217,8 @@ public class PadController extends UiController {
     private void axesAction() {
 	if (globeMovement) {
 	    float zoom = getAxis(AXIS_L_TRIGGER) - getAxis(AXIS_R_TRIGGER);
-	    ui.lc.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), 
-			   zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
+	    ui.globeComponent.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), 
+				       zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
 	} else {
 	    double[] vels = new double[3];
 	    vels[0] = getAxis(AXIS_L_H);

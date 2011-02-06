@@ -15,56 +15,51 @@ import javax.swing.event.*;
 public class ServerHost extends JFrame {
     /** The chopper name. We've been changing it enough that
      *  it's just easier to have it be an easily-changable string */
-    public final String heloName = "Robocopter";
+    final String heloName = "Robocopter";
 
     /* All sorts of components */
     /** The object responsible for receiving and sending
      *  data to and from the chopper */
-    public final DataReceiver r;
+    final DataReceiver dataReceiver;
     /** The component that displays the globe with tracking
      *  data and location selection */
-    public final WorldWindComponent lc;
+    final WorldWindComponent globeComponent;
     /** The component that displays a 3D rendering of the 
      *  current orientation of the chopper */
-    public final OrientationComponent tc;
+    final OrientationComponent orientationComponent;
     /** The component that displays telemetry and allows for
      *  manipulation of the image quality */
-    public final ImagePanel ic;
+    final ImagePanel imagePanel;
     /** The component that displays graphs of the acceleration */
-    public final AccelerationComponent ac;
+    final AccelerationComponent accelerationComponent;
     /** The component that displays error values from the four PID
      *  loops on the chopper. */
-    public final PidErrorComponent pidc;
+    final PidErrorComponent pidComponent;
     /** An Updatable that receives all messages from the chopper
      *  @see EchoUpdatable */
-    public final Updatable status;
+    final Updatable status;
     /** The component responsible for displaying sensor
      *  data that isn't displayed by one of the other components */
-    public final SensorComponent sc;
+    final SensorComponent sensorComponent;
     /** The component that displays mission-critical data like
      *  battery levels and connection statuses */
-    public final StatusLabel sl;
+    final StatusLabel statusLabel;
     /** A component to display and set motor speeds. */
-    public final MotorComponent mc;
+    final MotorComponent motorComponent;
+    /** The autopilot GUI. */
+    final NavPanel navPanel;
 
     /* Custom controllers, mostly because Will is the effing man */
     private final List<UiController> pads;
 
     /** The components to put in the left tab pane in the UI */
-    private LinkedList<Component> leftTabPanes;
+    private LinkedList<JComponent> leftTabPanes;
     /** The components to put in the right tab pane in the UI */
-    private LinkedList<Component> rightTabPanes;
+    private LinkedList<JComponent> rightTabPanes;
     /** The left tab pane */
-    public JTabbedPane leftTabs;
+    JTabbedPane leftTabs;
     /** The right tab pane */
-    public JTabbedPane rightTabs;
-
-    /* Whether we are allowed to create a WorldWindComponent.
-     * WWJ doesn't run on Linux 86-64, so Ben's high-fallutin' 
-     * 64-bit Ubuntu can't have a globe */
-    //The hell it can't.
-    /* Fine. You just didn't know how to configure your own computer. */
-    private boolean allowGlobe = true;
+    JTabbedPane rightTabs;
 
     /** Create a new ServerHost. */
     public ServerHost() {
@@ -76,58 +71,56 @@ public class ServerHost extends JFrame {
 
 	/* Create all the necessary components so we can feed them
 	 * into each other */
-	r = DataReceiver.getInstance();
+	dataReceiver = DataReceiver.getInstance();
 
-	if (allowGlobe) lc = new WorldWindComponent();
-	else lc = null;
-
-	tc = new OrientationComponent();
-	ic = new ImagePanel();
-	ac = new AccelerationComponent();
-	pidc = new PidErrorComponent();
-	sc = new SensorComponent();
+	globeComponent = new WorldWindComponent();
+	orientationComponent = new OrientationComponent();
+	imagePanel = new ImagePanel();
+	accelerationComponent = new AccelerationComponent();
+	pidComponent = new PidErrorComponent();
+	sensorComponent = new SensorComponent();
 	status = new EchoUpdatable();
-	mc = new MotorComponent();
+	motorComponent = new MotorComponent();
+	navPanel = new NavPanel();
 
-	sl = new StatusLabel();
-	r.setStatusLabel(sl);
+	statusLabel = new StatusLabel();
+	dataReceiver.setStatusLabel(statusLabel);
 
 	/* Create the sensor parser and tell it where to
 	 * find all of the appropriate components */
 	SensorParser sp = new SensorParser();
-	sp.setWorldWindComponent(lc);
-	sp.setOrientationComponent(tc);
-	sp.setAccelerationComponent(ac);
-	sp.setSensorComponent(sc);
+	sp.setWorldWindComponent(globeComponent);
+	sp.setOrientationComponent(orientationComponent);
+	sp.setAccelerationComponent(accelerationComponent);
+	sp.setSensorComponent(sensorComponent);
 
-	/* Tie the updatables to the DataReceiver */
-	r.tie(sp);
 	/* Tie the PID error visualization to the DataReceiver */
-	r.tie(pidc);
-	r.tie(PidTuningComponent.getInstance());
-	r.tieImage(ic);
+	dataReceiver.tie(pidComponent);
+	dataReceiver.tie(PidTuningComponent.getInstance());
+	dataReceiver.tieImage(imagePanel);
 
-	MessageHookManager.addHook(mc);
+	MessageHookManager.addHook(motorComponent);
+	MessageHookManager.addHook(sp);
 
 	if (ServerCreator.getHeartbeatEnabled()) {
 	    /* Tie the heartbeat to the DataReceiver */
-	    r.tie(HeartbeatThread.revive());
+	    dataReceiver.tie(HeartbeatThread.revive());
 	}
 
-	leftTabPanes = new LinkedList<Component>();
-	rightTabPanes = new LinkedList<Component>();
+	leftTabPanes = new LinkedList<JComponent>();
+	rightTabPanes = new LinkedList<JComponent>();
 
 	/* The left tab pane has the globe and the tilt */
-	if (allowGlobe)
-	    leftTabPanes.add(lc);
-	leftTabPanes.add(tc);
-	leftTabPanes.add(mc);
+	leftTabPanes.add(globeComponent);
+	leftTabPanes.add(orientationComponent);
+	leftTabPanes.add(motorComponent);
 
 	/* The right has the telemetry, the acceleration and the sensor data */
-	rightTabPanes.add(ic);
-	rightTabPanes.add(ac);
-	rightTabPanes.add(sc);
-	rightTabPanes.add(pidc);
+	rightTabPanes.add(imagePanel);
+	rightTabPanes.add(accelerationComponent);
+	rightTabPanes.add(sensorComponent);
+	rightTabPanes.add(pidComponent);
+	rightTabPanes.add(navPanel);
 
 	pads = new ArrayList<UiController>();
 	pads.add(new PadController(this));
@@ -141,10 +134,15 @@ public class ServerHost extends JFrame {
 	return null;
     }
 
+    public String getInput(String prompt) {
+	KeyboardController k = getController(KeyboardController.class);
+	return k.getInput(prompt);
+    }
+
     /** Start accepting data */
     public void accept() {
 	/* Start the DataReceiver thread */
-	(new Thread(r)).start();
+	(new Thread(dataReceiver)).start();
     }
 
     /** Initialize operating system specific stuff */
@@ -159,13 +157,7 @@ public class ServerHost extends JFrame {
     public void start() {
 	/* Update the Look and Feel of components created
 	 * in the constructor */
-	ac.updateUI();
-	sc.updateUI();
-	lc.updateUI();
-	ic.updateUI();
-	pidc.updateUI();
-	mc.updateUI();
-
+	
 	/* The right/left pane creator */
 	JPanel horizontalPanel = new JPanel(new GridLayout(1,2));
 
@@ -174,13 +166,15 @@ public class ServerHost extends JFrame {
 	rightTabs = new JTabbedPane();
 
 	/* Add all of the stuff on the left to the tabbed pane */
-	for (int i=0; i<leftTabPanes.size(); i++) {
-	    leftTabs.add(leftTabPanes.get(i));
+	for (JComponent c : leftTabPanes) {
+	    c.updateUI();
+	    leftTabs.add(c);
 	}
 
 	/* Do the same for the right */
-	for (int i=0; i<rightTabPanes.size(); i++) {
-	    rightTabs.add(rightTabPanes.get(i));
+	for (JComponent c : rightTabPanes) {
+	    c.updateUI();
+	    rightTabs.add(c);
 	}
 
 	horizontalPanel.add(leftTabs);
@@ -208,11 +202,11 @@ public class ServerHost extends JFrame {
 		     * text of the button. If not connected, restart the
 		     * DataReceiver thread */
 		    if (connected) {
-			r.stop();
+			dataReceiver.stop();
 			connected = false;
 			disconnectButton.setText("Connect");
 		    } else {
-			(new Thread(r)).start();
+			(new Thread(dataReceiver)).start();
 			connected = true;
 			disconnectButton.setText("Disconnect");
 		    }
@@ -226,9 +220,9 @@ public class ServerHost extends JFrame {
 		public void actionPerformed(ActionEvent e) {
 		    /* Tell the DataReceiver to suck it and sleep until
 		     * it does */
-		    r.die();
+		    dataReceiver.die();
 		    try {
-			while (r.isConnected())
+			while (dataReceiver.isConnected())
 			    Thread.sleep(200);
 		    } catch (InterruptedException ex) {
 			;
@@ -241,7 +235,7 @@ public class ServerHost extends JFrame {
 	/* Assemble right panel */
 	rawDataPanel.add(titleLabel, BorderLayout.NORTH);
 	rawDataPanel.add(rightTabs, BorderLayout.CENTER);
-	rawDataPanel.add(sl, BorderLayout.SOUTH);
+	rawDataPanel.add(statusLabel, BorderLayout.SOUTH);
 	horizontalPanel.add(rawDataPanel);
 
 	/* Show the frame */

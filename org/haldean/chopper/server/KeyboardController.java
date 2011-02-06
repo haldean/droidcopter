@@ -37,6 +37,17 @@ public class KeyboardController extends UiController {
 	    Debug.log("Keyboard controller initialized.");
 	}
     }
+
+    public String getInput(String prompt) {
+	return getInput(prompt, "");
+    }
+
+    public String getInput(String prompt, String defaultAnswer) {
+	enable = false;
+	String input = JOptionPane.showInputDialog(ui, prompt, defaultAnswer);
+	enable = true;
+	return input;
+    }
     
     private void getKeyboards() {
 	keyboards = new ArrayList<Keyboard>();
@@ -105,8 +116,7 @@ public class KeyboardController extends UiController {
     }
 
     private void getRotation() {
-	String value = JOptionPane.
-	    showInputDialog(ui, "Target bearing (in right-hand degrees from North)", "0.0");
+	String value = getInput("Target bearing (in right-hand degrees from North)", "0.0");
 	try {
 	    Double theta = new Double(value);
 	    if (theta < 0 || theta >= 360) {

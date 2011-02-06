@@ -251,9 +251,10 @@ public class WorldWindComponent extends UpdateUiPanel {
      */
     private void newDestination() {
 	try {
-	    EnsignCrusher.setTargetLocation(targetPosition, 
-					    new Double(velocity.getText()),
-					    new Double(radius.getText()));
+	    Position p = new Position(targetPosition.getLatitude(), 
+				      targetPosition.getLongitude(), followAltitude);
+	    ServerCreator.getServerHost().navPanel.insertDestination(p, new Double(velocity.getText()),
+								     new Double(radius.getText()));
 	} catch (NullPointerException e) {
 	    JOptionPane.
 		showMessageDialog(this, "You must select a destination", "Error",

@@ -2,10 +2,13 @@ package org.haldean.chopper.server;
 
 import gov.nasa.worldwind.geom.*;
 
-/** This takes the sensor messages from the DataReceiver and parses
+/** 
+ *  This takes the sensor messages from the DataReceiver and parses
  *  it, notifying the appropriate components with the new data 
- *  @author William Brown */
-public class SensorParser implements Updatable {
+ *
+ *  @author William Brown 
+ */
+public class SensorParser implements MessageHook {
     /* The messages are all essentially flattened arrays
      * divided by colons. These constants are used to determine
      * which "index" in the string corresponds to what data */
@@ -36,6 +39,10 @@ public class SensorParser implements Updatable {
 	;
     }
 
+    public String[] processablePrefixes() {
+	return new String[] {"GPS", "OREINT", "ACCEL", "FLUX", "TEMPERATURE", "PING"};
+    }
+
     /** Set the notified NASA World Wind globe component 
      *  @param _wwc The World Wind component to notify */
     public void setWorldWindComponent(WorldWindComponent _wwc) {
@@ -60,54 +67,54 @@ public class SensorParser implements Updatable {
 	sensors = _sensors;
     }
 
-    /** Update the components with new data 
-     *  @param msg The received message to parse */
-    public void update(String msg) {
-	String parts[] = msg.split(":");
-	
-	
+    /** 
+     *  Update the components with new data 
+     *
+     *  @param msg The received message to process
+     */
+    public void process(Message message) {
 	/* If this is a GPS signal notify the World Wind component */
-	if (parts[0].equals("GPS")) {
+	if (message.getPart(0).equals("GPS")) {
 		try {
-		    double lat = new Double(parts[LAT]);
-		    double lon = new Double(parts[LON]);
-		    double alt = new Double(parts[ALT]);
+		    double lat = new Double(message.getPart(LAT));
+		    double lon = new Double(message.getPart(LON));
+		    double alt = new Double(message.getPart(ALT));
 	
 		    /* If this is true, the phone isn't receiving a GPS signal */
 		    if (! (lat == 0 || lon == 0 || alt == 0) && wwc != null)
 			wwc.addWaypoint(Position.fromDegrees(lat, lon, alt));
 		}
 		catch (Exception e) {
-			System.out.println("UNPARSABLE: " + msg);
+			System.out.println("UNPARSABLE: " + message);
 			e.printStackTrace();
 		}
 	}
 	/* Orientation */
-	else if (parts[0].equals("ORIENT")) {
-	    Orientation o = new Orientation(new Double(parts[ROLL]),
-					    new Double(parts[TILT]),
-					    new Double(parts[PITCH]));
+	else if (message.getPart(0).equals("ORIENT")) {
+	    Orientation o = new Orientation(new Double(message.getPart(ROLL)),
+					    new Double(message.getPart(TILT)),
+					    new Double(message.getPart(PITCH)));
 	    orient.setOrientation(o);
 	}
 	
 
 	/* Acceleration */
-	else if (parts[0].equals("ACCEL")) {
-	    accel.setAcceleration(new Double(parts[XACCEL]),
-				  new Double(parts[YACCEL]),
-				  new Double(parts[ZACCEL]));
+	else if (message.getPart(0).equals("ACCEL")) {
+	    accel.setAcceleration(new Double(message.getPart(XACCEL)),
+				  new Double(message.getPart(YACCEL)),
+				  new Double(message.getPart(ZACCEL)));
 	}
 
 	/* Sensors. All other sensors unsupported by phone and .:. ignored. */
-	else if (parts[0].equals("FLUX"))
-	    sensors.setFlux(Math.sqrt(Math.pow(new Double(parts[1]), 2) +
-				      Math.pow(new Double(parts[2]), 2) +
-				      Math.pow(new Double(parts[3]), 2)));
+	else if (message.getPart(0).equals("FLUX"))
+	    sensors.setFlux(Math.sqrt(Math.pow(new Double(message.getPart(1)), 2) +
+				      Math.pow(new Double(message.getPart(2)), 2) +
+				      Math.pow(new Double(message.getPart(3)), 2)));
 
-	else if (parts[0].equals("TEMPERATURE"))
-	    sensors.setTemperature(new Double(parts[1]));
+	else if (message.getPart(0).equals("TEMPERATURE"))
+	    sensors.setTemperature(new Double(message.getPart(1)));
 
-	else if (parts[0].equals("PING"))
-	    sensors.setPing(new Integer(parts[1]));
+	else if (message.getPart(0).equals("PING"))
+	    sensors.setPing(new Integer(message.getPart(1)));
     }
 }

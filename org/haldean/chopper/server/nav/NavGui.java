@@ -1,10 +1,13 @@
 package org.haldean.chopper.server.nav;
 
-import javax.swing.*;
 import java.awt.*;
-import java.util.*;
-import javax.swing.event.*;
 import java.awt.event.*;
+import java.util.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+import org.haldean.chopper.server.EnsignCrusher;
+import org.haldean.chopper.server.StyleProvider;
 
 /**
  * Maintains a GUI of AutoPilot data, so it can be graphically manipulated.
@@ -13,7 +16,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     /* Constants */
     public static final int PLANS = 3; //Number of NavLists to maintain
     public static final int BUFFER = 10; //For leaving empty space between drawn items
-    public static final int xSize = 140; //Column size for each NavList
+    public int xSize;
     
     /* Information on a selected NavData */
     private NavData selected = null;
@@ -43,13 +46,14 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
      */
     public NavGui() {
         super();
-        travelPlans.add( DrawNavList.fromString("{ DEST!300!40.78!-73.97!2!10!TEST1 VEL!3!4!5!6!6000!" + "I_Can_Fly" + " Fuck}"));
-        travelPlans.add( DrawNavList.fromString("{ DEST!100!39.33!-77.3!5!50!TEST2 { DEST!100!39.33!-77.3!5!50!TEST4 DEST!300!40.78!-73.97!2!10!TEST5 Seriously} DEST!300!40.78!-73.97!2!10!TEST3 Swing}"));
-        travelPlans.add( DrawNavList.fromString("{ boo}"));
+        travelPlans.add(DrawNavList.fromString("{ Flight_Plan_One}"));
+        travelPlans.add(DrawNavList.fromString("{ Flight_Plan_Two}"));
+        travelPlans.add(DrawNavList.fromString("{ Flight_Plan_Three}"));
         
         for (int i = 0; i < travelPlans.size(); i++) {
             registry.add(new Vector<NavData>());
         }
+
         addMouseMotionListener(this);
         addMouseListener(this);
     }
@@ -85,6 +89,16 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
         selParList.add(selListSlot, copyMe);
         repaint();
         revalidate();
+    }
+
+    /**
+     * Sends the selected command to the chopper.
+     */
+    public void makeItSo() {
+	if (selected == null) 
+	    return;
+
+	EnsignCrusher.makeItSo(selected);
     }
     
     /**
@@ -183,6 +197,13 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     public void paint(Graphics g) {
         super.paint(g);
         Graphics2D g2 = (Graphics2D) g;
+	
+	Dimension size = getSize();
+
+	g2.setColor(StyleProvider.background());
+	g2.fillRect(0, 0, (int) size.getWidth(), (int) size.getHeight());
+
+	xSize = (int) (size.getWidth() / travelPlans.size()) - 3 * (int) BUFFER;
 
         for (int i = 0; i < travelPlans.size(); i++) {
             //clear the registry
@@ -204,7 +225,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
                 yPos = yRange[yRange.length - 1][1];
             }
             yPos += .375 * NavData.BUFFER;
-            g2.setColor(Color.CYAN);
+            g2.setColor(StyleProvider.foreground3());
             g2.fillRect(slotCol * xSize + BUFFER, yPos, xSize - 2 * BUFFER, (int) (.25 * NavData.BUFFER));
         }
         
@@ -221,12 +242,12 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
                 yPos = yRange[yRange.length - 1][1];
             }
             yPos += .375 * NavData.BUFFER;
-            g2.setColor(Color.BLUE);
+            g2.setColor(StyleProvider.foreground2());
             g2.fillRect(selSlotCol * xSize + BUFFER, yPos, xSize - 2 * BUFFER, (int) (.25 * NavData.BUFFER));
         }
         
         //Update the size, so the containing JScrollPane doesn't flip out.
-        setPreferredSize(new Dimension(NavGui.PLANS * NavGui.xSize, getDeepestY() + BUFFER));
+        setPreferredSize(new Dimension(PLANS * xSize, getDeepestY() + BUFFER));
     }
     
     /**

@@ -332,7 +332,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 					Log.w(TAG, "Nav Target lock not available.");
 				}
 			}
-			Log.v(TAG, "Relative target: " + mTarget[0] + ", " + mTarget[1] + ", " + mTarget[2] + ", " + mTarget[3]);
+			//Log.v(TAG, "Relative target: " + mTarget[0] + ", " + mTarget[1] + ", " + mTarget[2] + ", " + mTarget[3]);
 		}
 		
 		

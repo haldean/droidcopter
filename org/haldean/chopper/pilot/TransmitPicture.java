@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.os.Handler;
@@ -47,18 +46,11 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 	 * before trying again. */
 	private static final int CAMERA_INTERVAL = 200;
 	
-	/** Android 2.2 comes with new YUV --> JPEG compression algorithms that sometimes don't work.
-	 * This flags whether or not to try to use them. */
-	private static final boolean NEWCOMPRESSMETHOD = true;
-	
 	/** Output stream */
 	private ObjectOutputStream mDataOut;
 	
 	/** For local JPEG compression */
 	private ByteArrayOutputStream mBaos;
-	
-	/** Used as part of the YUV --> JPEG coding process if NEWCOMPRESSMETHOD is false */
-	private int[] rgb = new int[0];
 	
 	private byte[] mPicFrame; 
 	
@@ -81,42 +73,6 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 		mComm = comm;
 		mBaos = new ByteArrayOutputStream();
 		mDataOut = mydata;
-	}
-	
-	/**
-	 * Transcodes a YUV 4:2:0 SP frame (delivered by the camera preview) to bitmap
-	 * @param rgb The array in which the new bitmap will be stored.
-	 * @param yuv420sp The source image.
-	 * @param width The width of the image.
-	 * @param height The height of the image.
-	 * @author justinbonnar
-	 */
-	private static final void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
-
-    	final int frameSize = width * height;
-    	
-    	for (int j = 0, yp = 0; j < height; j++) {
-    		int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-    		for (int i = 0; i < width; i++, yp++) {
-    			int y = (0xff & ((int) yuv420sp[yp])) - 16;
-    			if (y < 0) y = 0;
-    			if ((i & 1) == 0) {
-    				v = (0xff & yuv420sp[uvp++]) - 128;
-    				u = (0xff & yuv420sp[uvp++]) - 128;
-    			}
-    			
-    			int y1192 = 1192 * y;
-    			int r = (y1192 + 1634 * v);
-    			int g = (y1192 - 833 * v - 400 * u);
-    			int b = (y1192 + 2066 * u);
-    			
-    			if (r < 0) r = 0; else if (r > 262143) r = 262143;
-    			if (g < 0) g = 0; else if (g > 262143) g = 262143;
-    			if (b < 0) b = 0; else if (b > 262143) b = 262143;
-    			
-    			rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
-    		}
-    	}
 	}
 	
 	/**
@@ -221,38 +177,27 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 		
 		//long starttime = System.currentTimeMillis();
 		
-		if (NEWCOMPRESSMETHOD)
+		YuvImage sourcePic = null;
+		try {
+			sourcePic = new YuvImage(picFrame, myMakePic.getPreviewFormat(), frameSize[0], frameSize[1], null);
+		}
+		catch (Throwable t)
 		{
-			YuvImage sourcePic = null;
-			try {
-				sourcePic = new YuvImage(picFrame, myMakePic.getPreviewFormat(), frameSize[0], frameSize[1], null);
-			}
-			catch (Throwable t)
-			{
-				t.printStackTrace();
-			}
-			
-			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+			t.printStackTrace();
+		}
 		
-			//System.out.println("Compressing to jpeg");
-			try {
-				sourcePic.compressToJpeg(new Rect(0, 0, frameSize[0], frameSize[1]), mPrevQuality.get(), mBaos);
-			}
-			catch (Throwable t) {
-				Log.e(TAG,"Compress fail");
-				t.printStackTrace();
-			}
-			//System.out.println("Finished compressing");
+		//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
+	
+		//System.out.println("Compressing to jpeg");
+		try {
+			sourcePic.compressToJpeg(new Rect(0, 0, frameSize[0], frameSize[1]), mPrevQuality.get(), mBaos);
 		}
-		else {
-			//System.out.println("Bitmap compression");
-			if (frameSize[0] * frameSize[1] != rgb.length)
-				rgb = new int[frameSize[0] * frameSize[1]];
-			decodeYUV420SP(rgb, picFrame, frameSize[0], frameSize[1]);
-			//System.out.println(MakePicture.XPREV + ", " + MakePicture.YPREV + "; next: " + MakePicture.nextx + ", " + MakePicture.nexty);
-			Bitmap mBitMap = Bitmap.createBitmap(rgb, frameSize[0], frameSize[1], Bitmap.Config.RGB_565);
-			mBitMap.compress(Bitmap.CompressFormat.JPEG, mPrevQuality.get(), mBaos);
+		catch (Throwable t) {
+			Log.e(TAG,"Compress fail");
+			t.printStackTrace();
 		}
+		//System.out.println("Finished compressing");
+		
 		if (mBaos == null)
 			System.out.println("bad stream");
 		byte[] sendPic = mBaos.toByteArray();

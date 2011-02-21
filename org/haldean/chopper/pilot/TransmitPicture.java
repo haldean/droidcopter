@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.haldean.blob.Normalizer;
+
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.os.Handler;
@@ -61,6 +63,7 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 	private MakePicture myMakePic;
 	private Comm mComm;
 	
+	private Normalizer norm;
 	/**
 	 * Constructs the TransmitPicture thread.
 	 * @param mydata The outputstream over which telemetry frames should be sent.
@@ -73,6 +76,7 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 		mComm = comm;
 		mBaos = new ByteArrayOutputStream();
 		mDataOut = mydata;
+		norm = new Normalizer(Normalizer.red);
 	}
 	
 	/**
@@ -178,6 +182,7 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 		//long starttime = System.currentTimeMillis();
 		
 		YuvImage sourcePic = null;
+		norm.normalizeYuv(picFrame, picFrame);
 		try {
 			sourcePic = new YuvImage(picFrame, myMakePic.getPreviewFormat(), frameSize[0], frameSize[1], null);
 		}

@@ -294,13 +294,10 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 	}
 	
 	/** Initializes, registers the error callback. */
-	private void initErrorCallback() {
-		
+	private void initErrorCallback() {		
 		//set up callbacks.  First is on error
-		mCamError = new ErrorCallback()
-		{
-			public void onError(int error, Camera camera)
-			{
+		mCamError = new ErrorCallback()	{
+			public void onError(int error, Camera camera){
 				System.out.println("Camera error, code " + error);
 			}
 		};
@@ -310,12 +307,9 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 	/** Initializes the High-quality picture callback. */
 	private void initGoodPicCallback() {
 		//callback class, with instructions on what to do with a high-quality image
-		mGoodPic = new Camera.PictureCallback()
-		{
-			public void onPictureTaken(byte[] imageData, Camera c)
-			{
-				if (imageData != null)
-				{
+		mGoodPic = new Camera.PictureCallback()	{
+			public void onPictureTaken(byte[] imageData, Camera c){
+				if (imageData != null)	{
 					//TODO: store the picture
 				}
 				mHandler.sendEmptyMessage(START_PREVIEW);
@@ -340,10 +334,17 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 		//get available parameters, set specific ones.  Later, will configure these to be operated remotely.
 		Camera.Parameters params = mCamera.getParameters();
 		
+		List<Integer> formats = params.getSupportedPreviewFormats();
+		for (Integer num : formats) {
+			if (num == ImageFormat.YUY2) {
+				params.setPreviewFormat(ImageFormat.YUY2);
+				Log.v(TAG, "Preview format changed to YUY2");
+			}
+		}
 		mPrevFormat.set((params.getPreviewFormat()));
-		
+		Log.v(TAG, "Preview format is " + mPrevFormat.get());
 		List<Camera.Size> sizes = params.getSupportedPreviewSizes();
-		//Send list of available frame sizes to the serverSystem.out.println("Message: " + message);
+		
 		if (sizes != null) {
 			int mSize;
 			if (sizes.size() > 1) { //at least 2 elements

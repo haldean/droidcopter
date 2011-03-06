@@ -336,14 +336,15 @@ public class Navigation implements Runnable, Constants, Receivable {
 		final double[] myCopy = newTarget.clone();
 		new Thread() {
 			public void run() {
-			String newNav = "New Nav Vector: ";
+			String newNav = "New_Nav_Vector: ";
 			mTargetLock.lock();
 			for (int i = 0; i < 4; i++) {
 				mTarget[i] = myCopy[i];
-				newNav += myCopy[i] + " ";
+				newNav += myCopy[i] + ":";
 			}
 			mTargetLock.unlock();
 			Log.i(TAG, newNav);
+			updateReceivers(newNav);
 			}
 		}.start();
 	}

@@ -7,17 +7,19 @@ import java.util.Stack;
 import java.util.Vector;
 
 import org.haldean.chopper.server.StyleProvider;
+import org.haldean.chopper.nav.*;
 
 /**
  * Stores, draws NavList data.
  */
-public class DrawNavList extends LinkedList<NavData> implements NavData {
+public class DrawNavList extends NavList implements DrawNav {
     private static final int TICK_LENGTH = 4;
 
     private boolean selected = false;
     private boolean highlighted = false;
     private boolean expanded = true;
     private String name;
+    private LinkedList<DrawNav> mList;
     
     /** yRange[0] is the list-start block, and yRange[1] is the list-end block
      *  yRange[i][0] is the start point of the on-screen representation, and yRange[i][1] is the end point.
@@ -38,14 +40,65 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
     private DrawNavList(String str) {
         super();
         name = str;
+        mList = new LinkedList<DrawNav>();
+    }
+    
+    public DrawNavList(NavList list) {
+        this(list.getName());
+        ListIterator<NavData> i1 = list.copyList().listIterator();
+        while (i1.hasNext()) {
+            NavData data = i1.next();
+            if (data instanceof NavDest) {
+                mList.add(new DrawNavDest( (NavDest) data));
+            }
+            else if (data instanceof NavVel) {
+                mList.add(new DrawNavVel( (NavVel) data));
+            }
+            else if (data instanceof NavList) {
+                mList.add(new DrawNavList( (NavList) data));
+            }
+        }
+    }
+    
+    public void add(int i, DrawNav nav) {
+        mList.add(i, nav);
+    }
+    
+    public void remove(DrawNav nav) {
+        mList.remove(nav);
+    }
+    
+    public DrawNav get(int i) {
+        return mList.get(i);
+    }
+    
+    public ListIterator<DrawNav> listIterator() {
+        return mList.listIterator();
     }
     
     /**
      * Clones the list.
      */
     public DrawNavList clone() {
+        System.out.println(toString());
         DrawNavList newList = fromString(toString());
+        System.out.println(newList);
         return newList;
+    }
+    
+    public String toString() {
+		String me = new String();
+		me = me.concat(" {");
+		ListIterator<DrawNav> iterator = mList.listIterator();
+		while (iterator.hasNext()) {
+			me = me.concat(" ").concat(iterator.next().toString());
+		}
+		me = me.concat(" " + name + "}");
+		return me;
+	}
+    
+    public static DrawNavList fromString(String str) {
+        return new DrawNavList(NavList.fromString(str));
     }
     
     /**
@@ -81,20 +134,6 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
     }
     
     /**
-     * Serializes the DrawNavList to String form.
-     */
-    public String toString() {
-	String me = new String();
-	me = me.concat(" {");
-	ListIterator<NavData> iterator = listIterator();
-	while (iterator.hasNext()) {
-	    me = me.concat(" ").concat(iterator.next().toString());
-	}
-	me = me.concat(" " + name + "}");
-	return me;
-    }
-    
-    /**
      * Draws the list and, recursively, all its elements.
      *
      * @param g2 The object to which to draw the list.
@@ -103,7 +142,7 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
      * @param xSize The permissible width of the list.
      * @param registry The registry of currently drawn NavDatas, to which to add this list.
      */
-    public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<NavData> registry) {
+    public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<DrawNav> registry) {
         //list-start block:
         yRange[0][0] = ypos;
         yRange[0][1] = ypos + 2 * FONTSIZE;
@@ -119,8 +158,10 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
         }
         
             
-	g2.setColor(selected ? StyleProvider.background() : StyleProvider.foreground());
-	g2.drawString(name.replaceAll("_", " ") + " List", xpos, yRange[0][0] + FONTSIZE);
+        g2.setColor(selected ? StyleProvider.background() : StyleProvider.foreground());
+        if (name == null)
+            System.out.println("null name");
+        g2.drawString(name.replaceAll("_", " ") + " List", xpos, yRange[0][0] + FONTSIZE);
         
         
         //if expanded, reassigned later, when the actual end of last block in the list is known.
@@ -131,7 +172,7 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
         
         //Draw the lists' objects
         if (expanded) {
-            ListIterator<NavData> i1 = listIterator();
+            ListIterator<DrawNav> i1 = mList.listIterator();
             while (i1.hasNext()) { //iterate through each object
                 int lastY = getDeepestY(registry); //find the position of the previous task
                 i1.next().drawMe(g2, xpos, lastY + BUFFER, xSize, registry); //draw this item there.
@@ -170,7 +211,7 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
      * @param registry The registry to examine.
      * @return The y-position of the deepest task.
      */
-    private static int getDeepestY(Vector<NavData> registry) {
+    private static int getDeepestY(Vector<DrawNav> registry) {
         int maxY = 0;
         for (int i = 0; i < registry.size(); i++) {
             int[][] mRange = registry.get(i).getYRange();
@@ -180,51 +221,4 @@ public class DrawNavList extends LinkedList<NavData> implements NavData {
         }
         return maxY;
     }
-    
-    /**
-	 * Deserializes a NavList from valid serialized String form.
-	 * @param msg Serialized form of the NavList
-	 * @return The newly-deserialized NavList
-	 */
-	public static DrawNavList fromString(String msg) {
-		String[] tokens = msg.split(" ");
-		Stack<NavData> myStack = new Stack<NavData>();
-		for (int i = 0; i < tokens.length; i++){
-			if (!tokens[i].endsWith("}")) {
-				NavData myTask = null;
-				if (tokens[i].startsWith("DEST")) {
-					myTask = new DrawNavDest(tokens[i]);
-					myStack.push(myTask);
-				}
-				if (tokens[i].startsWith("VEL")) {
-					myTask = new DrawNavVel(tokens[i]);
-					myStack.push(myTask);
-				}
-				if (tokens[i].startsWith("{")) {
-					myStack.push(null);
-				}
-			}
-			else {
-				DrawNavList myList = new DrawNavList(tokens[i].substring(0, tokens[i].length() - 1));
-				NavData myTask;
-				while ((myTask = myStack.pop()) != null)
-					myList.addFirst(myTask);
-				myStack.push(myList);
-			}
-		}
-		if (myStack.empty()) {
-			return null;
-		}
-		else {
-			NavData result = myStack.pop();
-			if (result instanceof DrawNavList) {
-				return (DrawNavList) result;
-			}
-			else {
-				DrawNavList mL = new DrawNavList();
-				mL.add(result);
-				return mL;
-			}
-		}
-	} 
 }

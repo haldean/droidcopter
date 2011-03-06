@@ -14,6 +14,7 @@ public final class ChopperMain extends Activity implements Constants
 {
 	/** Tag for logging */
 	public static final String TAG = "chopper.ChopperMain";
+	private boolean telemetry = false;
 	
 	private static boolean mFirstRun = true;
 	
@@ -58,14 +59,18 @@ public final class ChopperMain extends Activity implements Constants
         Comm comm = new Comm(true);
         ChopperStatus status = new ChopperStatus(getApplicationContext());
         StatusReporter reporter = new StatusReporter(status);
-        MakePicture pic = new MakePicture(previewHolder);
+        MakePicture pic = null;
+        if (telemetry) {
+        	pic = new MakePicture(previewHolder);
+        }
         
         Navigation nav = new Navigation(status);
         Guidance guid = new Guidance(status, nav);
         
-        
-        comm.setTelemetrySource(pic);
-        comm.registerReceiver(IMAGE, pic);
+        if (telemetry) {
+	        comm.setTelemetrySource(pic);
+	        comm.registerReceiver(IMAGE, pic);
+        }
         comm.registerReceiver(NAV, nav);
         comm.registerReceiver(CSYS, nav);
         comm.registerReceiver(GUID, guid);
@@ -76,15 +81,24 @@ public final class ChopperMain extends Activity implements Constants
         status.registerReceiver(nav);
         
         reporter.registerReceiver(comm);
-        pic.registerReceiver(comm);
+        if (telemetry) {
+        	pic.registerReceiver(comm);
+        }
         guid.registerReceiver(comm);
         
-        new Thread(comm).start();
-        new Thread(status).start();
-        new Thread(reporter).start();
-        new Thread(pic).start();
-        new Thread(nav).start();
-        new Thread(guid).start();
+        try {
+	        new Thread(comm).start();
+	        new Thread(status).start();
+	        new Thread(reporter).start();
+	        if (telemetry) {
+	        	new Thread(pic).start();
+	        }
+	        new Thread(nav).start();
+	        new Thread(guid).start();
+        }
+        catch (Exception e) {
+        	e.printStackTrace();
+        }
         
         mFirstRun = false;
 	}

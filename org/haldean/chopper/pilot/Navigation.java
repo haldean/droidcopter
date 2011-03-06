@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.haldean.chopper.pilot.nav.NavList;
-import org.haldean.chopper.pilot.nav.NavTask;
+import org.haldean.chopper.nav.NavData;
+import org.haldean.chopper.nav.NavList;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -65,12 +65,12 @@ public class Navigation implements Runnable, Constants, Receivable {
 	private final AtomicInteger mNavStatus = new AtomicInteger(NAV_STATUSES - 1);
 	
 	/** Holds all flight plans */
-	private Vector<NavTask> mTravelPlans = new Vector<NavTask>(); //Vector --> already thread-safe
+	private Vector<NavData> mTravelPlans = new Vector<NavData>(); //Vector --> already thread-safe
 	
 	/** Different flight plans depending on Nav status */
-	private NavTask mLowPower;
-	private NavTask mFlightPath;
-	private NavTask mOnMyOwn;
+	private NavData mLowPower;
+	private NavData mFlightPath;
+	private NavData mOnMyOwn;
 	
 	/** Handle for other chopper components */
 	private ChopperStatus mStatus;
@@ -81,6 +81,8 @@ public class Navigation implements Runnable, Constants, Receivable {
 	/** Registered receivers */
 	private LinkedList<Receivable> mRec;
 	
+	private NavTask mTask;
+	
 	/**
 	 * Constructs a navigation object, initializes NavLists
 	 * @param status The ChopperStatus from which to obtain location information. 
@@ -90,9 +92,11 @@ public class Navigation implements Runnable, Constants, Receivable {
 			throw new NullPointerException();
 		}
 		mRec = new LinkedList<Receivable>();
-		mLowPower = new NavList();
-		mFlightPath = new NavList();
-		mOnMyOwn = new NavList();
+		mLowPower = NavList.fromString("{ -1}");
+		mFlightPath = NavList.fromString("{ -2}");
+		mOnMyOwn = NavList.fromString("{ -3}");
+		
+		mTask = new NavTask(status);
 		
 		mTravelPlans.add(mLowPower);
 		mTravelPlans.add(mFlightPath);
@@ -123,19 +127,19 @@ public class Navigation implements Runnable, Constants, Receivable {
 		 * 'status'	changes during execution of the method */
 		int thisStatus = mNavStatus.get();
 		
-		NavTask myList = mTravelPlans.get(thisStatus);
+		NavData myList = mTravelPlans.get(thisStatus);
 		Log.v(TAG, "Nav using index " + thisStatus + ", task " + myList.toString());
-		if (myList.isComplete()) {
+		if (mTask.isComplete(myList)) {
 			Log.i(TAG, "Nav is Hovering");
 			hover();
 			return;
 		}
-		myList.getVelocity(mTempTarget);
+		mTask.getVelocity(myList, mTempTarget);
 		setTarget(mTempTarget);
 		
 		
 		
-		long interval = myList.getInterval();
+		long interval = mTask.getInterval(myList);
 		Log.v(TAG, "Nav Interval is " + interval);
 		//Send the current NavList to the server, in case any tasks have been completed
 		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
@@ -171,10 +175,10 @@ public class Navigation implements Runnable, Constants, Receivable {
 		/*String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
 			"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
 				" DEST!587!-117.15!32.72!10!600 } } }";*/
-		String taskList = "{ VEL!1!0!0!0!20!name1 VEL!-1!0!0!0!20!name1 VEL!0!1!0!0!20!name1 VEL!0!-1!0!0!20!name1 VEL!0!0!1!0!20!name1 VEL!0!0!-1!0!20!name1 }";
+		String taskList = "{ VEL!name1!1!0!0!0!20!-10 -4}";
 		setTask(BASIC_AUTO, taskList);
-		setTask(NO_CONN, "{ VEL!0!0!-1!0!1000000!No_Conn }");
-		setTask(LOW_POWER, "{ VEL!0!0!-1!0!1000000!Low_Power }");
+		setTask(NO_CONN, "{ VEL!No_Conn!0!0!-1!0!-1!1000000!-5 -6}");
+		setTask(LOW_POWER, "{ VEL!Low_Power!0!0!-1!0!-1!1000000!-7 -8}");
 		//autoPilot(true);
 		Looper.loop();
 	}
@@ -228,7 +232,7 @@ public class Navigation implements Runnable, Constants, Receivable {
 	 * @return An array of strings representing all flight plans (serialized form)
 	 */
 	public String[] getTasks() {
-		ListIterator<NavTask> iterator = mTravelPlans.listIterator();
+		ListIterator<NavData> iterator = mTravelPlans.listIterator();
 		String[] myTasks = new String[mTravelPlans.size()];
 		while (iterator.hasNext()) {
 			myTasks[iterator.nextIndex()] = iterator.next().toString();
@@ -353,7 +357,7 @@ public class Navigation implements Runnable, Constants, Receivable {
 		Log.v(TAG, "Nav about to myList");
 		NavList myList = null;
 		try {
-			myList = NavList.fromString(myTask, mStatus);
+			myList = NavList.fromString(myTask);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

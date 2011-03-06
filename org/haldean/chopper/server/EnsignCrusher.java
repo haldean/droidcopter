@@ -1,7 +1,7 @@
 package org.haldean.chopper.server;
 
 import org.haldean.chopper.server.nav.DrawNavDest;
-import org.haldean.chopper.server.nav.NavData;
+import org.haldean.chopper.server.nav.DrawNav;
 import org.haldean.chopper.server.nav.DrawNavVel;
 
 import gov.nasa.worldwind.geom.Position;
@@ -131,7 +131,7 @@ public class EnsignCrusher {
      *
      *  @param task The task to issue.
      */
-    public static void makeItSo(NavData task) {
+    public static void makeItSo(DrawNav task) {
 	DataReceiver.sendToDefault(navGoToAutomatic);
 	DataReceiver.sendToDefault("NAV:SET:AUTOTASK:1:" + task.toString());
 	Debug.log("Sent new navigation task: " + task.toString());

@@ -18,12 +18,12 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     public static final int BUFFER = 10; //For leaving empty space between drawn items
     public int xSize;
     
-    /* Information on a selected NavData */
-    private NavData selected = null;
+    /* Information on a selected DrawNav */
+    private DrawNav selected = null;
     private DrawNavList taskParent = null;
     
-    /* Highlighted NavData */
-    private NavData highlighted = null;
+    /* Highlighted DrawNav */
+    private DrawNav highlighted = null;
     
     /* Highlighted slots */
     private DrawNavList parentList = null;
@@ -39,19 +39,19 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     private Vector<DrawNavList> travelPlans = new Vector<DrawNavList>(PLANS);
     
     /* Registry of all items and their positions in the component */
-    private Vector<Vector<NavData>> registry = new Vector<Vector<NavData>>(travelPlans.size());
+    private Vector<Vector<DrawNav>> registry = new Vector<Vector<DrawNav>>(travelPlans.size());
     
     /**
-     * Constructs the Component, initializes the core NavLists and the registry of NavDatas
+     * Constructs the Component, initializes the core NavLists and the registry of DrawNavs
      */
     public NavGui() {
         super();
-        travelPlans.add(DrawNavList.fromString("{ Flight_Plan_One}"));
-        travelPlans.add(DrawNavList.fromString("{ Flight_Plan_Two}"));
-        travelPlans.add(DrawNavList.fromString("{ Flight_Plan_Three}"));
-        
+        travelPlans.add(DrawNavList.fromString("{ Name1}"));
+        travelPlans.add(DrawNavList.fromString("{ Name2}"));
+        travelPlans.add(DrawNavList.fromString("{ Name3}"));
+        System.out.println(0 + " " + travelPlans.get(0));
         for (int i = 0; i < travelPlans.size(); i++) {
-            registry.add(new Vector<NavData>());
+            registry.add(new Vector<DrawNav>());
         }
 
         addMouseMotionListener(this);
@@ -80,12 +80,12 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     }
     
     /**
-     * If both a NavData and a slot are selected, copies the former to the latter.
+     * If both a DrawNav and a slot are selected, copies the former to the latter.
      */
     public void copySelection() {
         if ((selected == null) || (selParList == null))
             return;
-        NavData copyMe = selected.clone();
+        DrawNav copyMe = selected.clone();
         selParList.add(selListSlot, copyMe);
         repaint();
         revalidate();
@@ -102,7 +102,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     }
     
     /**
-     * If a NavData is selected, deletes it.
+     * If a DrawNav is selected, deletes it.
      */
     public void deleteSelection() {
         if (taskParent == null)
@@ -116,7 +116,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     }
     
     /**
-     * If both a NavData and a slot not contained by the NavData are selected, moves the former to the latter.
+     * If both a DrawNav and a slot not contained by the DrawNav are selected, moves the former to the latter.
      */
     public void moveSelection() {
         if (taskParent == null)
@@ -159,6 +159,8 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     public void insertNavDest(DrawNavDest dest) {
         if (selParList == null)
             return;
+        if (dest == null)
+            System.out.println("null dest");
         selParList.add(selListSlot, dest.clone());
         repaint();
         revalidate();
@@ -224,9 +226,9 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
                 yRange = parentList.get(listSlot - 1).getYRange();
                 yPos = yRange[yRange.length - 1][1];
             }
-            yPos += .375 * NavData.BUFFER;
+            yPos += .375 * DrawNav.BUFFER;
             g2.setColor(StyleProvider.foreground3());
-            g2.fillRect(slotCol * xSize + BUFFER, yPos, xSize - 2 * BUFFER, (int) (.25 * NavData.BUFFER));
+            g2.fillRect(slotCol * xSize + BUFFER, yPos, xSize - 2 * BUFFER, (int) (.25 * DrawNav.BUFFER));
         }
         
         //draw selected slot, if one exists:
@@ -241,9 +243,9 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
                 yRange = selParList.get(selListSlot - 1).getYRange();
                 yPos = yRange[yRange.length - 1][1];
             }
-            yPos += .375 * NavData.BUFFER;
+            yPos += .375 * DrawNav.BUFFER;
             g2.setColor(StyleProvider.foreground2());
-            g2.fillRect(selSlotCol * xSize + BUFFER, yPos, xSize - 2 * BUFFER, (int) (.25 * NavData.BUFFER));
+            g2.fillRect(selSlotCol * xSize + BUFFER, yPos, xSize - 2 * BUFFER, (int) (.25 * DrawNav.BUFFER));
         }
         
         //Update the size, so the containing JScrollPane doesn't flip out.
@@ -255,7 +257,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
      * @param e The MouseEvent to process.
      */
     public void mouseClicked(MouseEvent e) {
-        NavData myTask = findTask(e.getX(), e.getY());
+        DrawNav myTask = findTask(e.getX(), e.getY());
         if (e.getClickCount() == 2) {
             if ((myTask != null) && (myTask instanceof DrawNavList)) {
                 ((DrawNavList) myTask).switchExpanded();
@@ -300,7 +302,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
      * @param e The MouseEvent to process.
      */
     public void mouseMoved(MouseEvent e) {
-        NavData myTask = findTask(e.getX(), e.getY());
+        DrawNav myTask = findTask(e.getX(), e.getY());
         clearHighlighted();
         if (myTask == null) {
             parentList = findParentList(e.getX(), e.getY());
@@ -360,13 +362,13 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     }
     
     /**
-     * Finds the NavData that countains the given point, if any. May return null.
+     * Finds the DrawNav that countains the given point, if any. May return null.
      * @param mx The x coordinate of the point to examine.
      * @param my The y coordinate of the point to examine.
-     * @return The containing NavData.
+     * @return The containing DrawNav.
      */
-    private NavData findTask (int mX, int mY) {
-        Vector<NavData> myList = getColRegistry(mX, mY);
+    private DrawNav findTask (int mX, int mY) {
+        Vector<DrawNav> myList = getColRegistry(mX, mY);
         if (myList == null)
             return null;
         for (int i = 0; i < myList.size(); i++) {
@@ -380,15 +382,15 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
     }
     
     /**
-     * Examines the registry, returns the lower-bound Y-value of the lowest NavData.
+     * Examines the registry, returns the lower-bound Y-value of the lowest DrawNav.
      * Used to resize the component as necessary.
      * @return The deepest y-value.
      */
     private int getDeepestY() {
-        ListIterator<Vector<NavData>> i1 = registry.listIterator();
+        ListIterator<Vector<DrawNav>> i1 = registry.listIterator();
         int maxY = 0;
         while (i1.hasNext()) {
-            Vector<NavData> mReg = i1.next();
+            Vector<DrawNav> mReg = i1.next();
             for (int i = 0; i < mReg.size(); i++) {
                 int[][] mRange = mReg.get(i).getYRange();
                 for (int j = 0; j < mRange.length; j++) {
@@ -406,7 +408,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
      * @return The containing DrawNavList.
      */
     private DrawNavList findParentList(int mX, int mY) {
-        Vector<NavData> myList = getColRegistry(mX, mY);
+        Vector<DrawNav> myList = getColRegistry(mX, mY);
         if (myList == null)
             return null;
         DrawNavList myParent = null;
@@ -433,7 +435,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
      * @return The index in the list.
      */
     private int findSlotInList(DrawNavList parent, int mY) {
-        ListIterator<NavData> i1 = parent.listIterator();
+        ListIterator<DrawNav> i1 = parent.listIterator();
         int prevElts = 0;
         while (i1.hasNext()) {
             int[][] yRange = i1.next().getYRange();
@@ -449,7 +451,7 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
      * @param mY The y-value of the point to examine.
      * @return The appropriate column's registry.
      */
-    private Vector<NavData> getColRegistry(int mX, int mY) {
+    private Vector<DrawNav> getColRegistry(int mX, int mY) {
         int mXr = mX % xSize;
         if (mXr < BUFFER)
             return null;
@@ -461,4 +463,3 @@ public class NavGui extends JComponent implements MouseListener, MouseMotionList
         return registry.get(col);
     }
 }
-

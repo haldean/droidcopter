@@ -3,12 +3,12 @@ package org.haldean.chopper.server.nav;
 import javax.swing.*;
 import java.util.*;
 import java.awt.*;
-import org.haldean.chopper.nav.NavVelData;
+import org.haldean.chopper.nav.*;
 
 /**
  * Stores, draws NavVel data.
  */
-public class DrawNavVel extends NavVelData implements NavData {
+public class DrawNavVel extends NavVel implements DrawNav {
 	private boolean selected = false;
     private boolean highlighted = false;
     
@@ -19,21 +19,21 @@ public class DrawNavVel extends NavVelData implements NavData {
      * This is here so that we can use the needlessly static NavVel builder.
      */
 	private DrawNavVel() {
+        type = "VEL";
 	}
     
-    /**
-     * Constructs a DrawNavVel by deserializing the supplied string.
-     * @param str
-     */
-    public DrawNavVel(String str) {
-        super(str);
+    
+    public DrawNavVel(NavVel source) {
+        type = "VEL";
+        name = source.getName();
+        mData = source.getData();
     }
     
-    /**
+     /**
      * Clones the DrawNavVel
      */
     public DrawNavVel clone() {
-        return new DrawNavVel(toString());
+        return DrawNavVel.taskFor(getVelocity(), getTime());
     }
     
     /**
@@ -68,7 +68,7 @@ public class DrawNavVel extends NavVelData implements NavData {
      * @param xSize The permissible width of the task.
      * @param registry The registry of currently drawn NavDatas, to which to add this task.
      */
-    public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<NavData> registry) {
+    public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<DrawNav> registry) {
         int myHeight = 5 * FONTSIZE;
         yRange[0][0] = ypos;
         yRange[0][1] = ypos + myHeight;
@@ -87,12 +87,13 @@ public class DrawNavVel extends NavVelData implements NavData {
         g2.setColor(Color.BLACK);
         g2.drawString(name, xpos, ypos + FONTSIZE);
         String velStr = "";
+        double[] velocity = getVelocity();
         for (int i = 0; i < 3; i++) {
             velStr = velStr.concat(Double.toString(velocity[i]) + " ");
         }
         g2.drawString(velStr, xpos, ypos + 2 * FONTSIZE);
         g2.drawString(Double.toString(velocity[3]), xpos, ypos + 3 * FONTSIZE);
-        g2.drawString(Long.toString(timeToExecute), xpos, ypos + 4 * FONTSIZE);
+        g2.drawString( Double.toString( getTime()), xpos, ypos + 4 * FONTSIZE);
         
         
         g2.setColor(Color.RED);
@@ -107,10 +108,13 @@ public class DrawNavVel extends NavVelData implements NavData {
      * @param timeToExecute How long to maintain this velocity.
      * @return The DrawNavVel.
      */
-    public static DrawNavVel taskFor(double[] velocities, long timeToExecute) {
+    public static DrawNavVel taskFor(double[] velocities, double timeToExecute) {
 		DrawNavVel n = new DrawNavVel();
-		n.velocity = velocities;
-		n.timeToExecute = timeToExecute;
+        for (int i = 0; i < 4; i++) {
+            n.mData[i] = velocities[i];
+        }
+		n.mData[4] = timeToExecute;
+        //n.mData[6] = ID#;
 		return n;
 	}
 }

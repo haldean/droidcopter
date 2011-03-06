@@ -4,14 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.*;
 
-import org.haldean.chopper.nav.NavDestData;
+import org.haldean.chopper.nav.*;
 import org.haldean.chopper.server.StyleProvider;
 
 /**
  * Stores, draws NavDest data
  */
  
-public class DrawNavDest extends NavDestData implements NavData {
+public class DrawNavDest extends NavDest implements DrawNav {
     private boolean selected = false;
     private boolean highlighted = false;
     
@@ -22,21 +22,20 @@ public class DrawNavDest extends NavDestData implements NavData {
      * This is here so that we can use the needlessly static NavDest builder.
      */
     private DrawNavDest() {
+        super();
     }
     
-    /**
-     * Constructs a DrawNavDest by deserializing the supplied string.
-     * @param str
-     */
-    public DrawNavDest(String str) {
-        super(str);
+    public DrawNavDest(NavData source) {
+        super();
+        name = source.getName();
+        mData = source.getData();
     }
     
     /**
      * Clones the DrawNavDest
      */
     public DrawNavDest clone() {
-        return new DrawNavDest(toString());
+        return DrawNavDest.taskFor(name, mData[0], mData[1], mData[2], mData[3], mData[4]);
     }
     
     /**
@@ -71,7 +70,7 @@ public class DrawNavDest extends NavDestData implements NavData {
      * @param xSize The permissible width of the task.
      * @param registry The registry of currently drawn NavDatas, to which to add this task.
      */
-    public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<NavData> registry) {
+    public void drawMe (Graphics2D g2, int xpos, int ypos, int xSize, Vector<DrawNav> registry) {
         int myHeight = 5 * FONTSIZE;
         yRange[0][0] = ypos;
         yRange[0][1] = ypos + myHeight;
@@ -81,21 +80,21 @@ public class DrawNavDest extends NavDestData implements NavData {
         } else if (highlighted) {
             g2.setColor(StyleProvider.foreground3());
         } else {
-	    g2.setColor(StyleProvider.background());
-	}
+            g2.setColor(StyleProvider.background());
+        }
 
-	g2.fillRect(xpos, ypos, xSize, myHeight);
+        g2.fillRect(xpos, ypos, xSize, myHeight);
 
-	g2.setColor(StyleProvider.foreground3());
-	g2.drawRect(xpos, ypos, xSize, myHeight);
+        g2.setColor(StyleProvider.foreground3());
+        g2.drawRect(xpos, ypos, xSize, myHeight);
 
         g2.setFont(globalFont);        
         g2.setColor(selected ? StyleProvider.background() : StyleProvider.foreground());
         g2.drawString(name.replaceAll("_", " "), xpos + 3, ypos + FONTSIZE + 3);
 
-	g2.setColor(selected ? StyleProvider.background() : StyleProvider.foreground2());
-        g2.drawString(String.format("Alt: %.3f", altitude), xpos + 3, 3 + ypos + 3 * FONTSIZE);
-        g2.drawString(String.format("Position: (%.3f, %.3f)", longitude, latitude), xpos + 3, 3 + ypos + 2 * FONTSIZE);
+        g2.setColor(selected ? StyleProvider.background() : StyleProvider.foreground2());
+        g2.drawString(String.format("Alt: %.3f", getAltitude()), xpos + 3, 3 + ypos + 3 * FONTSIZE);
+        g2.drawString(String.format("Position: (%.3f, %.3f)", getLongitude(), getLatitude()), xpos + 3, 3 + ypos + 2 * FONTSIZE);
         
         registry.add(this);
     }
@@ -114,12 +113,15 @@ public class DrawNavDest extends NavDestData implements NavData {
     public static DrawNavDest taskFor(String name, double altitude, double longitude, double latitude,
 				      double velocity, double destDist) {
 		DrawNavDest n = new DrawNavDest();
-		n.altitude = altitude;
-		n.longitude = longitude;
-		n.latitude = latitude;
-		n.myVelocity = velocity;
-		n.destDist = destDist;
+		n.mData[0] = altitude;
+		n.mData[1] = longitude;
+		n.mData[2] = latitude;
+		n.mData[3] = velocity;
+		n.mData[4] = destDist;
+        //n.mData[5] = ID#;
 		n.name = name;
+        if (n==null)
+            System.out.println("null in taskFor");
 		return n;
 	}
 }

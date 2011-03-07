@@ -12,6 +12,14 @@ public class JavaImage implements Image {
 	image = ImageIO.read(new File(path));
     }
 
+    public JavaImage(BufferedImage image) {
+	this.image = image;
+    }
+
+    public BufferedImage getImage() {
+	return image;
+    }
+
     public int[] getPixel(int i, int j) {
 	return rgbIntToTriple(image.getRGB(i, j));
     }

@@ -9,6 +9,7 @@ public class AreaSelectorComponent extends JComponent {
     JavaImage image;
     Segmenter segmenter;
     int[] loc;
+    float scale;
 
     public AreaSelectorComponent(JavaImage image) {
 	this.image = image;
@@ -21,10 +22,23 @@ public class AreaSelectorComponent extends JComponent {
 
     private void segmentImage(int x, int y) {
 	Dimension size = getSize();
-	System.out.println("start " + x + " " + y);
+	int[] imageSize = image.getSize();
+
+	System.out.println(x);
+	System.out.println(y);
+	x /= scale;
+	y /= scale;
+	System.out.println(x);
+	System.out.println(y);
+
 	segmenter = Segmenter.getSegmenterForPoint(image, x, y);
 	loc = segmenter.segment(image);
-	System.out.println("done " + loc[0] + " " + loc[1]);
+
+	System.out.println(loc[0]);
+	System.out.println(loc[1]);
+	System.out.println(loc[0] * scale);
+	System.out.println(loc[1] * scale);
+
 	repaint();
     }
 
@@ -36,16 +50,18 @@ public class AreaSelectorComponent extends JComponent {
 
 	if (image != null) {
 	    int[] imageSize = image.getSize();
-	    double scale = 1;
+	    scale = Math.min((float) width / (float) imageSize[0],
+			     (float) height / (float) imageSize[1]);
 	    /* Create a new square affine transform for that scaling */
 	    AffineTransform transform = AffineTransform.getScaleInstance(scale, scale);
 	    g2.drawImage(image.image, transform, null);
 	}
 
 	if (loc != null) {
-	    System.out.println("not null");
 	    g2.setColor(Color.GREEN);
-	    g2.fillRect(loc[1]-2, loc[0]-2, 5, 5);
+
+	    System.out.println("paint");
+	    g2.fillRect((int) (loc[1] * scale) - 1, (int) (loc[0] * scale) - 1, 3, 3);
 	}
     }
 

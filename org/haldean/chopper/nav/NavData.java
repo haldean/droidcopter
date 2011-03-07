@@ -35,6 +35,8 @@ public abstract class NavData {
 			mNav = new NavVel();
 		} else if (type.equals("DEST")) {
 			mNav = new NavDest();
+		} else if (type.equals("TRACK")) {
+		    mNav = new NavTrack();
 		}
         
 		mNav.type = type;

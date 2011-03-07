@@ -71,6 +71,9 @@ public class NavTask {
 				Log.wtf(TAG, "Completed task not removed from NavList.  Carry on.");
 			}
 		}
+		else if (nav instanceof NavTrack) {
+		    getTrackTarg((NavTrack) nav, target);
+		}
 	}
 	/**
 	 * Calculates whether or not the NavTask has been functionally achieved.
@@ -112,6 +115,13 @@ public class NavTask {
 		}
 		return true;
 	}
+
+    private void getTrackTarg(NavTrack nav, double[] target) {
+	if (!nav.started()) {
+	    nav.start();
+	}
+    }
+	
 	
 	private void getVelTarg(NavData nav, double[] target) {
 		NavVel vel = (NavVel) nav;

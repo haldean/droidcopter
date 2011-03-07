@@ -1,9 +1,12 @@
-package org.haldean.blob;
+package org.haldean.chopper.server;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 import javax.swing.*;
+
+import org.haldean.blob.JavaImage;
+import org.haldean.blob.Segmenter;
 
 public class AreaSelectorComponent extends JComponent {
     JavaImage image;
@@ -45,12 +48,12 @@ public class AreaSelectorComponent extends JComponent {
 			     (float) height / (float) imageSize[1]);
 	    /* Create a new square affine transform for that scaling */
 	    AffineTransform transform = AffineTransform.getScaleInstance(scale, scale);
-	    g2.drawImage(image.image, transform, null);
+	    g2.drawImage(image.getImage(), transform, null);
 	}
 
 	if (loc != null) {
 	    g2.setColor(Color.GREEN);
-	    g2.fillRect((int) (loc[1] * scale) - 1, (int) (loc[0] * scale) - 1, 3, 3);
+	    g2.fillRect((int) (loc[1] * scale) - 2, (int) (loc[0] * scale) - 2, 5, 5);
 	}
     }
 

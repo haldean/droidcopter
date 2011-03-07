@@ -8,20 +8,20 @@
 #define STATUS_LED 13
 #define STATUS_LED_CYCLES 30000
 #define WORD_BUFFER_LENGTH 4
-#define WORD_LENGTH 3
+#define WORD_LENGTH 2
 
-#include <SoftwareServo.h>
+#include <Servo.h>
 
 struct motor {
   unsigned char pin;
   unsigned int current_speed;
   unsigned int next_speed;
-  SoftwareServo ctrl;
+  Servo ctrl;
 };
 
 struct motor motors[MOTOR_COUNT] = {
-  {6, 0, 0, SoftwareServo()}, {9, 0, 0, SoftwareServo()}, 
-  {10, 0, 0, SoftwareServo()}, {11, 0, 0, SoftwareServo()}
+  {6, 0, 0, Servo()}, {9, 0, 0, Servo()}, 
+  {10, 0, 0, Servo()}, {11, 0, 0, Servo()}
 };
 
 char buffer[WORD_BUFFER_LENGTH];
@@ -69,14 +69,16 @@ void init_motors(void) {
  *  Initialize messenger service and speed vector.
  */
 void setup(void) {
+  /* Initialize serial monitor. */
+  Serial.begin(115200);
+  
   /* Set the serial status LED to output. */
   pinMode(STATUS_LED, OUTPUT);
 
   /* Initialize the motor controllers. */
   init_motors();
 
-  /* Initialize serial monitor. */
-  Serial.begin(115200);
+  Serial.println("BEGIN");
 }
 
 /**
@@ -99,7 +101,7 @@ void loop(void) {
         }
         
         buffer[WORD_LENGTH] = '\0';
-        motors[i].next_speed = atoi(buffer);
+        motors[i].next_speed = map(atoi(buffer), -1, 99, 67, 160);
       } else {
         Serial.println(BAD_REQUEST);
       }
@@ -120,9 +122,11 @@ void loop(void) {
     digitalWrite(STATUS_LED, LOW);
   }
   
+  #ifdef ENABLE_HEARTBEAT
   if (led_cycles % 10000 == 0) {
-   // Serial.println(HEARTBEAT_PULSE);
+    Serial.println(HEARTBEAT_PULSE);
   }
+  #endif
   
 }
 

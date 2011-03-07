@@ -9,7 +9,7 @@ public class AreaSelectorComponent extends JComponent {
     JavaImage image;
     Segmenter segmenter;
     int[] loc;
-    float scale;
+    float scale = 1;
 
     public AreaSelectorComponent(JavaImage image) {
 	this.image = image;
@@ -24,20 +24,11 @@ public class AreaSelectorComponent extends JComponent {
 	Dimension size = getSize();
 	int[] imageSize = image.getSize();
 
-	System.out.println(x);
-	System.out.println(y);
 	x /= scale;
 	y /= scale;
-	System.out.println(x);
-	System.out.println(y);
 
 	segmenter = Segmenter.getSegmenterForPoint(image, x, y);
 	loc = segmenter.segment(image);
-
-	System.out.println(loc[0]);
-	System.out.println(loc[1]);
-	System.out.println(loc[0] * scale);
-	System.out.println(loc[1] * scale);
 
 	repaint();
     }
@@ -59,8 +50,6 @@ public class AreaSelectorComponent extends JComponent {
 
 	if (loc != null) {
 	    g2.setColor(Color.GREEN);
-
-	    System.out.println("paint");
 	    g2.fillRect((int) (loc[1] * scale) - 1, (int) (loc[0] * scale) - 1, 3, 3);
 	}
     }

@@ -29,12 +29,8 @@ fi
 
 
 clean() {
-    echo "Clean old classfiles" 1>&2
-    rm -f org/haldean/chopper/server/*.class
-    rm -f org/haldean/chopper/server/nav/*.class
-    echo "Clean backup java files" 1>&2
-    rm -f org/haldean/chopper/server/*.java\~
-    rm -f org/haldean/chopper/server/nav/*.java\~
+    echo "Clean old classfiles and backup files" 1>&2
+    rm -f org/haldean/{chopper/server{/nav,},blob}/*.{class,java\~}
 }
 
 run() {

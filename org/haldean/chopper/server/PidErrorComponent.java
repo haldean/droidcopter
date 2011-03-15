@@ -121,7 +121,6 @@ public class PidErrorComponent extends JPanel implements Updatable {
     
     public void update(String message) {
 	if (!message.startsWith("GUID:ERROR")) return;
-	System.out.println(message);
 	String parts[] = message.split(":");
 	setErrors(new Double(parts[2]), new Double(parts[3]), 
 		  new Double(parts[4]), new Double(parts[5]));

@@ -53,8 +53,6 @@ public class Debug {
 	    } catch (IOException e) {
 		System.err.println("Failed to write to debug log.");
 	    }
-	} else {
-	    System.out.println("No writer specified.");
 	}
     }
 }

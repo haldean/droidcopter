@@ -1,8 +1,12 @@
 package org.haldean.chopper.server;
 
+import org.haldean.blob.JavaImage;
+import org.haldean.blob.Segmenter;
+
 import java.io.*;
 import java.util.LinkedList;
 import java.awt.*;
+import java.awt.event.*;
 import java.awt.image.*;
 import java.awt.geom.*;
 import javax.swing.*;
@@ -16,7 +20,7 @@ public class ImageComponent extends JComponent {
     private final Color labelColor = StyleProvider.foreground();
     private final Font labelFont = StyleProvider.fontSmall();
 
-    private BufferedImage img;
+    private JavaImage img;
     private AffineTransform transform;
 
     private long lastCaptureTime;
@@ -27,6 +31,10 @@ public class ImageComponent extends JComponent {
     private LinkedList<Double> frameRates;
     private double frameRateSum;
 
+    Segmenter segmenter;
+    int[] loc;
+    float scale = 1;
+
     /** Create an empty ImageComponent */
     public ImageComponent() {
 	transform = AffineTransform.getScaleInstance(1, 1);
@@ -35,11 +43,30 @@ public class ImageComponent extends JComponent {
 	frameCount = 0;
 	frameRateSum = 0;
 	frameRates = new LinkedList<Double>();
+
+	addMouseListener(new MouseAdapter() {
+		public void mouseClicked(MouseEvent e) {
+		    segmentImage(e.getX(), e.getY());
+		}
+	    });
     }
 
     /** For TabPanes */
     public String getName() {
 	return "Telemetry";
+    }
+
+    private void segmentImage(int x, int y) {
+	Dimension size = getSize();
+	int[] imageSize = img.getSize();
+
+	x /= scale;
+	y /= scale;
+
+	segmenter = Segmenter.getSegmenterForPoint(img, x, y);
+	loc = segmenter.segment(img);
+
+	repaint();
     }	
 
     /** Set the image displayed by the component 
@@ -47,8 +74,15 @@ public class ImageComponent extends JComponent {
     public void setImage(BufferedImage newImage) {
 	try {
 	    /* Make sure it isn't the same image we already have. */
-	    if (newImage != null && img != newImage) {
-		img = newImage;
+	    if (newImage != null && (img == null || img.getImage() != newImage)) {
+		/* Rotate the image one quadrant clockwise. */
+		AffineTransform rotateTransform = AffineTransform
+		    .getQuadrantRotateInstance(1, newImage.getWidth() / 2, 
+					       newImage.getHeight() / 2);
+		AffineTransformOp rotateOperation = 
+		    new AffineTransformOp(rotateTransform, AffineTransformOp.TYPE_BILINEAR);
+		BufferedImage bufferedImage = rotateOperation.filter(newImage, null);
+		img = new JavaImage(bufferedImage);
 
 		if (frameCount > 0) {
 		    framerate = 1.0 / 
@@ -86,23 +120,29 @@ public class ImageComponent extends JComponent {
 
 	if (img != null) {
 	    /* Calculate the appropriate transform to fit the image to
-	     * the canvas.  We fit the width, because it is larger
-	     * than the height and the canvas is about square. */
-	    float scale = (float) width / (float) img.getWidth();
+	     * the canvas. */
+	    int[] imageSize = img.getSize();
+	    scale = Math.min((float) width / (float) imageSize[0],
+			     (float) height / (float) imageSize[1]);
+
 	    /* Create a new square affine transform for that scaling */
 	    transform = AffineTransform.getScaleInstance(scale, scale);
-	    transform.quadrantRotate(1, img.getWidth() / 2, img.getHeight() / 2);
 
-	    g2.drawImage(img, transform, null);
+	    g2.drawImage(img.getImage(), transform, null);
 	
 	    /* Draw the image resolution to the component */
-	    g2.drawString("Size: " + (int) img.getWidth() + "x" + 
-			  (int) img.getHeight(), 1, height - 10);
+	    g2.drawString("Size: " + imageSize[0] + "x" + 
+			  (int) imageSize[1], 1, height - 10);
 	    /* Draw the capture time to the component */
 	    g2.drawString("Instantaneous Framerate: " + framerate + 
 			  " fps", 1, height - 22);
 	    g2.drawString("Average Framerate: " + 
 			  (frameRateSum / frameRates.size()), 1, height - 34);
+
+	    if (loc != null) {
+		g2.setColor(Color.GREEN);
+		g2.fillRect((int) (loc[1] * scale) - 2, (int) (loc[0] * scale) - 2, 5, 5);
+	    }
 	}
 	
     }

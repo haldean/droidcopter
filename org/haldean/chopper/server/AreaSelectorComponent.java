@@ -1,14 +1,18 @@
-package org.haldean.blob;
+package org.haldean.chopper.server;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 import javax.swing.*;
 
+import org.haldean.blob.JavaImage;
+import org.haldean.blob.Segmenter;
+
 public class AreaSelectorComponent extends JComponent {
     JavaImage image;
     Segmenter segmenter;
     int[] loc;
+    float scale = 1;
 
     public AreaSelectorComponent(JavaImage image) {
 	this.image = image;
@@ -21,10 +25,14 @@ public class AreaSelectorComponent extends JComponent {
 
     private void segmentImage(int x, int y) {
 	Dimension size = getSize();
-	System.out.println("start " + x + " " + y);
+	int[] imageSize = image.getSize();
+
+	x /= scale;
+	y /= scale;
+
 	segmenter = Segmenter.getSegmenterForPoint(image, x, y);
 	loc = segmenter.segment(image);
-	System.out.println("done " + loc[0] + " " + loc[1]);
+
 	repaint();
     }
 
@@ -36,16 +44,16 @@ public class AreaSelectorComponent extends JComponent {
 
 	if (image != null) {
 	    int[] imageSize = image.getSize();
-	    double scale = 1;
+	    scale = Math.min((float) width / (float) imageSize[0],
+			     (float) height / (float) imageSize[1]);
 	    /* Create a new square affine transform for that scaling */
 	    AffineTransform transform = AffineTransform.getScaleInstance(scale, scale);
-	    g2.drawImage(image.image, transform, null);
+	    g2.drawImage(image.getImage(), transform, null);
 	}
 
 	if (loc != null) {
-	    System.out.println("not null");
 	    g2.setColor(Color.GREEN);
-	    g2.fillRect(loc[1]-2, loc[0]-2, 5, 5);
+	    g2.fillRect((int) (loc[1] * scale) - 2, (int) (loc[0] * scale) - 2, 5, 5);
 	}
     }
 

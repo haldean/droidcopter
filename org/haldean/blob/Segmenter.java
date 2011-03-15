@@ -1,5 +1,6 @@
 package org.haldean.blob;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.HashMap;
@@ -21,7 +22,17 @@ public class Segmenter {
 	this.threshold = threshold;
     }
 
-    static Segmenter getSegmenterForPoint(Image input, int x, int y) {
+    public String toString() {
+	return String.format("SEGMENT;%d;%d;%d;%d;%d", targetColor[0], targetColor[1],
+			     targetColor[2], targetArea, threshold);
+    }
+
+    public static Segmenter fromString(String str) {
+	String[] parts = str.split(";");
+	return new Segmenter(Arrays.copyOfRange(parts, 1, 4), parts[4], parts[5]);
+    }
+
+    public static Segmenter getSegmenterForPoint(Image input, int x, int y) {
 	Segmenter seg = new Segmenter(input.getPixel(x, y), 0, DEFAULT_THRESHOLD);
 	int[][] labels = seg.labelField(seg.getField(input)).labels;
 	int area = 0, targetLabel = labels[x][y];

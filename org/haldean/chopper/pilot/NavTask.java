@@ -103,7 +103,7 @@ public class NavTask {
 		else if (nav instanceof NavList) {
 			NavList lastList = (NavList) nav;
 			NavData curTask = lastList.getCurrentTask();
-			while (isComplete(curTask)) {
+			while ((curTask != null) && (isComplete(curTask))) {
 				curTask = lastList.nextTask();
 			}
 			if (curTask == null) {

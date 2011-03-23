@@ -27,10 +27,11 @@ public class Segmenter {
 			     targetColor[2], targetArea, threshold);
     }
 
+    /*
     public static Segmenter fromString(String str) {
 	String[] parts = str.split(";");
 	return new Segmenter(Arrays.copyOfRange(parts, 1, 4), parts[4], parts[5]);
-    }
+	}*/
 
     public static Segmenter getSegmenterForPoint(Image input, int x, int y) {
 	Segmenter seg = new Segmenter(input.getPixel(x, y), 0, DEFAULT_THRESHOLD);
@@ -171,8 +172,12 @@ public class Segmenter {
 	    }
 	}
 
-	targetArea = bestArea.size;
-	return new int[] {bestArea.x, bestArea.y};
+	if (bestArea != null) {
+	    targetArea = bestArea.size;
+	    return new int[] {bestArea.x, bestArea.y};
+	} else {
+	    return null;
+	}
     }
 
     private class Area {

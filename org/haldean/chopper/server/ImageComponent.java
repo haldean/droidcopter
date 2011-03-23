@@ -57,16 +57,18 @@ public class ImageComponent extends JComponent {
     }
 
     private void segmentImage(int x, int y) {
-	Dimension size = getSize();
-	int[] imageSize = img.getSize();
+	if (img != null) {
+	    Dimension size = getSize();
+	    int[] imageSize = img.getSize();
 
-	x /= scale;
-	y /= scale;
+	    x /= scale;
+	    y /= scale;
 
-	segmenter = Segmenter.getSegmenterForPoint(img, x, y);
-	loc = segmenter.segment(img);
+	    segmenter = Segmenter.getSegmenterForPoint(img, x, y);
+	    loc = segmenter.segment(img);
 
-	repaint();
+	    repaint();
+	}
     }	
 
     /** Set the image displayed by the component 
@@ -138,6 +140,10 @@ public class ImageComponent extends JComponent {
 			  " fps", 1, height - 22);
 	    g2.drawString("Average Framerate: " + 
 			  (frameRateSum / frameRates.size()), 1, height - 34);
+
+	    if (segmenter != null) {
+		loc = segmenter.segment(img);
+	    }
 
 	    if (loc != null) {
 		g2.setColor(Color.GREEN);

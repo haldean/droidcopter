@@ -10,6 +10,7 @@ public final class BlobTracker implements Runnable, Receivable {
     int[] lastVector;
 
     private static final int TRACKING_PERIOD_MS = 200;
+    private static final int DISABLED_PERIOD_MS = 1000;
 
     public BlobTracker() {
 	lastLocation = new int[2];
@@ -25,7 +26,7 @@ public final class BlobTracker implements Runnable, Receivable {
     }
 
     public int[] getVector() {
-	return null;//Arrays.copyOf(lastVector, lastVector.length);
+	return Arrays.copyOf(lastVector, lastVector.length);
     }
 
     private void calculateVector() {
@@ -42,7 +43,22 @@ public final class BlobTracker implements Runnable, Receivable {
     }
     
     public void run() {
-	//image = getImage();
-	calculateVector();
+	while (true) {
+	    if (enabled) {
+		//image = getImage();
+		calculateVector();
+		try {
+		    Thread.sleep(TRACKING_PERIOD_MS);
+		} catch (InterruptedException e) {
+		    e.printStackTrace();
+		}
+	    } else {
+		try {
+		    Thread.sleep(DISABLED_PERIOD_MS);
+		} catch (InterruptedException e) {
+		    e.printStackTrace();
+		}
+	    }
+	}
     }
 }

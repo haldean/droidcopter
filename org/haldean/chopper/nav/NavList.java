@@ -11,6 +11,7 @@ public class NavList extends NavData {
     public NavList() {
         mData = new double[2];
         mList = new LinkedList<NavData>();
+        type = "LIST";
     }
     
 	/**

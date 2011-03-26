@@ -42,6 +42,13 @@ public class NavTask {
 			else
 				return (long) Math.max(NAVPAUSE, vel.getTime() - (System.currentTimeMillis() - vel.getFirstCall()));
 		}
+		else if (nav instanceof NavTrack) {
+			NavTrack track = (NavTrack) nav;
+			if (track.getStartTime() <= 0)
+				return (long) track.getTrackTime();
+			else
+				return (long) Math.max(NAVPAUSE, track.getTrackTime() - (System.currentTimeMillis() - track.getStartTime()));
+		}
 		return NAVPAUSE;
 	}
 	
@@ -106,20 +113,25 @@ public class NavTask {
 			while ((curTask != null) && (isComplete(curTask))) {
 				curTask = lastList.nextTask();
 			}
-			if (curTask == null) {
+			if (curTask == null)
 				return true;
-			}
-			else {
+			else
 				return false;
-			}
+		}
+		else if (nav instanceof NavTrack) {
+			NavTrack track = (NavTrack) nav;
+			if (track.started() && (System.currentTimeMillis() - track.getStartTime() >= track.getTrackTime()))
+				return true;
+			else
+				return false;
 		}
 		return true;
 	}
 
     private void getTrackTarg(NavTrack nav, double[] target) {
-	if (!nav.started()) {
-	    nav.start();
-	}
+    	if (!nav.started()) {
+    		nav.start();
+    	}
     }
 	
 	

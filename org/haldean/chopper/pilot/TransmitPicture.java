@@ -219,8 +219,8 @@ public final class TransmitPicture implements Runnable, Receivable, Constants
 			return;
 		}
 		int[] frameSize = myMakePic.getFrameSize();
-		if ((mPicFrame == null) || (mPicFrame.length != myMakePic.getFrameArrayLength()))
-				mPicFrame = new byte[myMakePic.getFrameArrayLength()];
+		if ((mPicFrame == null) || (mPicFrame.length != myMakePic.getBufferLength()))
+				mPicFrame = new byte[myMakePic.getBufferLength()];
 		myMakePic.getBufferCopy(mPicFrame); //create a new copy.
 		byte[] temppic = encodePic(mPicFrame, frameSize);
 		myMakePic.setFrameNewnessTo(false);

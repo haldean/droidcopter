@@ -108,7 +108,7 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 	/**
 	 * Gets the length of the array storing preview frames 
 	 */
-	public int getFrameArrayLength() {
+	public int getBufferLength() {
 		return mXprev.get() * mYprev.get() * ImageFormat.getBitsPerPixel(getPreviewFormat()) / 8;
 	}
 	
@@ -266,7 +266,7 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 			mYprev.set(mNextY.get());
 			Log.v(TAG, "Init prev array: " + mXprev.get() + ", " + mYprev.get());
 			synchronized (mStoreFrame) {
-				mStoreFrame = new byte[getFrameArrayLength()];
+				mStoreFrame = new byte[getBufferLength()];
 				Log.e(TAG, "Array size: " + mStoreFrame.length);
 			}
 			initPrevCallback();
@@ -405,7 +405,7 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 		mCamera.setPreviewCallbackWithBuffer(precall);
 		
 		synchronized (mStoreFrame) {
-			mStoreFrame = new byte[getFrameArrayLength()];
+			mStoreFrame = new byte[getBufferLength()];
 			mCamera.addCallbackBuffer(mStoreFrame);
 		}
 		//Inner class defs done

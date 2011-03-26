@@ -1,6 +1,5 @@
 package org.haldean.chopper.nav;
 
-import java.util.Arrays;
 
 public class NavTrack extends NavData {
 	

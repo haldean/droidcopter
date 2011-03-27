@@ -1,7 +1,5 @@
 package org.haldean.chopper.pilot;
 
-import java.util.Arrays;
-
 import org.haldean.blob.AndroidImage;
 import org.haldean.blob.Image;
 import org.haldean.blob.Segmenter;
@@ -13,27 +11,28 @@ public final class BlobTracker implements Runnable, Receivable {
     int[] lastVector;
     MakePicture mPic;
     byte[] mBuffer;
+    boolean enabled;
 
     private static final int TRACKING_PERIOD_MS = 200;
     private static final int DISABLED_PERIOD_MS = 1000;
 
     public BlobTracker(MakePicture pic) {
-	lastLocation = new int[2];
-	lastVector = new int[3];
-	segmenter = null;
-	image = new AndroidImage();
-	mPic = pic;
-	mBuffer = new byte[mPic.getBufferLength()];
+    	lastLocation = new int[2];
+    	lastVector = new int[3];
+    	segmenter = null;
+    	image = new AndroidImage();
+    	mPic = pic;
+    	mBuffer = new byte[mPic.getBufferLength()];
     }
 
     public void receiveMessage(String msg, Receivable source) {
-	if (msg.startsWith("SEGMENT")) {
-	    segmenter = Segmenter.fromString(msg);
-	}
+    	if (msg.startsWith("SEGMENT")) {
+    		segmenter = Segmenter.fromString(msg);
+    	}
     }
 
     public int[] getVector() {
-	return Arrays.copyOf(lastVector, lastVector.length);
+    	return lastVector; //Arrays.copyOf(lastVector, lastVector.length);
     }
 
     private void calculateVector() {

@@ -32,7 +32,8 @@ public final class BlobTracker implements Runnable, Receivable {
     }
 
     public int[] getVector() {
-    	return lastVector; //Arrays.copyOf(lastVector, lastVector.length);
+    	int[] vector = new int[] { lastVector[0], lastVector[1], lastVector[2] };
+    	return vector;
     }
 
     private void calculateVector() {

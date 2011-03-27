@@ -4,6 +4,9 @@
 #define MOTOR_ARM_TIME 5000
 #define MOTOR_ARM_VALUE 20
 #define MOTOR_COUNT 4
+#define MOTOR_MAX_COMMAND 160
+#define MOTOR_MIN_COMMAND 67
+#define MOTOR_OFF_COMMAND 50
 #define SPEED_HEADER "NEWSPEED"
 #define STATUS_LED 13
 #define STATUS_LED_CYCLES 30000
@@ -86,7 +89,7 @@ void setup(void) {
  */
 void loop(void) {
   if (Serial.available() >= WORD_LENGTH) {
-    int i, j, timeout;
+    int i, j, timeout, buffer_val;
     led_cycles = 0;
     digitalWrite(STATUS_LED, HIGH);
 
@@ -101,7 +104,13 @@ void loop(void) {
         }
         
         buffer[WORD_LENGTH] = '\0';
-        motors[i].next_speed = map(atoi(buffer), -1, 99, 67, 160);
+        buffer_val = atoi(buffer);
+        if (buffer_val > 0) {
+          motors[i].next_speed = map(atoi(buffer), -1, 99, 
+            MOTOR_MIN_COMMAND, MOTOR_MAX_COMMAND);
+        } else {
+          motors[i].next_speed = MOTOR_OFF_COMMAND;
+        }
       } else {
         Serial.println(BAD_REQUEST);
       }

@@ -68,8 +68,8 @@ public class EnsignCrusher {
      *  and dz in meters per second.
      */
     public static void manualVelocity(double[] velocities) {
-	String command = navGoToManual + String.format(":%f:%f:%f", velocities[1],
-						       velocities[0], velocities[2]);
+	String command = navGoToManual + String.format(":%f:%f:%f", velocities[0],
+						       velocities[1], velocities[2]);
 	DataReceiver.sendToDefault(command + ":" + bearing);
     }	
 

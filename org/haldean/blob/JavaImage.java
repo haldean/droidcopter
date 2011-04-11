@@ -33,4 +33,9 @@ public class JavaImage implements Image {
 			  rgb >> 8 & 0xFF, 
 			  rgb & 0xFF};
     }
+    
+    //TODO:
+    public void updateImage(byte[] data, int width, int height) {
+    	
+    }
 }

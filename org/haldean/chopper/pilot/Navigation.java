@@ -175,11 +175,14 @@ public class Navigation implements Runnable, Constants, Receivable {
 		/*String taskList = "{ { VEL!0!10!0!0!300 VEL!5!10!5!10!180 } " + 
 			"{ DEST!300!-74.012345!40.74!10!100 { DEST!300!-77.07950!38.97300!100!250 " +
 				" DEST!587!-117.15!32.72!10!600 } } }";*/
-		String taskList = "{ VEL!name1!1!0!0!0!20!-10 -4}";
+		String taskList = "{ VEL!name1!1!0!0!0!10000!-10 VEL!name1!-1!0!0!0!10000!-10 VEL!name1!0!1!0!0!10000!-10 VEL!name1!0!-1!0!0!10000!-10 VEL!name1!0!0!1!0!10000!-10 VEL!name1!0!0!-1!0!10000!-10 -4}";
 		setTask(BASIC_AUTO, taskList);
-		setTask(NO_CONN, "{ VEL!No_Conn!0!0!-1!0!-1!1000000!-5 -6}");
-		setTask(LOW_POWER, "{ VEL!Low_Power!0!0!-1!0!-1!1000000!-7 -8}");
-		//autoPilot(true);
+		setTask(NO_CONN, "{ VEL!No_Conn!0!0!-1!0!1000000!-1!-5 -6}");
+		setTask(LOW_POWER, "{ VEL!Low_Power!0!0!-1!0!1000000!-1!-7 -8}");
+		
+		mNavStatus.set(BASIC_AUTO);
+		autoPilot(true);
+		
 		Looper.loop();
 	}
 	

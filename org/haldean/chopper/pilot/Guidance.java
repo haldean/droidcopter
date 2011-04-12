@@ -35,7 +35,7 @@ import android.util.Log;
 public class Guidance implements Runnable, Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 5;
+	public int PIDREPS = 20;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;

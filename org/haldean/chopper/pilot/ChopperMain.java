@@ -14,7 +14,7 @@ public final class ChopperMain extends Activity implements Constants
 {
 	/** Tag for logging */
 	public static final String TAG = "chopper.ChopperMain";
-	private boolean telemetry = false;
+	private boolean telemetry = true;
 	
 	private static boolean mFirstRun = true;
 	

@@ -176,14 +176,13 @@ public class NavTask {
 		
 		//Bearing, in degrees
 		double bearingDeg = currentLoc.bearingTo(destination);
-		
 		double horDistance = currentLoc.distanceTo(destination);
 		double verDistance = destination.getAltitude() - currentLoc.getAltitude();
 		
 		//Establish vector
 		double bearingRad = bearingDeg / 180.0 * Math.PI;
-		target[0] = Math.cos(bearingRad);
-		target[1] = Math.sin(bearingRad);
+		target[0] = Math.sin(bearingRad);
+		target[1] = Math.cos(bearingRad);
 		target[2] = verDistance / horDistance;
 		
 		//Determine magnitude, "normalize" to myVelocity

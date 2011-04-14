@@ -30,7 +30,7 @@ public class Segmenter {
     	int targetArea = new Integer(parts[4]);
     	int threshold = new Integer(parts[5]);
     	return new Segmenter(targetColor, targetArea, threshold);
-	}
+    }
 
     public static Segmenter getSegmenterForPoint(Image input, int x, int y) {
 	Segmenter seg = new Segmenter(input.getPixel(x, y), 0, DEFAULT_THRESHOLD);

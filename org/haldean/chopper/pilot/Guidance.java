@@ -483,6 +483,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		mStatus.setMotorFields(mMotorSpeed);
 		
 		//Pass motor values to motor controller!
+		BluetoothOutput.setMotorSpeeds(mMotorSpeed[0], mMotorSpeed[1], mMotorSpeed[2], mMotorSpeed[3]);
 	}
 	
 	/**

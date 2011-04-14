@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import at.abraxas.amarino.Amarino;
 /**
  * Class to launch all component subroutines
  * @author Benjamin Bardin
@@ -29,6 +30,18 @@ public final class ChopperMain extends Activity implements Constants
 	 */
 	public ChopperMain() {
 		super();
+	}
+	
+	@Override
+	public void onStart() {
+		super.onStart();
+		Amarino.connect(this, BluetoothOutput.BT_DEVICE_ADDR);
+	}
+	
+	@Override
+	public void onStop() {
+		super.onStop();
+		Amarino.disconnect(this, BluetoothOutput.BT_DEVICE_ADDR);
 	}
 	
 	/**
@@ -87,6 +100,7 @@ public final class ChopperMain extends Activity implements Constants
         guid.registerReceiver(comm);
         
         try {
+	        BluetoothOutput.setContext(this);
 	        new Thread(comm).start();
 	        new Thread(status).start();
 	        new Thread(reporter).start();

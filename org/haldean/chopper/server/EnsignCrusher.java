@@ -107,6 +107,10 @@ public class EnsignCrusher {
 	DataReceiver.sendToDefault(taskString);
     }
 
+    public static void fullStop() {
+	setMotorSpeeds(new double[] {0, 0, 0, 0});
+    }
+
     /**
      *  Send PID tuning values to the helicopter.
      *

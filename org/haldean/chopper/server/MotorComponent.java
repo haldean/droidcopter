@@ -40,6 +40,15 @@ public class MotorComponent extends UpdateUiPanel implements MessageHook {
 		}
 	    });
 	controlPanel.add(applyButton, 2);
+
+	JButton stopButton = new JButton("Emergency Stop");
+	stopButton.addActionListener(new ActionListener() {
+		public void actionPerformed(ActionEvent e) {
+		    EnsignCrusher.fullStop();
+		}
+	    });
+	controlPanel.add(stopButton);
+
 	controlPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 	add(controlPanel, BorderLayout.SOUTH);
 

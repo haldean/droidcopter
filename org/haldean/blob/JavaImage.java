@@ -33,15 +33,8 @@ public class JavaImage implements Image {
 			  rgb >> 8 & 0xFF, 
 			  rgb & 0xFF};
     }
-<<<<<<< HEAD
 
     public void updateImage(byte[] data, int width, int height) {
 	/* Unimplemented. */
-=======
-    
-    //TODO:
-    public void updateImage(byte[] data, int width, int height) {
-    	
->>>>>>> aaa09c8901e1c062fb2d9624c28ee5fa44e90e56
     }
 }

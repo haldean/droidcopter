@@ -262,7 +262,8 @@ public class Guidance implements Runnable, Constants, Receivable {
 		
 		boolean mStabilizing = false; //initializing value
 		//Retrieve current orientation.		
-		mAzimuth = mStatus.getReadingFieldNow(AZIMUTH, mAzimuth);
+		
+		mAzimuth = mStatus.getReadingFieldNow(AZIMUTH, mAzimuth);		
 		mPitchDeg = -mStatus.getReadingFieldNow(PITCH, -mPitchDeg);
 		mRollDeg = mStatus.getReadingFieldNow(ROLL, mRollDeg);
 		
@@ -296,7 +297,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		else {
 			//Retrieve target velocity from nav,
 			//Transform absolute target velocity to relative target velocity
-			double theta = -mAzimuth * Math.PI / 180.0;
+			double theta = mAzimuth * Math.PI / 180.0;
 			if (mNav != null) {
 				try {
 					double[] absTarget = mNav.getTarget();

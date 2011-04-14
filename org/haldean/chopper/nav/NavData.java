@@ -21,7 +21,7 @@ public abstract class NavData {
 	}
 		
 	public static NavData fromString(String str) {
-		System.out.println("\'" + str + "\'");
+		//System.out.println("\'" + str + "\'");
 		String[] params = str.split("!");
 		String type = params[0];
 		NavData mNav = null;

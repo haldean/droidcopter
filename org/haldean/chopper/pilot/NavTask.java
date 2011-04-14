@@ -102,8 +102,14 @@ public class NavTask {
 		else if (nav instanceof NavVel) {
 			NavVel vel = (NavVel) nav;
 			if ((vel.getFirstCall() > 0) && //The task has been called at least once
-					(System.currentTimeMillis() - vel.getFirstCall() >= vel.getTime())) //the task has been running long enough
+					(System.currentTimeMillis() - vel.getFirstCall() >= vel.getTime())) {//the task has been running long enough
+				
+				System.out.println("Completing navVel");
+				System.out.println(System.currentTimeMillis());
+				System.out.println(vel.getFirstCall());
+				System.out.println(vel.getTime());
 				return true;
+			}
 			else
 				return false;
 		}
@@ -170,14 +176,13 @@ public class NavTask {
 		
 		//Bearing, in degrees
 		double bearingDeg = currentLoc.bearingTo(destination);
-		
 		double horDistance = currentLoc.distanceTo(destination);
 		double verDistance = destination.getAltitude() - currentLoc.getAltitude();
 		
 		//Establish vector
 		double bearingRad = bearingDeg / 180.0 * Math.PI;
-		target[0] = Math.cos(bearingRad);
-		target[1] = Math.sin(bearingRad);
+		target[0] = Math.sin(bearingRad);
+		target[1] = Math.cos(bearingRad);
 		target[2] = verDistance / horDistance;
 		
 		//Determine magnitude, "normalize" to myVelocity

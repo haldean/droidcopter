@@ -207,10 +207,15 @@ public class PadController extends UiController {
      *  @param axis The index of the axis to check
      *  @return A number from -1 to 1 representing the value of the joystick */
     public float getAxis(int axis) {
-	if (Math.abs(axes[axis].getPollData()) < 0.2)
+    float polled = axes[axis].getPollData();
+	if (Math.abs(polled) < 0.2)
 	    return 0;
-	else
-	    return 1.25F * (axes[axis].getPollData() - 0.2F);
+	else {
+		if (polled > 0)
+			return 1.25F * (polled - 0.2F);
+		else
+			return 1.25F * (polled + 0.2F);
+    }
     }
 
     /** Trigger events based on the values of the axes */
@@ -222,7 +227,7 @@ public class PadController extends UiController {
 	} else {
 	    double[] vels = new double[3];
 	    vels[0] = getAxis(AXIS_L_H);
-	    vels[1] = getAxis(AXIS_L_V);
+	    vels[1] = -getAxis(AXIS_L_V);
 	    vels[2] = getAxis(AXIS_R_V);
 		
 	    boolean updateVec = false;

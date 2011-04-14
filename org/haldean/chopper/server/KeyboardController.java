@@ -83,12 +83,12 @@ public class KeyboardController extends UiController {
 	double[] newVelocities = new double[3];
 
 	/* WASD for forward-left-back-right. I miss Lisp. */
-	newVelocities[0] = 
+	newVelocities[1] = 
 	    isKeyPressed(Key.W, true) && isKeyPressed(Key.S, true) ? 0 :
 	    (isKeyPressed(Key.W, true) ? EnsignCrusher.VELOCITY :
 	     (isKeyPressed(Key.S, true) ? -EnsignCrusher.VELOCITY : 0));
 
-	newVelocities[1] =
+	newVelocities[0] =
 	    isKeyPressed(Key.A, true) && isKeyPressed(Key.D, true) ? 0 :
 	    (isKeyPressed(Key.D, true) ? EnsignCrusher.VELOCITY :
 	     (isKeyPressed(Key.A, true) ? -EnsignCrusher.VELOCITY : 0));

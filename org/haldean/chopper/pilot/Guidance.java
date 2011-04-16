@@ -41,7 +41,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 	public static final double MAX_VEL = 2.0;
 	
 	/** The maximum angle, in degrees, guidance will permit the chopper to have */
-	public static final double MAX_ANGLE = 20;
+	public static final double MAX_ANGLE = 5;
 	
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
 	public static final double MAX_DMOTOR = .05;
@@ -136,9 +136,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
-				mGain[i][j] = .005;
+				mGain[i][j] = .00005;
 		for (int j = 0; j < 3; j++) {
-			mGain[3][j] = .0005;
+		//	mGain[3][j] = .0005;
+			mGain[3][j] = 0;
 		}
 	}
 	
@@ -160,7 +161,6 @@ public class Guidance implements Runnable, Constants, Receivable {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 				case EVAL_MOTOR_SPEED:
-					Log.d(TAG, "evaluating motor speed");
 					reviseMotorSpeed();
 					//Log.d(TAG, getErrorString());
 					updateReceivers(getErrorString());

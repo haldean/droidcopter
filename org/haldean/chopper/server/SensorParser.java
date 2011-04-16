@@ -40,7 +40,7 @@ public class SensorParser implements MessageHook {
     }
 
     public String[] processablePrefixes() {
-	return new String[] {"GPS", "OREINT", "ACCEL", "FLUX", "TEMPERATURE", "PING"};
+	return new String[] {"GPS", "ORIENT", "ACCEL", "FLUX", "TEMPERATURE", "PING"};
     }
 
     /** Set the notified NASA World Wind globe component 

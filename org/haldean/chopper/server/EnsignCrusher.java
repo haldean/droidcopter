@@ -103,7 +103,7 @@ public class EnsignCrusher {
 	for (int i=0; i<4; i++) {
 	    taskString += ":" + speeds[i];
 	}
-	DataReceiver.sendToDefault(navGoToManual);
+	//DataReceiver.sendToDefault(navGoToManual);
 	DataReceiver.sendToDefault(taskString);
     }
 

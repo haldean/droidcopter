@@ -87,6 +87,7 @@ public final class ChopperMain extends Activity implements Constants
         comm.registerReceiver(NAV, nav);
         comm.registerReceiver(CSYS, nav);
         comm.registerReceiver(GUID, guid);
+        comm.registerReceiver(GUID, nav);
         
         nav.registerReceiver(comm);
         nav.registerReceiver(guid);

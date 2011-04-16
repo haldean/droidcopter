@@ -41,10 +41,12 @@ public class PadController extends UiController {
 
     private int lastButtonMask = 0;
 
-    private boolean globeMovement = false;
+    private boolean globeMovement = true;
     
     private final double minDiff = 250; //ms
     private long lastAxesUpdate;
+    
+    private double theta = 0; //bearing
     
     /** Create a new PadController 
      *  @param _ui The ServerHost to act upon */
@@ -156,6 +158,26 @@ public class PadController extends UiController {
     public boolean buttonIsSet(int button) {
 	return buttonIsSet(lastButtonMask, button);
     }
+    
+    /** Perform an action based on the status of the buttons
+     * 
+     */
+    private void buttonMaybeAction() {
+    	int currentMask = buttonMask();
+    	/* In Conrol Mode, B changes orientation */
+        if (!globeMovement && buttonIsSet(currentMask, BUTTON_B)) {
+        	double mX = getAxis(AXIS_L_H);
+        	double mY = -getAxis(AXIS_L_V);
+        	if ( Math.sqrt(mX * mX + mY * mY) > .7 ) { //only take measurements .7 radius out. Arbitrary. Magic Number. Deal.
+    	    	double angle = Math.atan2(mY, mX);
+    	    	angle = angle * 180.0 / Math.PI;
+    	    	angle = 90.0 - angle;
+    	    	if (angle < 0.0)
+    	    		angle += 360.0;
+    	    	theta = angle;
+        	}
+        }
+    }
 
     /** Perform an action based on the status of the buttons
      *  @param mask The mask representings buttons that have changed state */
@@ -197,12 +219,13 @@ public class PadController extends UiController {
 	    sl.setGlobeMode(globeMovement);
 	    Debug.log("Globe control is now " + ((globeMovement) ? "on" : "off"));
 	}
-
+    
 	/* In Globe Mode, B activates or disactivates follow mode */
 	if (globeMovement && buttonIsSet(mask, BUTTON_B))
 	    ui.globeComponent.toggleFollow();
     }
-
+    
+    
     /** Get the value of a joystick axis, filtering out noisy results 
      *  @param axis The index of the axis to check
      *  @return A number from -1 to 1 representing the value of the joystick */
@@ -219,31 +242,35 @@ public class PadController extends UiController {
     }
 
     /** Trigger events based on the values of the axes */
-    private void axesAction() {
+    private void axesAction(int mask) {
 	if (globeMovement) {
 	    float zoom = getAxis(AXIS_L_TRIGGER) - getAxis(AXIS_R_TRIGGER);
 	    ui.globeComponent.moveView(getAxis(AXIS_L_H), getAxis(AXIS_L_V), 
 				       zoom, getAxis(AXIS_R_V), getAxis(AXIS_R_H));
 	} else {
 	    double[] vels = new double[3];
-	    vels[0] = getAxis(AXIS_L_H);
-	    vels[1] = -getAxis(AXIS_L_V);
-	    vels[2] = getAxis(AXIS_R_V);
+	    
+	    if (!buttonIsSet(mask, BUTTON_B)) { //if it's set, we're taking bearing. don't alter velocity.
+		    vels[0] = getAxis(AXIS_L_H);
+		    vels[1] = -getAxis(AXIS_L_V);
+		    vels[2] = getAxis(AXIS_R_V);
+	    
 		
-	    boolean updateVec = false;
-	    if (System.currentTimeMillis() - lastAxesUpdate > minDiff) {
-		updateVec = true;
-	    }
-		
-	    if (updateVec) {
-		lastAxesUpdate = System.currentTimeMillis();
-		//3.0 is the value of the maximum normal vector
-		double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
-		for (double v : vels) {
-		    v *= adjustment;
-		}
-
-		EnsignCrusher.manualVelocity(vels);
+		    boolean updateVec = false;
+		    if (System.currentTimeMillis() - lastAxesUpdate > minDiff) {
+			updateVec = true;
+		    }
+			
+		    if (updateVec) {
+			lastAxesUpdate = System.currentTimeMillis();
+			//3.0 is the value of the maximum normal vector
+			double adjustment = EnsignCrusher.MAX_VELOCITY / Math.sqrt(3.0);
+			for (double v : vels) {
+			    v *= adjustment;
+			}
+	
+			EnsignCrusher.manualVelocity(vels, theta);
+		    }
 	    }
 	}
     }
@@ -259,10 +286,11 @@ public class PadController extends UiController {
 	    lastButtonMask = mask;
 
 	    if (enabled) {
-		axesAction();
+		axesAction(mask);
 		if (newButtons != 0) {
 		    buttonAction(newButtons);
 		}
+		buttonMaybeAction();
 	    }
 
 	    try {

@@ -22,8 +22,8 @@ public class BluetoothOutput {
 
     public static void setMotorSpeeds(double m1, double m2, double m3, double m4) {
 	Amarino.sendDataToArduino(context, BT_DEVICE_ADDR, 'A', (int) (100 * m1));
-	Amarino.sendDataToArduino(context, BT_DEVICE_ADDR, 'B', (int) (100 * m2));
-	Amarino.sendDataToArduino(context, BT_DEVICE_ADDR, 'C', (int) (100 * m3));
+	Amarino.sendDataToArduino(context, BT_DEVICE_ADDR, 'C', (int) (100 * m2));
+	Amarino.sendDataToArduino(context, BT_DEVICE_ADDR, 'B', (int) (100 * m3));
 	Amarino.sendDataToArduino(context, BT_DEVICE_ADDR, 'D', (int) (100 * m4));
     }
 }

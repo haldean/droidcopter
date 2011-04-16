@@ -179,9 +179,10 @@ public class Navigation implements Runnable, Constants, Receivable {
 		setTask(BASIC_AUTO, taskList);
 		setTask(NO_CONN, "{ VEL!No_Conn!0!0!-1!0!1000000!-1!-5 -6}");
 		setTask(LOW_POWER, "{ VEL!Low_Power!0!0!-1!0!1000000!-1!-7 -8}");
+		//mNavStatus.set(BASIC_AUTO);
 		
-		mNavStatus.set(BASIC_AUTO);
-		autoPilot(true);
+		
+		//autoPilot(true);
 		
 		Looper.loop();
 	}
@@ -262,6 +263,11 @@ public class Navigation implements Runnable, Constants, Receivable {
 	public void receiveMessage(String msg, Receivable source) {
 		Log.d(TAG, "Receiving " + msg);
 		String[] parts = msg.split(":");
+		if (parts[0].equals("GUID")) {
+			if (parts[1].equals("VECTOR")) {
+				autoPilot(false);
+			}
+		}
 		if (parts[0].equals("NAV")) {
 			if (parts[1].equals("SET")) {
 				Log.v(TAG, "Updating Nav Status");				

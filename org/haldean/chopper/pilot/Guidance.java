@@ -58,6 +58,9 @@ public class Guidance implements Runnable, Constants, Receivable {
 	/** Handles messages for the thread */
 	private Handler mHandler;
 	
+	/** Stores whether or not a motor-eval loop should add itself to the queue again. **/
+	private boolean mReviseMotorSpeeds = true;
+	
 	/** Stores orientation data persistently, as expected values in case lock is not immediately available*/
 	private double mAzimuth;
 	private double mPitchDeg;
@@ -133,7 +136,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
-				mGain[i][j] = .05;
+				mGain[i][j] = .005;
 		for (int j = 0; j < 3; j++) {
 			mGain[3][j] = .0005;
 		}
@@ -157,6 +160,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 				case EVAL_MOTOR_SPEED:
+					Log.d(TAG, "evaluating motor speed");
 					reviseMotorSpeed();
 					//Log.d(TAG, getErrorString());
 					updateReceivers(getErrorString());
@@ -188,7 +192,8 @@ public class Guidance implements Runnable, Constants, Receivable {
 				}
 			}
 		};
-		mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+		//mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+		receiveMessage("GUID:VECTOR:0:0:0:0", null);
 		Looper.loop();
 	}
 	
@@ -198,7 +203,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 	 * @param source The source of the message, if a reply is needed.  May be null.
 	 */
 	public void receiveMessage(String msg, Receivable source) {
-		Log.d(TAG, "Receiving message " + msg);
+		//Log.d(TAG, "Receiving message " + msg);
 		String[] parts = msg.split(":");
 		if (parts[0].equals("GUID")) {
 			if (parts[1].equals("PID")) {
@@ -217,6 +222,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 			}
 			if (parts[1].equals("AUTOMATIC")) {
 				mHandler.removeMessages(NEW_GUID_VECTOR);
+				mReviseMotorSpeeds = true;
 				if (!mHandler.hasMessages(EVAL_MOTOR_SPEED))
 					mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
 			}
@@ -229,6 +235,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 				mAbsVec = true;
 			}
 			if (parts[1].equals("VECTOR")) {
+				mReviseMotorSpeeds = false;
 				mHandler.removeMessages(EVAL_MOTOR_SPEED);
 				Double[] myVector = new Double[4];
 				for (int i = 0; i < 4; i++) {
@@ -414,7 +421,6 @@ public class Guidance implements Runnable, Constants, Receivable {
 			case 3: //Azimuth
 				break;
 			}
-			
 			mTorques[i] = dmotor;
 			//Log.v(TAG, "Torque " + i + " " + dmotor);
 		}
@@ -472,10 +478,12 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
 		long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);
-		if (timetonext > 0)
-			mHandler.sendEmptyMessageDelayed(EVAL_MOTOR_SPEED, timetonext);
-		else
-			mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+		if (mReviseMotorSpeeds) {
+			if (timetonext > 0)
+				mHandler.sendEmptyMessageDelayed(EVAL_MOTOR_SPEED, timetonext);
+			else
+				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+		}
 	}
 	
 	/* To be finished */

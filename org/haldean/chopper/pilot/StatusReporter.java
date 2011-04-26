@@ -81,7 +81,7 @@ public class StatusReporter implements Runnable, Constants {
 			Log.w(TAG, "Acceleration Report Unavailable");
 		}
 
-		try {
+		/*try {
 			double myXflux = mStatus.getReadingFieldNow(X_FLUX);
 			double myYflux = mStatus.getReadingFieldNow(Y_FLUX);
 			double myZflux = mStatus.getReadingFieldNow(Z_FLUX);
@@ -89,7 +89,7 @@ public class StatusReporter implements Runnable, Constants {
 		}
 		catch (IllegalAccessException e) {
 			Log.w(TAG, "Flux Report Unavailable");
-		}
+		}*/
 		
 		try {
 			double[] mySpeeds = mStatus.getMotorFieldsNow();
@@ -101,7 +101,7 @@ public class StatusReporter implements Runnable, Constants {
 		catch (IllegalAccessException e) {
 			Log.w(TAG, "MotorSpeeds Report Unavailable");
 		}
-		
+		/*
 		try {
 			double[] myPowers = mStatus.getMotorFieldsNow();
 			infoList.add("MOTORPOWER:" + myPowers[0] +
@@ -135,7 +135,7 @@ public class StatusReporter implements Runnable, Constants {
 		catch (IllegalAccessException e) {
 			Log.w(TAG, "Pressure Report Unavailable");
 		}
-		
+		*/
 		try {
 			double myTemp = mStatus.getReadingFieldNow(TEMPERATURE);
 			infoList.add("TEMPERATURE:" + myTemp);

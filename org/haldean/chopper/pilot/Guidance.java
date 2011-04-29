@@ -1,5 +1,7 @@
 package org.haldean.chopper.pilot;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
@@ -35,13 +37,13 @@ import android.util.Log;
 public class Guidance implements Runnable, Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 20;
+	public int PIDREPS = 10;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;
 	
 	/** The maximum angle, in degrees, guidance will permit the chopper to have */
-	public static final double MAX_ANGLE = 5;
+	public static final double MAX_ANGLE = 10;
 	
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
 	public static final double MAX_DMOTOR = .05;
@@ -68,6 +70,9 @@ public class Guidance implements Runnable, Constants, Receivable {
 	private double mGpsBearing;
 	private double mGpsSpeed;
 	private double mGpsDalt;
+	
+	public static final String logname = "/sdcard/chopper/guidlog.txt";
+	private FileWriter logfile;
 	
 	/** Note that some of the following objects are declared outside their smallest scope.
 	 * This is to relieve unnecessary stress on the GC.  Many of these data holders
@@ -120,6 +125,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 	/** Controls whether N/S and E/W commands refer to absolute vectors or local **/
 	private boolean mAbsVec = true;
 	
+	public final static boolean mEnableLogging = true;
 	/**
 	 * Constructs a Guidance object
 	 * @param status The source status information.
@@ -136,10 +142,19 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
-				mGain[i][j] = .00005;
+				mGain[i][j] = .0001;
+				//mGain[i][j] = .05;
 		for (int j = 0; j < 3; j++) {
 		//	mGain[3][j] = .0005;
 			mGain[3][j] = 0;
+		}
+		try {
+			if (mEnableLogging)
+				logfile = new FileWriter(logname, false);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			Log.e(TAG, "Cannot open log file.");
 		}
 	}
 	
@@ -148,6 +163,16 @@ public class Guidance implements Runnable, Constants, Receivable {
 		               + ":" + mErrors[1][0]
 		               + ":" + mErrors[2][0]
 		               + ":" + mErrors[3][0];
+	}
+	
+	public void onDestroy() {
+		try {
+			if (logfile != null)
+				logfile.close();
+		}
+		catch (IOException e) {
+			Log.e(TAG, "Cannot close logfile.");
+		}
 	}
 	
 	/**
@@ -450,7 +475,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 			mTempMotorSpeed[i] += dalttorque;
 		}
 		
-		//Sanity Check--values must be between zero and one.
+		//Bounds Check--values must be between zero and one.
 		for (int i = 0; i < 4; i++) {
 			if (mTempMotorSpeed[i] < 0)
 				mTempMotorSpeed[i] = 0;
@@ -481,8 +506,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 		if (mReviseMotorSpeeds) {
 			if (timetonext > 0)
 				mHandler.sendEmptyMessageDelayed(EVAL_MOTOR_SPEED, timetonext);
-			else
+			else {
+				Log.e(TAG, "Guidance too slow");
 				mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
+			}
 		}
 	}
 	
@@ -490,7 +517,16 @@ public class Guidance implements Runnable, Constants, Receivable {
 	private void updateMotors() {
 		//Pass filtered values to ChopperStatus.
 		mStatus.setMotorFields(mMotorSpeed);
-		
+		String logline = Long.toString(System.currentTimeMillis()) + " " + mMotorSpeed[0] + " " + mMotorSpeed[1] + " " + mMotorSpeed[2] + " " + mMotorSpeed[3] + "\n";
+		try {
+			if (logfile != null) {
+				logfile.write(logline);
+				logfile.flush();
+			}
+		}
+		catch (IOException e) {
+			Log.e(TAG, "Cannot write to logfile");
+		}
 		//Pass motor values to motor controller!
 		BluetoothOutput.setMotorSpeeds(mMotorSpeed[0], mMotorSpeed[1], mMotorSpeed[2], mMotorSpeed[3]);
 	}

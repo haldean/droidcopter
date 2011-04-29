@@ -145,11 +145,13 @@ public class Navigation implements Runnable, Constants, Receivable {
 		updateReceivers("NAV:AUTOTASK:" + thisStatus + ":" + myList.toString());
 		
 		mHandler.removeMessages(EVAL_NAV);
-		if (interval > 0) {
-			mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
-		}
-		else {
-			mHandler.sendEmptyMessage(EVAL_NAV);
+		if (mAutoPilot.get()) {
+			if (interval > 0) {
+				mHandler.sendEmptyMessageDelayed(EVAL_NAV, interval);
+			}
+			else {
+				mHandler.sendEmptyMessage(EVAL_NAV);
+			}
 		}
 	}
 	

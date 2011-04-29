@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -155,13 +156,18 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public String getGpsExtrasNow() throws IllegalAccessException {
 		String gpsData = "";
-		if (mGpsExtrasLock.tryLock()) {
-			gpsData += mGpsAccuracy + 
-			":" + mGpsNumSats +
-			":" + mGpsTimeStamp;
-			mGpsExtrasLock.unlock();
+		try {
+			if (mGpsExtrasLock.tryLock(0, TimeUnit.SECONDS)) {
+				gpsData += mGpsAccuracy + 
+				":" + mGpsNumSats +
+				":" + mGpsTimeStamp;
+				mGpsExtrasLock.unlock();
+			}
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
+		catch (InterruptedException e) {
 			throw new IllegalAccessException();
 		}
 		return gpsData;
@@ -188,11 +194,16 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public double getGpsFieldNow(int whichField) throws IllegalAccessException {
 		double myValue;
-		if (mGpsLock[whichField].tryLock()) {
-			myValue = mGps[whichField];
-			mGpsLock[whichField].unlock();
+		try {
+			if (mGpsLock[whichField].tryLock(0, TimeUnit.SECONDS)) {
+				myValue = mGps[whichField];
+				mGpsLock[whichField].unlock();
+			}
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
+		catch (InterruptedException e) {
 			Log.w(TAG, "GPS Field " + whichField + " is locked.");
 			throw new IllegalAccessException();
 		}
@@ -207,11 +218,16 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public double getGpsFieldNow(int whichField, double expectedValue) {
 		double myValue;
-		if (mGpsLock[whichField].tryLock()) {
-			myValue = mGps[whichField];
-			mGpsLock[whichField].unlock();
+		try {
+			if (mGpsLock[whichField].tryLock(0, TimeUnit.SECONDS)) {
+				myValue = mGps[whichField];
+				mGpsLock[whichField].unlock();
+			}
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
+		catch (InterruptedException e) {
 			myValue = expectedValue;
 		}
 		return myValue;
@@ -238,13 +254,18 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public double[] getMotorFieldsNow() throws IllegalAccessException {
 		double[] myValues = new double[4];
-		if (mMotorLock.tryLock()) {
-			for (int i = 0; i < 4; i++) {
-				myValues[i] = mMotorSpeed[i];
+		try {
+			if (mMotorLock.tryLock(0, TimeUnit.SECONDS)) {
+				for (int i = 0; i < 4; i++) {
+					myValues[i] = mMotorSpeed[i];
+				}
+				mMotorLock.unlock();
 			}
-			mMotorLock.unlock();
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
+		catch (InterruptedException e) {
 			Log.w(TAG, "motorspeed is locked.");
 			throw new IllegalAccessException();
 		}
@@ -257,13 +278,18 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public double[] getMotorPowerFieldsNow() throws IllegalAccessException {
 		double[] myValues = new double[4];
-		if (mMotorPowerLock.tryLock()) {
-			for (int i = 0; i < 4; i++) {
-				myValues[i] = mMotorPower[i];
+		try {
+			if (mMotorPowerLock.tryLock(0, TimeUnit.SECONDS)) {
+				for (int i = 0; i < 4; i++) {
+					myValues[i] = mMotorPower[i];
+				}
+				mMotorPowerLock.unlock();
 			}
-			mMotorPowerLock.unlock();
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
+		catch (InterruptedException e) {
 			Log.w(TAG, "motorpowers is locked.");
 			throw new IllegalAccessException();
 		}
@@ -299,12 +325,12 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 		SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
 		
 		/* Registers this class as a sensor listener for every necessary sensor. */
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
+		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
+		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
 		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
+		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
+		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
 		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
 		
 		/* Initialize GPS reading: */
@@ -332,11 +358,16 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public double getReadingFieldNow(int whichField) throws IllegalAccessException {
 		double myValue;
-		if (mReadingLock[whichField].tryLock()) {
-			myValue = mReading[whichField];
-			mReadingLock[whichField].unlock();
+		try {
+			if (mReadingLock[whichField].tryLock(0, TimeUnit.SECONDS)) {
+				myValue = mReading[whichField];
+				mReadingLock[whichField].unlock();
+			}
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
+		catch (InterruptedException e) {
 			Log.w(TAG, "Reading field " + whichField + " is locked.");
 			throw new IllegalAccessException();
 		}
@@ -351,12 +382,17 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	 */
 	public double getReadingFieldNow(int whichField, double expectedValue) {
 		double myValue;
-		if (mReadingLock[whichField].tryLock()) {
-			myValue = mReading[whichField];
-			mReadingLock[whichField].unlock();
+		try {
+			if (mReadingLock[whichField].tryLock(0, TimeUnit.SECONDS)) {
+				myValue = mReading[whichField];
+				mReadingLock[whichField].unlock();
+			}
+			else {
+				throw new InterruptedException();
+			}
 		}
-		else {
-			Log.w(TAG, "Reading field " + whichField + " is locked.");
+		catch (InterruptedException e) {
+			Log.e(TAG, "Reading field " + whichField + " is locked.");
 			myValue = expectedValue;
 		}
 		return myValue;

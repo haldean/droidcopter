@@ -18,6 +18,7 @@ public final class ChopperMain extends Activity implements Constants
 	private boolean telemetry = true;
 	
 	private static boolean mFirstRun = true;
+	private Guidance guid;
 	
 	/**
 	 * Holds the wakelock; needed to keep the camera preview rendering on
@@ -78,7 +79,7 @@ public final class ChopperMain extends Activity implements Constants
         }
         
         Navigation nav = new Navigation(status);
-        Guidance guid = new Guidance(status, nav);
+        guid = new Guidance(status, nav);
         
         if (telemetry) {
 	        comm.setTelemetrySource(pic);
@@ -117,12 +118,13 @@ public final class ChopperMain extends Activity implements Constants
         
         mFirstRun = false;
 	}
-	/*
+	
 	/**
 	 * Releases the wakelock, destroys activity.
-	 
+	 */
 	protected void onDestroy() {
 		//mWakeLock.release();
 		super.onDestroy();
-	} */
+		guid.onDestroy();
+	} 
 }

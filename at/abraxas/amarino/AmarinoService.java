@@ -336,14 +336,14 @@ public class AmarinoService extends Service {
 		ConnectedThread ct = connections.get(address);
 		if (ct != null) {
 			ct.write(data);
-			try {
+			/*try {
 				if (logfile != null)
 					logfile.write(Long.toString(System.currentTimeMillis()) + " " + new String(data) + "\n");
 			}
 			catch (IOException e) {
 				Log.e(TAG, "Cannot write to logfile.");
 				e.printStackTrace();
-			}
+			}*/
 		}
 	}
 	

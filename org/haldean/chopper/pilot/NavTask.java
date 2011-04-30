@@ -1,6 +1,10 @@
 package org.haldean.chopper.pilot;
 
-import org.haldean.chopper.nav.*;
+import org.haldean.chopper.nav.NavData;
+import org.haldean.chopper.nav.NavDest;
+import org.haldean.chopper.nav.NavList;
+import org.haldean.chopper.nav.NavTrack;
+import org.haldean.chopper.nav.NavVel;
 
 import android.location.Location;
 import android.util.Log;

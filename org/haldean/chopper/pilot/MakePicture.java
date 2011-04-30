@@ -99,9 +99,7 @@ public final class MakePicture implements Runnable, Constants, Receivable {
 	 */
 	public void getBufferCopy(byte[] copyTo) {
 		synchronized (mStoreFrame) {
-			for (int i = 0; i < mStoreFrame.length; i++) {
-				copyTo[i] = mStoreFrame[i];
-			}
+			System.arraycopy(mStoreFrame, 0, copyTo, 0, mStoreFrame.length);
 		}
 	}
 	

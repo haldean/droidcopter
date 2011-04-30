@@ -58,7 +58,7 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 	private static final long GPS_MIN_TIME = 0;
 	
 	/** Number of threads in the mutator pool */
-	private static final int sNumMutatorThreads = 3;
+	private static final int sNumMutatorThreads = 5;
 	
 	/** Used to obtain location manager. */
 	private Context mContext;
@@ -332,7 +332,7 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
 		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
-		
+
 		/* Initialize GPS reading: */
 		LocationManager LocMan = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
 		LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	GPS_MIN_TIME,	GPS_MIN_DIST,	this);

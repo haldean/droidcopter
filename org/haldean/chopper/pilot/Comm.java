@@ -101,7 +101,7 @@ public final class Comm implements Runnable, Receivable, Constants {
 	private ExecutorService mPool;
 	
 	/** Number of threads to run in the pool */
-	private static int sNumPoolThreads = 5;
+	private static int sNumPoolThreads = 4;
 	
 	/** When set to false, only transmits messages; does not receive */
 	private boolean mAcceptMsgs;

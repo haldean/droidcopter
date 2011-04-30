@@ -13,16 +13,54 @@
     			android:debuggable="true"
     			android:persistent="true"
     			android:configChanges="orientation">
-	    <activity android:name="ChopperMain"
+    			
+    	<activity android:name="at.abraxas.amarino.MainScreen" android:screenOrientation="portrait"
+                  android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <activity android:name="ChopperMain"
 	    	android:screenOrientation="portrait"
 	    	android:label="Chopper"
 	    	android:persistent="true"> 
-	   		<intent-filter>
-	               <action android:name="android.intent.action.MAIN" />
-	               <category android:name="android.intent.category.LAUNCHER" />
-	        </intent-filter>
 	    </activity>
-	</application> 
+
+		<!-- android:theme="@android:style/Theme.Dialog" -->
+    	<activity android:name="at.abraxas.amarino.DeviceDiscovery" 
+    			  android:screenOrientation="portrait"/>
+
+    	<activity android:name="at.abraxas.amarino.EventListActivity" android:screenOrientation="portrait"/>
+
+    	<activity android:name="at.abraxas.amarino.Monitoring" 
+    			  android:windowSoftInputMode="stateHidden"/>
+
+		<service android:name="at.abraxas.amarino.AmarinoService"
+				 android:exported="true">
+				 <intent-filter>
+				 	<action android:name="amarino.intent.action.SEND" />
+				 </intent-filter>
+		</service>
+		
+		<receiver android:name="at.abraxas.amarino.RemoteControl" 
+			android:process="at.abraxas.amarino">
+			<intent-filter>
+                <action android:name="amarino.intent.action.CONNECT" />
+                <action android:name="amarino.intent.action.DISCONNECT" />
+                <action android:name="amarino.intent.action.ACTION_GET_CONNECTED_DEVICES" />
+            </intent-filter>
+
+		</receiver>
+	
+	</application>
+	
+	
+	
+	<supports-screens android:anyDensity="true" android:resizeable="true" android:smallScreens="true" android:largeScreens="true" android:normalScreens="true"></supports-screens>
+	    
+	     
 
 	<uses-permission android:name="android.permission.CAMERA"></uses-permission>
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"></uses-permission>
@@ -41,6 +79,8 @@
 	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
 	<uses-permission android:name="android.permission.DEVICE_POWER"></uses-permission>
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+	<uses-permission android:name="android.permission.BLUETOOTH"></uses-permission>
+	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"></uses-permission>
 	
 	<uses-feature android:name="android.hardware.camera" />
 	<uses-feature android:name="android.hardware.camera.autofocus" />

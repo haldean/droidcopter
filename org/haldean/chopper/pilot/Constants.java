@@ -42,6 +42,9 @@ public interface Constants {
 	/** Message for Guidance handler, passing a manual vector for motorspeeds **/
 	public static final int NEW_GUID_VECTOR = 110;
 	
+	/** Message for BluetoothOutput, passing a vector to transmit to motors. **/
+	public static final int SEND_MOTOR_SPEEDS = 111;
+	
 	/** Message for Guidance handler, instructing it to obtain PID values **/
 	public static final int GET_PIDS = 11;
 	

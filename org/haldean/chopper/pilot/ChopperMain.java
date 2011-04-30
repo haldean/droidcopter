@@ -15,7 +15,7 @@ public final class ChopperMain extends Activity implements Constants
 {
 	/** Tag for logging */
 	public static final String TAG = "chopper.ChopperMain";
-	private boolean telemetry = true;
+	private boolean telemetry = false;
 	
 	private static boolean mFirstRun = true;
 	private Guidance guid;
@@ -65,7 +65,7 @@ public final class ChopperMain extends Activity implements Constants
         }
 		
         /* Camera stuff */
-        setContentView(R.layout.main);
+        setContentView(R.layout.chopper_prev);
         SurfaceView preview = (SurfaceView) findViewById(R.id.preview);
         SurfaceHolder previewHolder = preview.getHolder();
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
@@ -77,9 +77,9 @@ public final class ChopperMain extends Activity implements Constants
         if (telemetry) {
         	pic = new MakePicture(previewHolder);
         }
-        
+        BluetoothOutput mBTooth = new BluetoothOutput(this);
         Navigation nav = new Navigation(status);
-        guid = new Guidance(status, nav);
+        guid = new Guidance(status, nav, mBTooth);
         
         if (telemetry) {
 	        comm.setTelemetrySource(pic);
@@ -102,7 +102,7 @@ public final class ChopperMain extends Activity implements Constants
         guid.registerReceiver(comm);
         
         try {
-	        BluetoothOutput.setContext(this);
+	        new Thread(mBTooth).start();
 	        new Thread(comm).start();
 	        new Thread(status).start();
 	        new Thread(reporter).start();

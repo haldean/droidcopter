@@ -37,7 +37,7 @@ import android.util.Log;
 public class Guidance implements Runnable, Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public int PIDREPS = 10;
+	public static final int PIDREPS = 10;
 	
 	/** Maximum permissible target velocity, in m/s; larger vectors will be resized */
 	public static final double MAX_VEL = 2.0;
@@ -125,19 +125,22 @@ public class Guidance implements Runnable, Constants, Receivable {
 	/** Controls whether N/S and E/W commands refer to absolute vectors or local **/
 	private boolean mAbsVec = true;
 	
+	private BluetoothOutput mBt;
+	
 	public final static boolean mEnableLogging = true;
 	/**
 	 * Constructs a Guidance object
 	 * @param status The source status information.
 	 * @param nav The source of navigation target information.
 	 */
-	public Guidance(ChopperStatus status, Navigation nav) {
+	public Guidance(ChopperStatus status, Navigation nav, BluetoothOutput bT) {
 		if (status == null | nav == null) {
 			throw new NullPointerException();
 		}
 		mStatus = status;
 		mNav = nav;
 		mRec = new LinkedList<Receivable>();
+		mBt = bT;
 		
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 3; i++)
@@ -528,7 +531,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 			Log.e(TAG, "Cannot write to logfile");
 		}
 		//Pass motor values to motor controller!
-		BluetoothOutput.setMotorSpeeds(mMotorSpeed[0], mMotorSpeed[1], mMotorSpeed[2], mMotorSpeed[3]);
+		Message msg = Message.obtain(mBt.mHandler, SEND_MOTOR_SPEEDS, mMotorSpeed);
+		msg.sendToTarget();
+		//Log.i(TAG, "Guidance sending message.");
+		
 	}
 	
 	/**

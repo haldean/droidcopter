@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/23/trunk/amarino/src/at/abraxas/amarino
+END
+AmarinoService.java
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/23/trunk/amarino/src/at/abraxas/amarino/AmarinoService.java
+END
+AmarinoIntent.java
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/!svn/ver/16/trunk/amarino/src/at/abraxas/amarino/AmarinoIntent.java
+END
+package.html
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/package.html
+END
+EventListAdapter.java
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/EventListAdapter.java
+END
+Event.java
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/Event.java
+END
+MainScreen.java
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/2/trunk/amarino/src/at/abraxas/amarino/MainScreen.java
+END
+BTDevice.java
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/BTDevice.java
+END
+Monitoring.java
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/Monitoring.java
+END
+Amarino.java
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/18/trunk/amarino/src/at/abraxas/amarino/Amarino.java
+END
+DeviceDiscovery.java
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/10/trunk/amarino/src/at/abraxas/amarino/DeviceDiscovery.java
+END
+EventListActivity.java
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/!svn/ver/2/trunk/amarino/src/at/abraxas/amarino/EventListActivity.java
+END
+PlugInListAdapter.java
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/PlugInListAdapter.java
+END
+MessageBuilder.java
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/23/trunk/amarino/src/at/abraxas/amarino/MessageBuilder.java
+END
+RemoteControl.java
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/RemoteControl.java
+END
+AmarinoDbAdapter.java
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/!svn/ver/16/trunk/amarino/src/at/abraxas/amarino/AmarinoDbAdapter.java
+END
+Plugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/1/trunk/amarino/src/at/abraxas/amarino/Plugin.java
+END

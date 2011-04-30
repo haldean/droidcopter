@@ -1,3 +1,4 @@
+#define ARM_BUTTON_PIN 12
 #define BAD_REQUEST "BADREQUEST"
 #define HEARTBEAT_PULSE "PULSE"
 #define MESSAGE_TIMEOUT_CYCLES 100
@@ -18,6 +19,7 @@
 
 unsigned int led_cycles = 0;
 MeetAndroid bt;
+bool enable_motors = true;
 
 struct motor {
   unsigned char pin;
@@ -36,8 +38,12 @@ struct motor motors[MOTOR_COUNT] = {
  */
 void write_speeds(void) {
   for (int i = 0; i < MOTOR_COUNT; i++) {
-    motors[i].current_speed = motors[i].next_speed;
-    motors[i].ctrl.write(motors[i].current_speed);
+    if (enable_motors) {
+      motors[i].current_speed = motors[i].next_speed;
+      motors[i].ctrl.write(motors[i].current_speed);
+    } else {
+      motors[i].ctrl.write(MOTOR_OFF_COMMAND);
+    }
   }
 }
 
@@ -46,8 +52,10 @@ void write_speeds(void) {
  */
 void print_speeds(void) {
   for (int i = 0; i < MOTOR_COUNT; i++) {
-    bt.send(motors[i].current_speed);
+    Serial.print(motors[i].current_speed);
+    Serial.print(" ");
   }
+  Serial.print("\n");
 }
 
 /**
@@ -105,8 +113,8 @@ void motor_message(byte flag, byte numOfValues) {
     motors[i].next_speed = MOTOR_OFF_COMMAND;
   }
 
-  write_speeds();
-  print_speeds();
+  //print_speeds();
+  Serial.println("done");
   led_cycles = 0;
 }
 
@@ -114,10 +122,14 @@ void motor_message(byte flag, byte numOfValues) {
  *  Wait for serial information to come in.
  */
 void loop(void) {
+  enable_motors = digitalRead(ARM_BUTTON_PIN) == HIGH;
   bt.receive();
 
-  led_cycles++;
-  if (led_cycles >= STATUS_LED_CYCLES) {
+  write_speeds();
+
+  if (enable_motors) {
+    digitalWrite(STATUS_LED, HIGH);
+  } else {
     digitalWrite(STATUS_LED, LOW);
   }
   

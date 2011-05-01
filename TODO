@@ -15,14 +15,14 @@
 *** DONE Code for possibly unreliable pices-server connection	       :Will:
 *** DONE Code for full automatic telemetry reset (upon failure)	       :Will:
 ** PROGRESS Flight control					       :Will:
-*** TODO Manual control of velocity via 360 controller    
+*** DONE Manual control of velocity via 360 controller    
 *** PROGRESS Manual control of velocity via keyboard(/mouse)
 **** TODO Add a flag to switch keyboard control on and off
-*** TODO Interface droidcopter's autopilot subroutines    
+*** DONE Interface droidcopter's autopilot subroutines    
 **** DONE Turn autopilot on/off                         
 **** DONE Locally create flight plan, submit to autopilot              
-**** TODO Query autopilot for current flight plans      
-**** PROGRESS Visualization for autopilot interface          
+**** DONE Query autopilot for current flight plans      
+**** DONE Visualization for autopilot interface          
 ** DONE Misc Fixes
 *** DONE Don't send repeat commands for navigation
 *** DONE Implement diagonal movement correctly
@@ -33,12 +33,12 @@
    After doing more research, we've decided this can and should be
    done by hand.
 ** IGNORE Determine velocity through integrating acceleration
-** DONE Navigation						  :Ben:
-   CLOSED: [2010-09-11 Sat 21:40]
+** TODO Navigation						  :Ben:
 *** Figure out where it is
 *** Figure out where to go
 *** Figure out how to get there
-** TODO Host commands						 :Will:
+*** Test the motherfucker                                        :Paul:
+** DONE Host commands						 :Will:
 ** IGNORE Raw statistics					       :Will:
 *** Visualization of bounds and accuracy
 ** DONE Acceleration visualization				 :Will:
@@ -57,20 +57,31 @@
 ** DONE Visualize battery data					 :Will:
    CLOSED: [2010-09-11 SAT 21:41]
 
-
 * TODO First Hardware Iteration					       :Will:
-** PROGRESS Build chopper					       :Will:
+** DONE Build chopper					       :Will:
 *** DONE Create design
 *** DONE Order hardware
-*** PROGRESS Construct chopper
+*** DONE Construct chopper
 **** DONE Print chopper parts
 **** DONE Physical assembly
-**** PROGRESS Electronics assembly
-** PROGRESS Arduino control of motors				       :Will:
-** PROGRESS Bluetooth connection from Arduino to Droid		       :Will:
+**** DONE Electronics assembly
+** DONE Arduino control of motors				       :Will:
+** DONE Bluetooth connection from Arduino to Droid		       :Both:
 ** DONE Buy electronics						       :Both:
 ** IGNORE Pressure sensor
 ** IGNORE Ultrasonic rangefinder				       :Will:
+** DONE Stress test motor controllers
+** DONE Buy more motor controllers
+** DONE Buy more more motor controllers
+** DONE Buy more batteries
+** DONE Hardware kill switch
+** TODO Landing gear                                                   :Will:
+
+* TODO Blob Tracking
+** DONE Blob tracking algorithm
+** TODO Blob tracking on Android
+** TODO Blob tracking to velocity vector
+** TODO Follow a big pink thing
 
 * TODO Second Hardware Iteration				       :Will:
 ** TODO Ultrasonic or laser rangefinder

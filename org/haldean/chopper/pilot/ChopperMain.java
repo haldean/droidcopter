@@ -15,9 +15,13 @@ public final class ChopperMain extends Activity implements Constants
 {
 	/** Tag for logging */
 	public static final String TAG = "chopper.ChopperMain";
-	private boolean telemetry = true;
 	
+	private boolean telemetry = false;
+	
+	/** Prevent duplicate launching of threads if app loses focus **/
 	private static boolean mFirstRun = true;
+	
+	/** Need a permanent reference to this, to destroy it. **/
 	private Guidance guid;
 	
 	/**
@@ -33,13 +37,17 @@ public final class ChopperMain extends Activity implements Constants
 		super();
 	}
 	
-	@Override
+	/**
+	 * Starts the activity, and Amarino
+	 */
 	public void onStart() {
 		super.onStart();
 		Amarino.connect(this, BluetoothOutput.BT_DEVICE_ADDR);
 	}
 	
-	@Override
+	/**
+	 * Stops the activity, and Amarino
+	 */
 	public void onStop() {
 		super.onStop();
 		Amarino.disconnect(this, BluetoothOutput.BT_DEVICE_ADDR);
@@ -77,7 +85,7 @@ public final class ChopperMain extends Activity implements Constants
         if (telemetry) {
         	pic = new MakePicture(previewHolder);
         }
-        BluetoothOutput mBTooth = new BluetoothOutput(this);
+        BluetoothOutput mBTooth = new BluetoothOutput();
         Navigation nav = new Navigation(status);
         guid = new Guidance(status, nav, mBTooth);
         
@@ -125,6 +133,7 @@ public final class ChopperMain extends Activity implements Constants
 	protected void onDestroy() {
 		//mWakeLock.release();
 		super.onDestroy();
-		guid.onDestroy();
+		if (guid != null)
+			guid.onDestroy();
 	} 
 }

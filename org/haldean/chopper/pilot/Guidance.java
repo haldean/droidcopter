@@ -71,7 +71,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 	private double mGpsSpeed;
 	private double mGpsDalt;
 	
+	/** Log file name **/
 	public static final String logname = "/sdcard/chopper/guidlog.txt";
+	
+	/** Log file writer **/
 	private FileWriter logfile;
 	
 	/** Note that some of the following objects are declared outside their smallest scope.
@@ -116,18 +119,20 @@ public class Guidance implements Runnable, Constants, Receivable {
 	 * in the event of difficulty maintaining altitude */
 	private boolean mHorizontalDrift = false; //if true, does not consider dx, dy or azimuth error; makes for maximally efficient altitude control
 	
+	/** List of registered receivers */
 	private LinkedList<Receivable> mRec;
 	
 	/** Handles to other chopper components */
 	private ChopperStatus mStatus;
 	private Navigation mNav;
+	private BluetoothOutput mBt;
 	
 	/** Controls whether N/S and E/W commands refer to absolute vectors or local **/
 	private boolean mAbsVec = true;
 	
-	private BluetoothOutput mBt;
-	
+	/** Flag for writing motor speeds to output file **/
 	public final static boolean mEnableLogging = true;
+	
 	/**
 	 * Constructs a Guidance object
 	 * @param status The source status information.
@@ -147,11 +152,23 @@ public class Guidance implements Runnable, Constants, Receivable {
 			for (int j = 0; j < 3; j++)
 				mGain[i][j] = .0003;
 				//mGain[i][j] = .05;
+		
 		for (int j = 0; j < 3; j++) {
 		//	mGain[3][j] = .0005;
-			mGain[2][j] = .0015;
+			mGain[2][j] = .0025;
 			mGain[3][j] = 0;
 		}
+		
+		mGain[0][0] = .001;
+		mGain[0][1] = .0003;
+		mGain[0][2] = 0; 
+		mGain[1][0] = .001;
+		mGain[1][1] = .0003;
+		mGain[1][2] = 0;
+		mGain[2][0] = .006;
+		mGain[2][1] = .006;
+		mGain[2][2] = 0;
+				
 		try {
 			if (mEnableLogging)
 				logfile = new FileWriter(logname, false);
@@ -162,6 +179,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 		}
 	}
 	
+	/**
+	 * Obtains the current P error values, concatenates into a string
+	 * @return A string representing the error values.
+	 */
 	private String getErrorString() {
 		return "GUID:ERROR:" + mErrors[0][0]
 		               + ":" + mErrors[1][0]
@@ -169,6 +190,9 @@ public class Guidance implements Runnable, Constants, Receivable {
 		               + ":" + mErrors[3][0];
 	}
 	
+	/**
+	 * Closes the log file.
+	 */
 	public void onDestroy() {
 		try {
 			if (logfile != null)
@@ -523,8 +547,8 @@ public class Guidance implements Runnable, Constants, Receivable {
 			else if (mTempMotorSpeed[i] > 1)
 				mTempMotorSpeed[i] = 1;
 			double diff = mTempMotorSpeed[i] - mMotorSpeed[i];
-			if (i==1)
-				Log.v(TAG, "guid, diff is " + diff);
+			//if (i==1)
+				//Log.v(TAG, "guid, diff is " + diff);
 			if (mStabilizing) {
 				if (diff > 0)
 					mMotorSpeed[i] += Math.min(diff, MAX_DSTABLE);
@@ -533,19 +557,15 @@ public class Guidance implements Runnable, Constants, Receivable {
 			}
 			else {				
 				if (diff > 0) {
-					if (i==1)
-						Log.v(TAG, "guid, adding " + Math.min(diff, MAX_DMOTOR));
 					mMotorSpeed[i] += Math.min(diff, MAX_DMOTOR);
 				}
 				else if (diff < 0) {
-					if (i==1)
-						Log.v(TAG, "guid, adding " + Math.max(diff, -MAX_DMOTOR));
 					mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
 				}
 			}
 			mTempMotorSpeed[i] = mMotorSpeed[i];
-			if (i == 1)
-				Log.v(TAG, "guid, ms1 is " + mMotorSpeed[i]);
+			//if (i == 1)
+			//	Log.v(TAG, "guid, ms1 is " + mMotorSpeed[i]);
 		}	
 		
 		//Send motor values to motors here:
@@ -564,7 +584,9 @@ public class Guidance implements Runnable, Constants, Receivable {
 		}
 	}
 	
-	/* To be finished */
+	/**
+	 * Write motor values to ChopperStatus, BluetoothOutput, logfile.
+	 */
 	private void updateMotors() {
 		//Pass filtered values to ChopperStatus.
 		mStatus.setMotorFields(mMotorSpeed);

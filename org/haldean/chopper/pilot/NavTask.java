@@ -137,14 +137,23 @@ public class NavTask {
 		}
 		return true;
 	}
-
+	
+	/**
+	 * Get velocity target from a NavTrack
+	 * @param nav The NavTrack
+	 * @param target Writes the velocity here.
+	 */
     private void getTrackTarg(NavTrack nav, double[] target) {
     	if (!nav.started()) {
     		nav.start();
     	}
     }
 	
-	
+    /**
+	 * Get velocity target from a NavVel
+	 * @param nav The NavVel
+	 * @param target Writes the velocity here.
+	 */
 	private void getVelTarg(NavData nav, double[] target) {
 		NavVel vel = (NavVel) nav;
 		
@@ -158,6 +167,11 @@ public class NavTask {
 		}
 	}
 	
+	/**
+	 * Get velocity target from a NavDest
+	 * @param nav The NavDest
+	 * @param target Writes the velocity here.
+	 */
 	private void getDestTarg(NavData nav, double[] target) {
 		NavDest lastDest = (NavDest) nav;
 		Location myLoc = myCs.getLastLocation();

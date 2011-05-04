@@ -48,6 +48,8 @@ public class Navigation implements Runnable, Constants, Receivable {
 	 * when autopilot has run out of NavTasks */
 	public static final int HOVER_PAUSE = 1000;
 	
+	public static final String THREE_HRS_IN_MS = "10800000";
+	
 	/** Velocity to achieve.  Must be locked on each read/write. */
 	private double[] mTarget = new double[4];
 	
@@ -118,6 +120,8 @@ public class Navigation implements Runnable, Constants, Receivable {
 			mHandler.sendEmptyMessage(EVAL_NAV);
 			Log.i(TAG, "Autopilot engaged");
 		}
+		else
+			Log.i(TAG, "Autopilot disengaged");
 	}
 	
 	/** Evaluates a new navigation vector, based on current status and the relevant NavTask */
@@ -179,8 +183,8 @@ public class Navigation implements Runnable, Constants, Receivable {
 				" DEST!targ3!587!-117.15!32.72!10!600!234 } } }";*/
 		String taskList = "{ VEL!name1!1!0!0!0!10000!-10 VEL!name1!-1!0!0!0!10000!-10 VEL!name1!0!1!0!0!10000!-10 VEL!name1!0!-1!0!0!10000!-10 VEL!name1!0!0!1!0!10000!-10 VEL!name1!0!0!-1!0!10000!-10 -4}";
 		setTask(BASIC_AUTO, taskList);
-		setTask(NO_CONN, "{ VEL!No_Conn!0!0!-1!0!1000000!-1!-5 -6}");
-		setTask(LOW_POWER, "{ VEL!Low_Power!0!0!-1!0!1000000!-1!-7 -8}");
+		setTask(NO_CONN, "{ VEL!No_Conn!0!0!-1!0!" + THREE_HRS_IN_MS + "!-1!-5 -6}");
+		setTask(LOW_POWER, "{ VEL!Low_Power!0!0!-1!0!"+ THREE_HRS_IN_MS + "!-1!-7 -8}");
 		//mNavStatus.set(BASIC_AUTO);
 		
 		

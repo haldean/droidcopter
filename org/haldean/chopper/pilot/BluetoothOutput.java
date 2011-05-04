@@ -1,13 +1,9 @@
 package org.haldean.chopper.pilot;
 
-import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Binder;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
@@ -27,34 +23,6 @@ public class BluetoothOutput implements Constants, Runnable {
     public BluetoothOutput(ChopperMain context) {
     	this.context = context;
     	initialized = true;
-    	mConnection = new ServiceConnection() {
-    	    public void onServiceConnected(ComponentName className, IBinder service) {
-    	    	Log.i(TAG, "binder data: " + service.toString());
-    	    	/*try {
-    	    		Log.i(TAG, "binder name: " + service.getInterfaceDescriptor());
-    	    	}
-    	    	catch (RemoteException e) {
-    	    		Log.e(TAG, "Remote exception. what?");
-    	    		e.printStackTrace();
-    	    	}*/
-    	    	if (service instanceof AmarinoService.AmarinoServiceBinder) {
-    	    		Log.i(TAG, "binder is as expected.");
-    	    	}
-    	    	else
-    	    		Log.i(TAG, "binder is not and amserbind");
-    	    	if (service instanceof Binder)
-    	    		Log.i(TAG, "binder is a Binder");
-    	    	else
-    	    		Log.i(TAG, "binder is not a Binder");
-    	    	amService = ((AmarinoService.AmarinoServiceBinder)service).getService();
-    	    	Log.i(TAG, "binding initialized");
-    	    }
-
-    	    public void onServiceDisconnected(ComponentName className) {
-    	    	amService = null;
-    	    	Log.e(TAG, "Lost binding to Amarino Service");
-    	    }
-    	};
     }
     
     public void run() {
@@ -100,11 +68,10 @@ public class BluetoothOutput implements Constants, Runnable {
 		intent.putExtra(AmarinoIntent.EXTRA_DATA, data);
 		amService = Amarino.getAmarinoService();
 		if (amService != null) {
-			Log.v(TAG, "sending to amarino");
 			amService.onStart(intent, 0); //Pretty sure that last 0 can be anything.
 		}
-		else
-			Log.e(TAG, "amarino service is null");
+		//else
+			//Log.e(TAG, "amarino service is null");
 	}
 	
     private static Intent getSendIntent(String address, int dataType, char flag){

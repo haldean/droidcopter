@@ -335,7 +335,7 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 
 		/* Initialize GPS reading: */
 		LocationManager LocMan = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
-		LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	GPS_MIN_TIME,	GPS_MIN_DIST,	this);
+		LocMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,	GPS_MIN_TIME, GPS_MIN_DIST,	this);
 		
 		mContext.registerReceiver(batteryInfo, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 
@@ -417,18 +417,18 @@ public final class ChopperStatus implements Runnable, SensorEventListener, Const
 				Log.w(TAG, "No altitude fix");
 			}
 			double newalt = loc.getAltitude();
-			System.out.println("new altitude: " + newalt);
+			Log.i(TAG, "new altitude: " + newalt);
 			/* Vertical velocity does not update until vertical position does; prevents false conclusions that vertical velocity == 0 */
 			double oldAlt = getGpsField(ALTITUDE);
 			if (newalt != oldAlt) {
 				mGpsExtrasLock.lock();
 				long timeElapsed = mGpsTimeStamp - loc.getTime();
 				mGpsExtrasLock.unlock();
-				
-				setGpsField(dALT, (newalt - oldAlt / (double) timeElapsed) * 1000.0);
+				double newdalt = ((newalt - oldAlt) / (double) timeElapsed) * 1000.0;
+				setGpsField(dALT, newdalt);
+				Log.i(TAG, "new dalt: " + newdalt);
+				setGpsField(ALTITUDE, newalt);
 			}
-			
-			setGpsField(ALTITUDE, newalt);
 			setGpsField(BEARING, loc.getBearing());
 			setGpsField(LONG, loc.getLongitude());
 			setGpsField(LAT, loc.getLatitude());			

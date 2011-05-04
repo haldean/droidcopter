@@ -46,16 +46,16 @@ public class Guidance implements Runnable, Constants, Receivable {
 	public static final double MAX_ANGLE = 10;
 	
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
-	public static final double MAX_DMOTOR = .05;
+	public static final double MAX_DMOTOR = .01;
 	
 	/** The maximum change in motor speed permitted at one time if the chopper is stabilizing.  Must be positive. */
-	public static final double MAX_DSTABLE = .1;
+	public static final double MAX_DSTABLE = .05;
 	
 	/** Tag for logging */
 	public static final String TAG = new String("chopper.Guidance");
 	
 	/** Used when a really big number is needed, still small enough to prevent overflow. */
-	private static final double sReallyBig = 10;
+	private static final double sReallyBig = 2.0;
 	
 	/** Handles messages for the thread */
 	private Handler mHandler;
@@ -143,12 +143,13 @@ public class Guidance implements Runnable, Constants, Receivable {
 		mBt = bT;
 		
 		//Temporary: need real tuning values at some point. Crap.
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 2; i++)
 			for (int j = 0; j < 3; j++)
-				mGain[i][j] = .0001;
+				mGain[i][j] = .0003;
 				//mGain[i][j] = .05;
 		for (int j = 0; j < 3; j++) {
 		//	mGain[3][j] = .0005;
+			mGain[2][j] = .0015;
 			mGain[3][j] = 0;
 		}
 		try {
@@ -287,6 +288,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 	
 	/** Core of the class; calculates new motor speeds based on status */
 	private void reviseMotorSpeed() {
+		mHandler.removeMessages(EVAL_MOTOR_SPEED);
 		//Log.v(TAG, "START MOTOR REVISION");
 		long starttime = System.currentTimeMillis();
 		
@@ -345,9 +347,12 @@ public class Guidance implements Runnable, Constants, Receivable {
 					}
 					else {
 						//Log.v(TAG, "Local vectors");
+						String targ = "";
 						for (int i = 0; i < 4; i++) {
 							mTarget[i] = absTarget[i];
+							targ = targ + " " + mTarget[i];
 						}
+						//Log.v(TAG, "guid, nav targ: " + targ);
 					}
 					
 					//Calculate recorded velocity; reduce, if necessary, to MAXVEL
@@ -357,7 +362,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 					}
 					myVel = Math.sqrt(myVel);
 					if (myVel > MAX_VEL) {
-						//Log.v(TAG, "Reducing requested velocity");
+						Log.v(TAG, "guid, Reducing requested velocity");
 						double adjustment = MAX_VEL / myVel;
 						for (int i = 0; i < 3; i++) {
 							mTarget[i] *= adjustment;
@@ -378,18 +383,30 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Retrieve current absolute velocity.  For now, only from GPS data; later, maybe write a kalman filter to use accelerometer data as well. 
 		//Transform current velocity from absolute to relative
 		
-		//CHECK SIGN HERE:
-		mGpsBearing = mStatus.getGpsFieldNow(BEARING, mGpsBearing);
-		double theta = (mGpsBearing - mAzimuth) * Math.PI / 180.0;
-		
-		mGpsSpeed = mStatus.getGpsFieldNow(SPEED, mGpsSpeed);
-		mCurrent[0] = mGpsSpeed * Math.sin(theta);
-		mCurrent[1] = mGpsSpeed * Math.cos(theta);
-		
-		mGpsDalt = mStatus.getGpsFieldNow(dALT, mGpsDalt);
-		mCurrent[2] = mGpsDalt;
-		mCurrent[3] = mAzimuth;
-		
+		if (mStabilizing) {
+			mCurrent[0] = 0;
+			mCurrent[1] = 0;
+			mCurrent[2] = 0;
+			mCurrent[3] = mAzimuth;
+		}
+		else {
+			mGpsBearing = mStatus.getGpsFieldNow(BEARING, mGpsBearing);
+			double theta = (mGpsBearing - mAzimuth) * Math.PI / 180.0;
+			
+			mGpsSpeed = mStatus.getGpsFieldNow(SPEED, mGpsSpeed);
+			mCurrent[0] = mGpsSpeed * Math.sin(theta);
+			mCurrent[1] = mGpsSpeed * Math.cos(theta);
+			
+			mGpsDalt = mStatus.getGpsFieldNow(dALT, mGpsDalt);
+			mCurrent[2] = mGpsDalt;
+			mCurrent[3] = mAzimuth;
+			
+			String targ = "guid, curr vec: ";
+			for (int i = 0; i < 4; i++) {
+				targ = targ + " " + mCurrent[i];
+			}
+			//Log.v(TAG, targ);
+		}
 		
 		for (int i = 0; i < 4; i++) {
 			//Calculate proportional errors
@@ -407,7 +424,8 @@ public class Guidance implements Runnable, Constants, Receivable {
 			
 			//Mark proportional error
 			mErrors[i][0] = err;
-			
+			/*if (i == 2)
+				Log.v(TAG, "guid, dalt err is " + err);*/
 			//Update integral errors
 			mErrors[i][1] -= mIntegralErrors[i][mIntegralIndex];
 			mIntegralErrors[i][mIntegralIndex] = err;
@@ -418,25 +436,39 @@ public class Guidance implements Runnable, Constants, Receivable {
 			
 			//Calculate changes in output
 			for (int j = 0; j < 3; j++) {
+			/*	if (i == 1) {
+					Log.v(TAG, "guid, dy error " + j + " is " + mErrors[i][j]);
+					Log.v(TAG, "guid, dy gain " + j + " is " + mGain[i][j]);
+				}*/
 				dmotor += mErrors[i][j] * mGain[i][j];
 			}
+			/*if (i == 1)
+				Log.v(TAG, "guid, dmotor 1 is " + dmotor);
+			if (i == 2)
+				Log.v(TAG, "guid, dmotor 2 is " + dmotor);*/
 			double phi = 0;
 			switch (i) {
 			case 0: //X velocity
-				phi = Math.sin(rollrad);
-				phi = Math.abs(phi);
-				if (phi == 0)
-					dmotor = 2 * dmotor; 
-				else
-					dmotor = dmotor / phi;
+				if (!mStabilizing) {
+					phi = Math.sin(rollrad);
+					phi = Math.abs(phi);
+					if (phi == 0)
+						dmotor = 2 * dmotor; 
+					else
+						dmotor = dmotor / phi;
+				}
 				break;
 			case 1: //Y velocity
-				phi = Math.sin(pitchrad);
-				phi = Math.abs(phi);
-				if (phi == 0)
-					dmotor = 2 * dmotor;
-				else
-					dmotor = dmotor / phi;
+				if (!mStabilizing) {
+					phi = Math.sin(pitchrad);
+					phi = Math.abs(phi);
+					if (phi == 0)
+						dmotor = 2 * dmotor;
+					else
+						dmotor = dmotor / phi;
+					Log.v(TAG, "guid, phi 1 is " + phi);
+					Log.v(TAG, "guid, dmotor 1 is " + dmotor);
+				}
 				break;
 			case 2: //Z velocity
 				phi = Math.cos(ascentrad);
@@ -445,6 +477,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 					dmotor = 0; //Don't bother with altitude control, gives more efficiency to torque[0, 1] for stabilization
 				else
 					dmotor = dmotor / phi;
+				//Log.v(TAG, "guid, phi 2 is " + phi);
 				break;
 			case 3: //Azimuth
 				break;
@@ -454,6 +487,11 @@ public class Guidance implements Runnable, Constants, Receivable {
 		}
 		mLastUpdate = thistime;
 		
+		/*String targ = "";
+		for (int i = 0; i < 4; i++)
+			targ = targ + " " + mTorques[i];
+		Log.v(TAG, "guid, torques is " + targ);
+		*/
 		if ((!mHorizontalDrift) || (mStabilizing)) { //if horizontal drift is on, motor speeds give full efficiency to altitude control
 		//but if the chopper is stabilizing, under no circumstances ignore torques 0, 1
 			//changes torques to motor values
@@ -485,6 +523,8 @@ public class Guidance implements Runnable, Constants, Receivable {
 			else if (mTempMotorSpeed[i] > 1)
 				mTempMotorSpeed[i] = 1;
 			double diff = mTempMotorSpeed[i] - mMotorSpeed[i];
+			if (i==1)
+				Log.v(TAG, "guid, diff is " + diff);
 			if (mStabilizing) {
 				if (diff > 0)
 					mMotorSpeed[i] += Math.min(diff, MAX_DSTABLE);
@@ -492,12 +532,20 @@ public class Guidance implements Runnable, Constants, Receivable {
 					mMotorSpeed[i] += Math.max(diff, -MAX_DSTABLE);
 			}
 			else {				
-				if (diff > 0)
+				if (diff > 0) {
+					if (i==1)
+						Log.v(TAG, "guid, adding " + Math.min(diff, MAX_DMOTOR));
 					mMotorSpeed[i] += Math.min(diff, MAX_DMOTOR);
-				else if (diff < 0)
+				}
+				else if (diff < 0) {
+					if (i==1)
+						Log.v(TAG, "guid, adding " + Math.max(diff, -MAX_DMOTOR));
 					mMotorSpeed[i] += Math.max(diff, -MAX_DMOTOR);
+				}
 			}
-			mMotorSpeed[i] = mTempMotorSpeed[i];
+			mTempMotorSpeed[i] = mMotorSpeed[i];
+			if (i == 1)
+				Log.v(TAG, "guid, ms1 is " + mMotorSpeed[i]);
 		}	
 		
 		//Send motor values to motors here:

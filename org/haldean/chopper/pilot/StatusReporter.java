@@ -6,7 +6,6 @@ import java.util.ListIterator;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 
 /**
  * Sends regular chopper status reports to all registered receivers. <P>
@@ -61,26 +60,17 @@ public class StatusReporter implements Runnable, Constants {
 		LinkedList<String> infoList = new LinkedList<String>();
 		
 		/* Lock data, send it, unlock.  If the lock is unavailable (unlikely), skip this datapiece for this iteration */
-		try {
-			double myAzimuth = mStatus.getReadingFieldNow(AZIMUTH);
-			double myPitch = mStatus.getReadingFieldNow(PITCH);
-			double myRoll = mStatus.getReadingFieldNow(ROLL);
-			infoList.add("ORIENT:" + myAzimuth + ":" + myPitch + ":" + myRoll);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Orientation Report Unavailable");
-		}
+		double myAzimuth = mStatus.getReadingField(AZIMUTH);
+		double myPitch = mStatus.getReadingField(PITCH);
+		double myRoll = mStatus.getReadingField(ROLL);
+		infoList.add("ORIENT:" + myAzimuth + ":" + myPitch + ":" + myRoll);
 		
-		try {
-			double myXaccel = mStatus.getReadingFieldNow(X_ACCEL);
-			double myYaccel = mStatus.getReadingFieldNow(Y_ACCEL);
-			double myZaccel = mStatus.getReadingFieldNow(Z_ACCEL);
-			infoList.add("ACCEL:" + myXaccel + ":" + myYaccel + ":" + myZaccel);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Acceleration Report Unavailable");
-		}
-
+		
+		double myXaccel = mStatus.getReadingField(X_ACCEL);
+		double myYaccel = mStatus.getReadingField(Y_ACCEL);
+		double myZaccel = mStatus.getReadingField(Z_ACCEL);
+		infoList.add("ACCEL:" + myXaccel + ":" + myYaccel + ":" + myZaccel);
+			
 		/*try {
 			double myXflux = mStatus.getReadingFieldNow(X_FLUX);
 			double myYflux = mStatus.getReadingFieldNow(Y_FLUX);
@@ -91,16 +81,13 @@ public class StatusReporter implements Runnable, Constants {
 			Log.w(TAG, "Flux Report Unavailable");
 		}*/
 		
-		try {
-			double[] mySpeeds = mStatus.getMotorFieldsNow();
-			infoList.add("MOTORSPEED:" + mySpeeds[0] +
-					":" + mySpeeds[1] +
-					":" + mySpeeds[2] +
-					":" + mySpeeds[3]);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "MotorSpeeds Report Unavailable");
-		}
+		double[] mySpeeds = new double[4];
+		mStatus.getMotorFields(mySpeeds);
+		infoList.add("MOTORSPEED:" + mySpeeds[0] +
+				":" + mySpeeds[1] +
+				":" + mySpeeds[2] +
+				":" + mySpeeds[3]);
+	
 		/*
 		try {
 			double[] myPowers = mStatus.getMotorFieldsNow();
@@ -136,30 +123,18 @@ public class StatusReporter implements Runnable, Constants {
 			Log.w(TAG, "Pressure Report Unavailable");
 		}
 		*/
-		try {
-			double myTemp = mStatus.getReadingFieldNow(TEMPERATURE);
-			infoList.add("TEMPERATURE:" + myTemp);
-		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "Temperature Report Unavailable");
-		}
-		
+		infoList.add("TEMPERATURE:" + mStatus.getReadingField(TEMPERATURE));
 		infoList.add("BATTERY:" + mStatus.getBatteryLevel());
 		
 		/* Send GPS data */
 		String gpsData = new String("GPS");
-		try {
-			for (int i = 0; i < GPS_FIELDS; i++) {
-				double myValue = mStatus.getGpsFieldNow(i);
-				gpsData += ":" + myValue;
-			}
-			
-			gpsData += ":" + mStatus.getGpsExtrasNow();			
-			infoList.add(gpsData);
+
+		for (int i = 0; i < GPS_FIELDS; i++) {
+			double myValue = mStatus.getGpsField(i);
+			gpsData += ":" + myValue;
 		}
-		catch (IllegalAccessException e) {
-			Log.w(TAG, "GPS Report Unavailable");
-		}
+		gpsData += ":" + mStatus.getGpsExtras();			
+		infoList.add(gpsData);
 		
 		return infoList;
 	}

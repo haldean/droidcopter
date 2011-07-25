@@ -16,13 +16,14 @@ public final class ChopperMain extends Activity implements Constants
 	/** Tag for logging */
 	public static final String TAG = "chopper.ChopperMain";
 	
-	private boolean telemetry = false;
+	private boolean telemetry = true;
 	
 	/** Prevent duplicate launching of threads if app loses focus **/
 	private static boolean mFirstRun = true;
 	
 	/** Need a permanent reference to this, to destroy it. **/
 	private Guidance guid;
+	private ChopperStatus status;
 	
 	/**
 	 * Holds the wakelock; needed to keep the camera preview rendering on
@@ -79,7 +80,7 @@ public final class ChopperMain extends Activity implements Constants
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
         Comm comm = new Comm(true);
-        ChopperStatus status = new ChopperStatus(getApplicationContext());
+        status = new ChopperStatus(getApplicationContext());
         StatusReporter reporter = new StatusReporter(status);
         MakePicture pic = null;
         if (telemetry) {
@@ -95,6 +96,7 @@ public final class ChopperMain extends Activity implements Constants
         }
         comm.registerReceiver(NAV, nav);
         comm.registerReceiver(CSYS, nav);
+        comm.registerReceiver(CSYS, guid);
         comm.registerReceiver(GUID, guid);
         comm.registerReceiver(GUID, nav);
         
@@ -117,7 +119,6 @@ public final class ChopperMain extends Activity implements Constants
 	        if (telemetry) {
 	        	new Thread(pic).start();
 	        }
-	        new Thread(nav).start();
 	        new Thread(guid).start();
         }
         catch (Exception e) {
@@ -135,5 +136,7 @@ public final class ChopperMain extends Activity implements Constants
 		super.onDestroy();
 		if (guid != null)
 			guid.onDestroy();
+		if (status != null)
+			status.close();
 	} 
 }

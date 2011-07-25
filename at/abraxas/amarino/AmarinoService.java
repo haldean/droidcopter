@@ -306,9 +306,15 @@ public class AmarinoService extends Service {
 		localDevice.init(this, new ReadyListener() {
 			@Override
 			public void ready() {
-				RemoteDevice device = localDevice.getRemoteForAddr(address);
-				localDevice.destroy();
-				new ConnectThread(device).start();
+				try {
+					RemoteDevice device = localDevice.getRemoteForAddr(address);
+					localDevice.destroy();
+					new ConnectThread(device).start();
+				}
+				catch (NullPointerException e) {
+					Log.e(TAG, "Fuck external libraries.");
+					e.printStackTrace();
+				}
 			}
 		});
 		

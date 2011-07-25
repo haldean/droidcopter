@@ -16,8 +16,9 @@ import gov.nasa.worldwind.geom.Position;
  *  @author William Brown
  */
 public class EnsignCrusher {
-    private static String navGoToManual = "NAV:SET:MANUAL";
-    private static String navGoToAutomatic = "NAV:SET:AUTOPILOT";
+	private static String navGoToDirect = "GUID:DIRECT";  // Direct control of motor speeds.
+    private static String navGoToManual = "GUID:MANUAL";  // Manual control of chopper target angles.
+    private static String navGoToAutomatic = "GUID:AUTO";  // Full automatic navigation.
     private static double bearing = 0;
 
     /* In meters per second (we hope.) */
@@ -99,7 +100,7 @@ public class EnsignCrusher {
      *  the motor closest to North.
      */
     public static void setMotorSpeeds(double[] speeds) {
-	String taskString = "GUID:VECTOR";
+	String taskString = navGoToDirect;
 	for (int i=0; i<4; i++) {
 	    taskString += ":" + speeds[i];
 	}

@@ -112,21 +112,21 @@ public class Guidance implements Runnable, Constants, Receivable {
 	/**
 	 * Constructs a Guidance object
 	 * @param status The source status information.
-	 * @param nav The source of navigation target information.
 	 */
-	public Guidance(ChopperStatus status, Navigation nav, BluetoothOutput bT) {
-		if (status == null | nav == null) {
+	public Guidance(ChopperStatus status, BluetoothOutput bT, Angler angler) {
+		if (status == null || angler == null) {
 			throw new NullPointerException();
 		}
 		mStatus = status;
 		mRec = new LinkedList<Receivable>();
 		mBt = bT;
-		mAngler = new Angler(status, nav);
+		mAngler = angler;
+		createHandler();  // Overridden at thread start.  Here for testing.
 		
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 3; i++)
-			mGain[i][0] = .1;
-		mGain[3][0] = 0;
+			mGain[i][0] = .01;
+		mGain[3][0] = .01;
 				
 		try {
 			if (mEnableLogging)
@@ -162,13 +162,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		}
 	}
 	
-	/**
-	 * Starts the guidance thread
-	 */
-	public void run() {
-		Looper.prepare();
-		Thread.currentThread().setName("Guidance");
-		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+	private void createHandler() {
 		mHandler = new Handler() {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
@@ -204,6 +198,16 @@ public class Guidance implements Runnable, Constants, Receivable {
 				}
 			}
 		};
+	}
+	
+	/**
+	 * Starts the guidance thread
+	 */
+	public void run() {
+		Looper.prepare();
+		Thread.currentThread().setName("Guidance");
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+		createHandler();
 		//mHandler.sendEmptyMessage(EVAL_MOTOR_SPEED);
 		receiveMessage("DIRECT:0:0:0:0", null);
 		Looper.loop();
@@ -293,11 +297,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 	}
 	
 	/** Core of the class; calculates new motor speeds based on status */
-	private void reviseMotorSpeed() {
+	public void reviseMotorSpeed() {
 		mHandler.removeMessages(EVAL_MOTOR_SPEED);
 		long starttime = System.currentTimeMillis();
-		updateAngleTarget();
-		
+
 		//Retrieve current orientation.		
 		
 		mAzimuth = mStatus.getReadingField(AZIMUTH);		
@@ -306,10 +309,12 @@ public class Guidance implements Runnable, Constants, Receivable {
 		
 		double[] errors = new double[4];
 		synchronized (mAngleTarget) {
+			logArray("mAngleTarget", mAngleTarget);
 			errors[0] = mAngleTarget[0] - mRollDeg;
 			errors[1] = mAngleTarget[1] - mPitchDeg;
 			errors[2] = mAngleTarget[2] - mStatus.getGpsField(dALT);
 			errors[3] = mAngleTarget[3] - mAzimuth;
+			logArray("errors", errors);
 		}
 		
 		String errs = "errors: ";
@@ -330,7 +335,12 @@ public class Guidance implements Runnable, Constants, Receivable {
 			
 
 			//Calculate derivative errors.
-			mErrors[i][2] = (err - mErrors[i][0]) * 1000.0 / (starttime - mLastUpdate);
+			long timeInterval = starttime - mLastUpdate;
+			if (timeInterval != 0) {
+				mErrors[i][2] = (err - mErrors[i][0]) * 1000.0 / (starttime - mLastUpdate);
+			} else {
+				mErrors[i][2] = 0.0;
+			}
 			
 			
 			//Mark proportional error
@@ -371,7 +381,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		
 		//Send motor values to motors here:
 		updateMotors();
-		
+		updateAngleTarget();
 		//Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
 		long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);
@@ -388,6 +398,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 	}
 	
 	private void controlVarsToMotorSpeeds() {
+		logArray("controlVars", mControlVars);
 		double pitchrad = mPitchDeg * Math.PI / 180.0;
 		double rollrad = mRollDeg * Math.PI / 180.0;
 		double gradient = Math.sqrt(
@@ -400,13 +411,18 @@ public class Guidance implements Runnable, Constants, Receivable {
 		
 		double x = mControlVars[0];
 		double y = mControlVars[1];
-		double z = mControlVars[2] / cosGrad;
+		double z;
+		if (cosGrad != 0) {
+			z = mControlVars[2] / cosGrad;
+		} else {
+			z = mControlVars[2];
+		}
 		double t = mControlVars[3];
 		
 		mMotorSpeed[0] = Math.sqrt(constrainValue(t - 2*y + z, 0, 1));
 		mMotorSpeed[1] = Math.sqrt(constrainValue(t + 2*y + z, 0, 1));
 		mMotorSpeed[2] = Math.sqrt(constrainValue(-t - 2*x + z, 0, 1));
-		mMotorSpeed[3] = Math.sqrt(constrainValue(-t + 2*x + z, 0 ,1));
+		mMotorSpeed[3] = Math.sqrt(constrainValue(-t + 2*x + z, 0, 1));
 	}
 	
 	private void updateAngleTarget() {
@@ -434,7 +450,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 	}
 	
 	/**
-	 * Write motor values to ChopperStatus, BluetoothOutput, logfile.
+	 * Write motor values to ChopperStatus, BluetoothOutputImpl, logfile.
 	 */
 	private void updateMotors() {
 		//Pass filtered values to ChopperStatus.
@@ -450,8 +466,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 			//Log.e(TAG, "Cannot write to logfile");
 		}
 		//Pass motor values to motor controller!
-		Message msg = Message.obtain(mBt.mHandler, SEND_MOTOR_SPEEDS, mMotorSpeed);
-		msg.sendToTarget();
+		Message msg = Message.obtain();
+		msg.what = SEND_MOTOR_SPEEDS;
+		msg.obj = mMotorSpeed;
+		mBt.sendMessageToHandler(msg);
 		//Log.i(TAG, "Guidance sending message.");
 		
 	}
@@ -467,6 +485,14 @@ public class Guidance implements Runnable, Constants, Receivable {
 				myList.next().receiveMessage(str, this);
 			}
 		}
+	}
+	
+	private static void logArray(String id, double[] array) {
+		String output = id + ": ";
+		for (int i = 0; i < array.length; i++) {
+			output += array[i] + ", ";
+		}
+		Log.v(TAG, output);
 	}
 }
 

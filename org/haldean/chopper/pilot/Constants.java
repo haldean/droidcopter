@@ -27,7 +27,7 @@ public interface Constants {
 	/** Message for MakePicture handler, instructing to send a list of available preview sizes to the server */
 	public static final int SEND_SIZES = 105;
 	
-	/** Message for Navigation handler, instructing it to calculate the desired velocity vector */
+	/** Message for NavigationImpl handler, instructing it to calculate the desired velocity vector */
 	public static final int EVAL_NAV = 106;
 	
 	/** Message for Comm handler, instructing it to attempt to make a data (telemetry) connection with the server */
@@ -42,7 +42,7 @@ public interface Constants {
 	/** Message for Guidance handler, passing a manual vector for motorspeeds **/
 	public static final int NEW_GUID_VECTOR = 110;
 	
-	/** Message for BluetoothOutput, passing a vector to transmit to motors. **/
+	/** Message for BluetoothOutputImpl, passing a vector to transmit to motors. **/
 	public static final int SEND_MOTOR_SPEEDS = 111;
 	
 	/** Message for Guidance handler, instructing it to obtain PID values **/

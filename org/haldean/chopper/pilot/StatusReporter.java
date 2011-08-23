@@ -28,13 +28,13 @@ import android.os.Message;
  */
 public class StatusReporter implements Runnable, Constants {
 	
-	/** How often (in ms) status updates should be sent by ChopperStatus to the server */
+	/** How often (in ms) status updates should be sent by ChopperStatusImpl to the server */
 	public int updateInterval = 350;
 	
 	/** Tag for logging */
 	public static final String TAG = "chopper.StatusReporter";
 	
-	/** The ChopperStatus from which to compile status reports */
+	/** The ChopperStatusImpl from which to compile status reports */
 	private ChopperStatus mStatus;
 	
 	/** List of registered receivers */
@@ -45,7 +45,7 @@ public class StatusReporter implements Runnable, Constants {
 	
 	/**
 	 * Constructs the object.
-	 * @param status The ChopperStatus from which to compile status reports
+	 * @param status The ChopperStatusImpl from which to compile status reports
 	 */
 	public StatusReporter(ChopperStatus status) {
 		mRec = new LinkedList<Receivable>();

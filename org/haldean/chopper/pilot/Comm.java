@@ -208,11 +208,11 @@ public final class Comm implements Runnable, Receivable, Constants {
 	}
 	
 	/**
-	 * Registers a receiver to receive a category of Comm updates, especially MakePicture and Navigation objects.
+	 * Registers a receiver to receive a category of Comm updates, especially MakePicture and NavigationImpl objects.
 	 * @param msgType The type of updates for which to register.
 	 * @param receiver The receiver to register.
 	 * @see MakePicture MakePicture
-	 * @see Navigation Navigation
+	 * @see NavigationImpl NavigationImpl
 	 */
 	public void registerReceiver(int msgType, Receivable receiver) {
 		LinkedList<Receivable> myList = mMsgTypes.get(msgType);

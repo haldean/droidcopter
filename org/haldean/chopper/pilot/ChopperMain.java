@@ -23,7 +23,7 @@ public final class ChopperMain extends Activity implements Constants
 	
 	/** Need a permanent reference to this, to destroy it. **/
 	private Guidance guid;
-	private ChopperStatus status;
+	private ChopperStatusImpl status;
 	
 	/**
 	 * Holds the wakelock; needed to keep the camera preview rendering on
@@ -43,7 +43,7 @@ public final class ChopperMain extends Activity implements Constants
 	 */
 	public void onStart() {
 		super.onStart();
-		Amarino.connect(this, BluetoothOutput.BT_DEVICE_ADDR);
+		Amarino.connect(this, BluetoothOutputImpl.BT_DEVICE_ADDR);
 	}
 	
 	/**
@@ -51,7 +51,7 @@ public final class ChopperMain extends Activity implements Constants
 	 */
 	public void onStop() {
 		super.onStop();
-		Amarino.disconnect(this, BluetoothOutput.BT_DEVICE_ADDR);
+		Amarino.disconnect(this, BluetoothOutputImpl.BT_DEVICE_ADDR);
 	}
 	
 	/**
@@ -80,15 +80,16 @@ public final class ChopperMain extends Activity implements Constants
         previewHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         
         Comm comm = new Comm(true);
-        status = new ChopperStatus(getApplicationContext());
+        status = new ChopperStatusImpl(getApplicationContext());
         StatusReporter reporter = new StatusReporter(status);
         MakePicture pic = null;
         if (telemetry) {
         	pic = new MakePicture(previewHolder);
         }
-        BluetoothOutput mBTooth = new BluetoothOutput();
-        Navigation nav = new Navigation(status);
-        guid = new Guidance(status, nav, mBTooth);
+        BluetoothOutputImpl mBTooth = new BluetoothOutputImpl();
+        NavigationImpl nav = new NavigationImpl(status);
+        Angler angler = new AnglerImpl(status, nav);
+        guid = new Guidance(status, mBTooth, angler);
         
         if (telemetry) {
 	        comm.setTelemetrySource(pic);

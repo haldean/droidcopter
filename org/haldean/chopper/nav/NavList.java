@@ -16,8 +16,7 @@ public class NavList extends NavData {
     
 	/**
 	 * Deserializes a NavList from valid serialized String form.
-	 * @param msg Serialized form of the NavList
-	 * @param cs The ChopperStatus with which to construct NavDests.
+	 * @param str Serialized form of the NavList
 	 * May be null, in which case null we be passed to the NavDestReader constructor. 
 	 */
 	

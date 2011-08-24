@@ -3,6 +3,8 @@ package org.haldean.chopper.pilot;
 import android.util.Log;
 
 public class AnglerImpl implements Constants, Angler {
+	private static final double LOW_SPEED_CUTOFF = .01;
+	
 	private Navigation mNav;
 	private ChopperStatus mStatus;
 	private double[] mNavTarget;
@@ -35,7 +37,10 @@ public class AnglerImpl implements Constants, Angler {
 		mRelativeTarget[1] = mNavTarget[0] * Math.sin(theta) + mNavTarget[1] * Math.cos(theta);
 		mRelativeTarget[2] = mNavTarget[2];
 		mRelativeTarget[3] = mNavTarget[3];
-			
+		
+		mRelativeTarget[0] = lowSpeedCutoff(mRelativeTarget[0]);
+		mRelativeTarget[1] = lowSpeedCutoff(mRelativeTarget[1]);
+		
 		//Calculate target speed; if necessary, reduce to MAX_VEL by proportionately adjusting components.
 		double myVel = 0;
 		for (int i = 0; i < 3; i++) {
@@ -55,20 +60,27 @@ public class AnglerImpl implements Constants, Angler {
 		double phi = (mGpsBearing - mAzimuth) * Math.PI / 180.0;
 		
 		double mGpsSpeed = mStatus.getGpsField(SPEED);
+
 		mCurrent[0] = mGpsSpeed * Math.sin(phi);
 		mCurrent[1] = mGpsSpeed * Math.cos(phi);
 		mCurrent[2] = mStatus.getGpsField(dALT);
 		mCurrent[3] = mAzimuth;
 		
+		mCurrent[0] = lowSpeedCutoff(mCurrent[0]);
+		mCurrent[1] = lowSpeedCutoff(mCurrent[1]);
+		
+		logArray("mCurrent", mCurrent);
+		logArray("mRelativeTarget", mRelativeTarget);
+		
 		if (mCurrent[0] < mRelativeTarget[0]) {
 			target[0] += 1.0;
-		} else {
+		} else if (mCurrent[0] > mRelativeTarget[0]) {
 			target[0] -= 1.0;
 		}
 		
 		if (mCurrent[1] < mRelativeTarget[1]) {
 			target[1] += 1.0;
-		} else {
+		} else if (mCurrent[1] > mRelativeTarget[1]) {
 			target[1] -= 1.0;
 		}
 		
@@ -78,6 +90,12 @@ public class AnglerImpl implements Constants, Angler {
 		target[3] = mRelativeTarget[3];
 	}
 	
+	private static double lowSpeedCutoff(double requested) {
+		if (Math.abs(requested) < LOW_SPEED_CUTOFF) {
+			return 0;
+		}
+		return requested;
+	}
 	private static double restrainedTarget(double requested) {
 		if (requested < -MAX_ANGLE) {
 			return -MAX_ANGLE;
@@ -86,5 +104,13 @@ public class AnglerImpl implements Constants, Angler {
 			return MAX_ANGLE;
 		}
 		return requested;
+	}
+	
+	private static void logArray(String id, double[] array) {
+		String output = id + ": ";
+		for (int i = 0; i < array.length; i++) {
+			output += array[i] + ", ";
+		}
+		Log.v(TAG, output);
 	}
 }

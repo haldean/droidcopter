@@ -46,8 +46,7 @@ public class MockChopperStatus implements ChopperStatus, Constants {
 
 	@Override
 	public double getGpsField(int whichField) {
-		// TODO Auto-generated method stub
-		return 0;
+		return mGps[whichField];
 	}
 
 	@Override

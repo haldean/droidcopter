@@ -31,7 +31,7 @@ public class GuidanceTest extends AndroidTestCase implements Constants {
 		
 	}
 	
-	public void testFacingNorth() throws Exception {
+	public void testBasicCorrections() throws Exception {
 		guid.receiveMessage("GUID:AUTOPILOT", null);
 		double[] angleTarget = new double[4];
 		double[] oldSpeeds = new double[4];

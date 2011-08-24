@@ -59,7 +59,6 @@ public class DeviceDiscovery extends ListActivity {
 	
 	protected static String ADDRESS_EXTRA = "device_address";
 	
-	@SuppressWarnings("unused")
 	private static final String TAG = "DeviceDiscovery";
 	
 	private DeviceAdapter adapter;

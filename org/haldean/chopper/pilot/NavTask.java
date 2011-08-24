@@ -175,22 +175,18 @@ public class NavTask {
 	private void getDestTarg(NavData nav, double[] target) {
 		NavDest lastDest = (NavDest) nav;
 		Location myLoc = myCs.getLastLocation();
-		if (myLoc != null) {
-			currentLoc = myLoc;
-			if (destination == null) {
-				destination = new Location(currentLoc);
-			}
-			
-			destination.setAltitude(lastDest.getAltitude());
-			destination.setLongitude(lastDest.getLongitude());
-			destination.setLatitude(lastDest.getLatitude());
-			
-		}
-		else {
+		if (myLoc == null) {
 			Log.w(TAG, "GPS Not Initialized");
 			return;
 		}
+		currentLoc = myLoc;
+		if (destination == null) {
+			destination = new Location(currentLoc);
+		}
 		
+		destination.setAltitude(lastDest.getAltitude());
+		destination.setLongitude(lastDest.getLongitude());
+		destination.setLatitude(lastDest.getLatitude());
 		
 		//Bearing, in degrees
 		double bearingDeg = currentLoc.bearingTo(destination);

@@ -181,6 +181,7 @@ public class Segmenter {
 
     private class Area {
 	int size = 0;
+	@SuppressWarnings("unused")
 	int label = 0;
 	int x = 0;
 	int y = 0;

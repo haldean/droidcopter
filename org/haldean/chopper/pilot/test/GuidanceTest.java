@@ -43,12 +43,88 @@ public class GuidanceTest extends AndroidTestCase implements Constants {
 		angleTarget[0] = 10.0;
 		mAngler.setAngleTarget(angleTarget);
 		incrementGpsTimeStamp();
+		
+		motorTarget[3] = 1.0;
+		motorTarget[2] = 0.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the right, pitch 5");
+		mCs.setReadingField(PITCH, 5);
+		angleTarget[0] = 10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
+		motorTarget[0] = 1.0;
+		motorTarget[3] = 1.0;
+		motorTarget[2] = 0.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the right");
+		mCs.setReadingField(ROLL, 5);
+		angleTarget[0] = 10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
+		motorTarget[3] = 1.0;
+		motorTarget[2] = 0.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the right");
+		mCs.setReadingField(PITCH, -5);
+		angleTarget[0] = 10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
+		motorTarget[3] = 1.0;
+		motorTarget[2] = 0.0;
+		motorTarget[0] = 0.0;
+		motorTarget[1] = 1.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the right");
+		mCs.setReadingField(ROLL, -5);
+		angleTarget[0] = 10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
+		motorTarget[3] = 1.0;
+		motorTarget[2] = 0.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the right");
+		mCs.setReadingField(ROLL, 0);
+		mCs.setReadingField(PITCH, 0);
+		angleTarget[0] = 10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
 		motorTarget[3] = 1.0;
 		motorTarget[2] = 0.0;
 		checkAngles(oldSpeeds, newSpeeds, motorTarget);
 
 		Log.v(TAG, " ");
 		Log.v(TAG, "10 degrees to the left");
+		angleTarget[0] = -10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
+		motorTarget[2] = 1.0;
+		motorTarget[3] = 0.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the left");
+		mCs.setReadingField(ROLL, 5);
+		angleTarget[0] = -10.0;
+		mAngler.setAngleTarget(angleTarget);
+		incrementGpsTimeStamp();
+		motorTarget[2] = 1.0;
+		motorTarget[3] = 0.0;
+		checkAngles(oldSpeeds, newSpeeds, motorTarget);
+		
+		Log.v(TAG, " ");
+		Log.v(TAG, "10 degrees to the left");
+		mCs.setReadingField(ROLL, -5);
 		angleTarget[0] = -10.0;
 		mAngler.setAngleTarget(angleTarget);
 		incrementGpsTimeStamp();
@@ -163,7 +239,7 @@ public class GuidanceTest extends AndroidTestCase implements Constants {
 	}
 	
 	private void checkAngles(double[] oldSpeed, double[] newSpeed, double[] finalSpeed) {
-		for (int j = 0; j < 40; j++) {
+		for (int j = 0; j < 160; j++) {
 			mCs.getMotorFields(oldSpeed);
 			guid.reviseMotorSpeed();
 			mCs.getMotorFields(newSpeed);

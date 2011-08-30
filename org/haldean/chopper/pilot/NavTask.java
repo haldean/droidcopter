@@ -197,13 +197,22 @@ public class NavTask {
 		double bearingRad = bearingDeg / 180.0 * Math.PI;
 		target[0] = Math.sin(bearingRad);
 		target[1] = Math.cos(bearingRad);
-		target[2] = verDistance / horDistance;
+		if (horDistance != 0) {
+			target[2] = verDistance / horDistance;
+		} else {
+			target[2] = verDistance; 
+		}
 		
 		//Determine magnitude, "normalize" to myVelocity
 		double mag = Math.sqrt(Math.pow(target[0], 2) +
 								Math.pow(target[1], 2) +
 								Math.pow(target[2], 2));
-		double adjustment = lastDest.getVelocity() / mag;
+		double adjustment;
+		if (mag != 0) {
+			adjustment = lastDest.getVelocity() / mag;
+		} else {
+			adjustment = 0.0;
+		}
 		
 		for (int i = 0; i < 3; i++)
 			target[i] *= adjustment;

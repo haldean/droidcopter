@@ -49,7 +49,12 @@ public class AnglerImpl implements Constants, Angler {
 		myVel = Math.sqrt(myVel);
 		if (myVel > MAX_VEL) {
 			Log.v(TAG, "guid, Reducing requested velocity");
-			double adjustment = MAX_VEL / myVel;
+			double adjustment;
+			if (myVel != 0) {
+				adjustment = MAX_VEL / myVel;
+			} else {
+				adjustment = 0;
+			}
 			for (int i = 0; i < 3; i++) {
 				mRelativeTarget[i] *= adjustment;
 			}

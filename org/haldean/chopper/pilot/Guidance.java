@@ -337,7 +337,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 			//Calculate derivative errors.
 			long timeInterval = starttime - mLastUpdate;
 			if (timeInterval != 0) {
-				mErrors[i][2] = (err - mErrors[i][0]) * 1000.0 / (starttime - mLastUpdate);
+				mErrors[i][2] = (err - mErrors[i][0]) * 1000.0 / timeInterval;
 			} else {
 				mErrors[i][2] = 0.0;
 			}

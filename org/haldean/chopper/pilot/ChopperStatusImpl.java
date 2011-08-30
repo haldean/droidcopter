@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -145,7 +144,11 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 	 * @see org.haldean.chopper.pilot.ChopperStatus#getBatteryLevel()
 	 */
 	public float getBatteryLevel() {
-		return (float) mCurrBatt.get() / (float) mMaxBatt.get();
+		if (mMaxBatt.get() != 0) {
+			return (float) mCurrBatt.get() / (float) mMaxBatt.get();
+		} else {
+			return 0.0F;
+		}
 	}
 	
 	/* (non-Javadoc)
@@ -242,7 +245,12 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 					/* int read/writes are uninterruptible, no lock needed */
 					mCurrBatt.set(intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0));
 					mMaxBatt.set(intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100));
-					float batteryPercent = (float) mCurrBatt.get() * 100F / (float) mMaxBatt.get();
+					float batteryPercent;
+					if (mMaxBatt.get() != 0) {
+						batteryPercent = (float) mCurrBatt.get() * 100F / (float) mMaxBatt.get();
+					} else {
+						batteryPercent = 0F;
+					}
 					if (batteryPercent <= LOW_BATT) {
 						updateReceivers("CSYS:LOWPOWER");
 					}
@@ -252,7 +260,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 	
         /* Gets a sensor manager */
 		final SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
-		List<Sensor> sensorList = sensors.getSensorList(Sensor.TYPE_ALL);
+		//List<Sensor> sensorList = sensors.getSensorList(Sensor.TYPE_ALL);
 		/*for (Sensor sensor : sensorList) {
 			try {
 				if (logwriter != null) {
@@ -327,9 +335,11 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 				synchronized (mGpsExtrasLock) {
 					timeElapsed = mGpsTimeStamp - loc.getTime();
 				}
-				double newdalt = ((newalt - oldAlt) / (double) timeElapsed) * 1000.0;
-				setGpsField(dALT, newdalt);
-				Log.i(TAG, "new dalt: " + newdalt);
+				if (timeElapsed != 0) {
+					double newdalt = ((newalt - oldAlt) / (double) timeElapsed) * 1000.0;
+					setGpsField(dALT, newdalt);
+					Log.i(TAG, "new dalt: " + newdalt);
+				}
 				setGpsField(ALTITUDE, newalt);
 			}
 			setGpsField(BEARING, loc.getBearing());

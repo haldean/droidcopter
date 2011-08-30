@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="org/haldean/blob/JavaImage.java|org/haldean/blob/SegmentTest.java|org/haldean/chopper/pilot/nav/NavListTest.java|org/haldean/chopper/pilot/nav/NavVelTest.java|org/haldean/chopper/server/" kind="src" path="src"/>
+	<classpathentry excluding="org/haldean/blob/JavaImage.java|org/haldean/blob/SegmentTest.java|org/haldean/chopper/pilot/nav/NavListTest.java|org/haldean/chopper/pilot/nav/NavVelTest.java|org/haldean/chopper/pilot/test/|org/haldean/chopper/server/" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="lib" path="/home/benjamin/workspace/droidcopter/jars/AndroidBluetoothLibrary.jar"/>

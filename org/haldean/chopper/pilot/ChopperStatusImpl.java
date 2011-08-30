@@ -44,7 +44,7 @@ import android.util.Log;
  * @author Will Brown
  */
 public final class ChopperStatusImpl implements Runnable, SensorEventListener, Constants, LocationListener, ChopperStatus {	
-	public static final String logfilename = "sensors.txt";
+	public static final String logfilename = "orientation_timestamps.txt";
 	public static BufferedWriter logwriter;
 	
 	/** Parameter to specify GPS minimum update distance, with the usual trade-off between accuracy and power consumption.
@@ -253,7 +253,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
         /* Gets a sensor manager */
 		final SensorManager sensors = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
 		List<Sensor> sensorList = sensors.getSensorList(Sensor.TYPE_ALL);
-		for (Sensor sensor : sensorList) {
+		/*for (Sensor sensor : sensorList) {
 			try {
 				if (logwriter != null) {
 					logwriter.write("\nName      : " + sensor.getName() + "\n");
@@ -269,7 +269,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
+		}*/
 		/* Registers this class as a sensor listener for every necessary sensor. */
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
@@ -280,7 +280,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_FASTEST);				
-		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_GAME);
+		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		
 
@@ -316,7 +316,6 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 	public void onLocationChanged(Location loc) {
 		if (loc != null && mGps != null) {
 			if (!loc.hasAltitude()) {
-			//	loc.setAltitude(300.0);
 				Log.w(TAG, "No altitude fix");
 			}
 			double newalt = loc.getAltitude();
@@ -424,7 +423,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 			case Sensor.TYPE_ROTATION_VECTOR:
 				Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
 				grav_time = time;
-				String timestring = Long.toString(time);
+				String timestring = Long.toString(time/1000000);
 				try {
 					if (logwriter != null) {
 						logwriter.write(timestring + "\n");

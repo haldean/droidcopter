@@ -272,8 +272,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 					//Log.v(TAG, log);
 					newTarget[0] *= Angler.MAX_ANGLE;
 					newTarget[1] *= Angler.MAX_ANGLE;
-					newTarget[2] += 1.0;
-					//newTarget[2] *= 2.0;
+					newTarget[2] *= 3.0;
 					synchronized (mAngleTarget) {
 						System.arraycopy(newTarget, 0, mAngleTarget, 0, 4);
 					}

@@ -90,7 +90,7 @@ public class PadController extends UiController {
 		    buttons[BUTTON_X] = c;
 		else if (id == Component.Identifier.Button.Y)
 		    buttons[BUTTON_Y] = c;
-		else if (id == Component.Identifier.Button.BACK)
+		else if ((id == Component.Identifier.Button.BACK) || (id == Component.Identifier.Button.SELECT))
 		    buttons[BUTTON_BACK] = c;
 		else if (id == Component.Identifier.Button.LEFT_THUMB)
 		    buttons[BUTTON_L] = c;
@@ -120,7 +120,7 @@ public class PadController extends UiController {
 		    axes[AXIS_R_TRIGGER] = c;
 		else if (id == Component.Identifier.Axis.POV)
 		    axes[D_PAD] = c;
-	    }
+	    } 
 	}
     }
 

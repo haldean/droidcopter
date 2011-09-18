@@ -1,0 +1,49 @@
+digraph hostarch {
+	rankdir="LR";
+	node [shape="rect"];
+	
+	queue [label="MessageHookManager"];
+	network [label="DataReceiver"];
+	sensorparse [label="SensorParser"];
+	orient [label="OrientationComponent"];
+	globe [label="WorldWindComponent"];
+	accel [label="AccelerationComponent"];
+	sensor [label="SensorComponent"];
+	pidgraph [label="PidErrorComponent"];
+	
+	motor [label="MotorComponent"];
+	pid [label="PidTuningComponent"];
+	image [label="ImageReceiver"];
+	imagec [label="ImageComponent"];
+	
+	crusher [label="EnsignCrusher"];
+	xbox [label="PadController"];
+	key [label="KeyboardController"];
+	
+	heart [label="HeartbeatThread"];
+	nav [label="NavComponent"];
+	
+	queue -> network[dir="both"];
+
+	queue -> sensorparse;
+	sensorparse -> orient;
+	sensorparse -> globe;
+	sensorparse -> accel;
+	sensorparse -> sensor;
+	queue -> motor;
+	motor -> network;
+	queue -> pidgraph;
+	
+	pid -> network;
+
+	network -> image;
+	image -> imagec;
+
+	xbox -> crusher;
+	key -> crusher;
+	crusher -> network;
+
+	heart -> network;
+	nav -> crusher;
+	
+}

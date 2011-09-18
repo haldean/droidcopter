@@ -1,0 +1,28 @@
+digraph blob {
+	node [shape="rect",font="sans"];
+	segment [label="Image Segmentation"];
+	label [label="Image Labelling"];
+	areas [label="Connected Component Analysis"];
+	react [label="Navigation Decision"];
+
+	node [shape="none",fontsize=10];
+	image [label="Image"];
+	color [label="Color"];
+	field [label="Boolean Field"];
+	components [label="Connected Component"];
+	newcolor [label="New Mean Color"];
+	location [label="Estimated Object Location"];
+
+	image -> segment;
+	color -> segment;
+	
+	segment -> field;
+	field -> label;
+	label -> components;
+	components -> areas;
+	areas -> location;
+	location -> react;
+
+	areas -> newcolor [style="dashed"];
+	newcolor -> label [style="dashed"];
+}

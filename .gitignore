@@ -11,5 +11,6 @@ doc
 *.apk
 video
 Pilot/bin
+PilotTest/bin
 pidlog.txt
 debug.txt

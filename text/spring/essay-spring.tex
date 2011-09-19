@@ -23,12 +23,12 @@
 \section{Motivation}
 \subsection{Objectives}
 We approached this project with three goals in mind: stable flight,
-telepresence with an Android device and simple blob tracking for the
+telepresence with an Android device, and simple blob tracking for the
 helicopter. For stable flight control, we wanted a system that could
 maintain a hovering state within a narrow radius of a given point (our
-target radius was ten feet) and could respond to commands sent from a
+target radius was ten feet), and could respond to commands sent from a
 host computer. For telepresence, we wanted to be able to visualize the
-Android device's location, orientation, acceleration and velocity in
+Android device's location, orientation, acceleration, and velocity in
 real-time, as well as receive a video stream that compensated for
 network latency and low bandwidth. Finally, we wanted a system that
 would be able to grossly track objects on the ground to follow them
@@ -49,16 +49,16 @@ hundred dollars of hardware, they can be manufactured extremely
 cheaply.
 
 \subsection{Progress}
-At the time of writing, we have attempted stable flight but ultimately
-failed. We performed multiple outdoor tests, but have yet to see any
-sort of stability. We discuss why we think this is the case in Section
-\ref{sec:cls}. In one of the tests, the Jabberwock went out of control
-and, instead of flying, attempted to dig a hole. In this test, the
-chassis was extremely damaged. The electronics, thankfully, escaped
-unscathed. Over the summer, we plan on rebuilding the chassis and
-returning to our tests, while also implementing the platform changes
-discussed in Section \ref{sec:cls} to prevent catastrophic failure as
-we experienced with the platform as outlined in this paper.
+At the time of writing, we have attempted stable flight but have
+ultimately failed. We performed multiple outdoor tests, but have yet to
+see any sort of stability. We discuss why we think this is the case in
+Section \ref{sec:cls}. In one of the tests, the Jabberwock completely
+lost control and, instead of flying, attempted to dig a hole. In this
+test, the chassis was severely damaged. The electronics, thankfully,
+escaped unscathed. This fall, we plan on rebuilding the chassis and
+returning to our tests.  We will implement the platform changes
+discussed in Section \ref{sec:cls} to prevent the catastrophic failure
+we experienced with the platform, as outlined in this paper.
 
 \subsection{Future Goals}
 We have discussed various uses of the Robocopter platform. Currently,
@@ -129,11 +129,11 @@ changes.
 
 The software is designed for two purposes: control and
 telepresence. We have implemented a system which allows us to monitor
-acceleration, orientation, temperature, location and even magnetic
+acceleration, orientation, temperature, location, and even magnetic
 flux. We also are streaming video from the helicopter to the server
 software, which is displayed in the UI. We have a control subsystem
 that allows us to control the helicopter from a mouse-based system, a
-keyboard based system or a Microsoft XBOX controller. 
+keyboard-based system, or a Microsoft XBOX controller. 
 
 The architecture of the system is shown in \figref{hostarch}.
 
@@ -183,15 +183,14 @@ For orientation, we used a 3D representation of the helicopter that
 accurately mirrors the orientation of the actual phone, which is
 easier to read than trying to apply three rotations in your head. We
 used the Java3D\footnote{https://java3d.dev.java.net/} game library
-for this, which we chose because it was the most resource-efficient in
-our testing. 
+for this, because it was the most resource-efficient in our testing. 
 
 For location, we chose to mimic the Google Earth interface and used
 NASA's World Wind\footnote{http://worldwind.arc.nasa.gov/java/}
 mapping software. This is an extraordinarily powerful library, and the
-only one we could find of its kind. While poorly documented, the fact
-that it was open source and very easy to use meant that we dropped
-this into our UI quickly and seamlessly. 
+only one we could find of its kind. Though poorly documented, it is open
+source and very easy to use.  Consequently, we dropped it into our UI
+quickly and seamlessly. 
 
 The last visualization we used was a very simple top-down view of the
 helicopter for the motor speeds, in which each ``motor'' is given a
@@ -225,38 +224,37 @@ immediately tries to reconnect,‭ ‬continuing to do so indefinitely.‭
 strings,‭ ‬delimited by colons.‭ ‬The strings from the control server --
 commands -- contain the instruction itself,‭ ‬prefixed by a sequence of
 meta-data describing the instruction.‭ ‬Similarly,‭ ‬data from the Android
-contain not just the data,‭ ‬but also a prefix tag describing the data.‭
-‬This enables somewhat efficient analysis on each end:‭ ‬messages can be
-routed only to those components that are registered to process a given
-prefix tag.  Messages are not transmitted directly between the Android
-and the control server.‭ ‬Instead,‭ ‬they are routed through a separate,‭
-‬dedicated broker server.‭ ‬This enables the control server itself to
-operate easily from different IP addresses,‭ ‬and hence from various
-locations. It also allows for easy logging and playback of sessions --
-the broker server logs all data and commands, and can replay a session
-so we can analyze what happened.
+device contain not just the data,‭ ‬but also a prefix tag describing the
+data.‭ ‬This enables somewhat efficient analysis on each end:‭ ‬messages can
+be routed only to those components that are registered to process a
+given prefix tag.  Messages are not transmitted directly between the
+Android device and the control server.‭ ‬Instead,‭ ‬they are routed through
+a separate,‭ ‬dedicated broker server.‭ ‬This enables the control server
+itself to operate easily from different IP addresses,‭ ‬and hence from
+various locations. It also allows for easy logging and playback of
+sessions -- the broker server logs all data and commands, and can replay
+a session later for analysis.
 
 \section{Jabberwock}
 A list of parts used is supplied in Appendix \ref{tab:parts}.
 
 \subsection{Design of the Chassis}
-The chassis is the part whose design has fluctuated the most over the
-process. While the software stack was fairly well-thought-out early
-on, we wrote it to be hardware-independent. At first, the plan was to
-use a kit chassis and buy our own components, as this would mean that
-all of the components would be guaranteed to work together. However,
-as time went on, we realized that the added cost of a robust chassis
-was higher than the value we were getting out of it, and we decided to
-build our own.
+The chassis design has fluctuated the most over the process. While the
+software stack was fairly well thought out early on, we wrote it to be
+hardware-independent. At first, the plan was to use a kit chassis and
+buy our own components, as this would mean that all of the components
+would be guaranteed to work together. However, as time went on, we
+realized that the added cost of a robust chassis was higher than the
+value we would get out of it, and we decided to build our own.
 
 Using a 3D printer, we were able to print whatever plastic parts we
 desired out of ABS plastic. ABS is a rigid and strong plastic -- it is
 best known for being the raw form of a Lego brick -- and is very cheap
 to buy in large quantities. Jabberwock was printed on a Makerbot that
-is capable of printing objects up to 10cm by 10cm by 13cm, so it
+is capable of printing objects up to 10cm by 10cm by 13cm: it
 wasn't large enough to build the entire helicopter in one go. Our
 design, therefore, had to account for the fact that no individual
-custom-made part could be larger than this.
+custom-made part could exceed these dimensions.
 
 \begin{figure}[htb]
   \centering
@@ -274,8 +272,8 @@ custom-made part could be larger than this.
 \end{figure}
 
 We opted for a design that is slightly different from most
-commercially-available quadricopter designs for both pragmatic and
-strength reasons. Our design features a large block in the middle made
+commercially-available quadricopter designs, for both pragmatism and
+strength. Our design features a large block in the middle made
 of sandwiched layers, each of which holds a narrow-gauge brass pipe in
 place. A rendering of this component can be seen in
 \figref{brock}. These brass pipes extend 25 cm out either side of this
@@ -287,34 +285,34 @@ The first and last layer of the center block each have eight mounting
 holes with a captive nut locked in between the outer layer and next
 layer. This allows us complete modularity in terms of hardware
 attachments without ever having to reprint -- all we must do is
-make sure it is compatible with the mounting screws already built in,
-and we can hotswap our hardware easily.
+make sure new components are compatible with the mounting screws already
+built in, and we can hotswap our hardware easily.
 
 \subsection{Electronics Design}
 In designing the electronics, we went for as much redundancy as
 possible, and only used parts that had ratings at least 50\% over our
 estimated needs. We estimated that the helicopter would have a weight
-of approximately 1 kg (which ended up being a bit lower than the
-actual weight) so each motor-propeller pair needed to be rated to
+of approximately 1 kg (actual weight was slightly higher) so each
+motor-propeller pair needed to be rated to
 carry at minimum 500 grams. In addition, we wanted to be able to put
 different payloads on the helicopter in the future (if we wanted to
-add a video camera, for example) so we ended up going with
+mount a video camera, for example) so we ended up using
 motor-propeller pairs that are capable of a very large range of
 possible thrusts, from around 50 grams to about 1.5 kg per motor. In
 later testing, we learned that the helicopter was neutrally buoyant
 when all motors were set to about 30\%.
 
 For our control hardware, we chose to use an Arduino because we had
-experience coding for the Arduino platform, and it provides many
+experience coding for the Arduino platform, and because it provides many
 libraries that are helpful for motor control and sensor
 readings. While the sensor reading libraries were not used for
-Jabberwock, in later iterations we plan on using rangefinding sensors
-for landing and three-dimensional map creation, so we wanted to make
-sure we had the capability to hook that in to the existing system.
+Jabberwock, in later iterations we plan may use rangefinding sensors
+for landing and three-dimensional map creation, so we wanted to ensure
+we had the capability to hook that in to the existing system.
 
 We chose our other parts based on online reviews and price. One of our
-goals was to keep this project as cheap as possible for two reasons;
-firstly, we wanted to be able to pay for the thing, and secondly, we
+goals was to keep this project as cheap as possible for two reasons.
+Firstly, we wanted to be able to pay for the thing, and secondly, we
 were interested in seeing just how cheaply this could be done. In the
 end, we managed to keep the cost low -- \$440 after tax and shipping.
 
@@ -330,11 +328,11 @@ longer, which is a clear advantage.
 
 \section{Blob Tracking}
 We would like the Robocopter platform to be able to track gross
-objects based on color; to that end, this semester, we implemented a
+objects based on color. To that end, this semester, we implemented a
 blob tracking algorithm that can run on both Android and a standard
-JVM, that is capable of image segmentation, labelling and object
-motion tracking. The architecture of this algorithm is outlined in
-\figref{blob}.
+JVM. The algorithm is capable of image segmentation, labelling and
+object motion tracking. The architecture of this algorithm is outlined
+in \figref{blob}.
 
 \imgfig{blob}{.5}{Architecture of the blob tracking system}
 
@@ -385,10 +383,10 @@ contains a centroid and size.
 
 \subsubsection{Connected Component Analysis}
 The result of segmentation and labelling usually returns multiple
-labelled areas; the analysis step attempts to determine which of the
+labelled areas. The analysis step attempts to determine which of the
 areas is the one which we are tracking. Since we were unsure of the
 rate at which the Android device would be capable of processing
-images, we wanted to make this step independent of location; if the
+images, we wanted to make this step independent of location. If the
 phone could only process a few frames per second, it is possible that
 the tracked object could have moved significantly between frames. We
 could not, therefore, make the assumption that the closest area to the
@@ -399,7 +397,7 @@ area was most similar to the previously detected area as our target.
 
 \subsubsection{Reaction and Tracking}
 Once we have the in-frame location, we translate this to coordinates
-centered on the origin; for example, if the centroid of an area was
+centered on the origin. For example, if the centroid of an area was
 detected to be in the center of the image, the resulting coordinates
 would be (0, 0). We then translate this into a navigation 3-vector, in
 which the Z-component is zero, and the X- and Y-component are the
@@ -436,7 +434,7 @@ bluetooth-related methods will crash the program on the emulator.
 A persistent developer can code around these drawbacks, testing other
 aspects of the program on the emulator.  More damaging is the speed at
 which the emulator runs: it is very, very slow.  This is hardly
-unexpected, but running moderately complex control algorithms at 10
+unexpected, but running moderately complex control algorithms at even 10
 Hertz quickly becomes untenable.
 
 Another hazard we noticed was more subtle.  On the emulator, many
@@ -465,7 +463,8 @@ object, which is sent to \code{AmarinoService}, processed, and
 transmitted over bluetooth.  Since our control loop runs at 10 Hertz
 and submits 4 motor values per loop, we were broadcasting system-wide
 \code{Intents} at the rate of 40 Hertz.  This proved to be too much
-for Android, which could not process the \code{Intent}s nearly fast enough.
+for Android, which could not process the \code{Intent}s nearly fast
+enough.
 
 \imgfig{motor1}{.5}{Actual motor speeds vs. broadcasted motor speeds}
 
@@ -497,7 +496,7 @@ approximately perfect.
 \subsubsection{Control loop stability}
 \label{sec:cls}
 After actual testing, it appears that the hardware limitations of the
-droid may preclude stable control have such a complex system.  The
+Droid may preclude stable control of such a complex system.  The
 orientation sensor on the Droid, even at its fastest setting, only
 registers new values at ever 100ms or so (this delay is not
 consistent).  Consequently, there is no purpose in running the PID
@@ -506,29 +505,37 @@ stability in well under a second.  The shift from ``stable'' to
 ``irrecoverably unstable'' can occur in as few as 3 or 4 tenths of a
 second--and therefore only 3 or 4 iterations of the PID loop.  While
 precise tuning might make control possible, even perfect tuning is
-likely to yield poor control at best.  And, of course, obtaining even
+likely to yield poor control at best.  And obtaining even
 ``acceptable'' tuning at this point seems to be a futile endeavor.
 
-Moving forward, the best solution seems to be running the low-level
-stability algorithms on the Arduino itself, based on readings from
-external gyroscopes and accelerometers attached to the arduino.  We
-will construct and tune two sets of loops, which we hope to run at 60
-to 100 Hertz.  One set will tune to an angle, and will activate
-whenever the quadricopter’s orientation is too steep.  Another loop
-will tune to relative acceleration values, to maintain either a
-constant velocity or change in velocity.  This loop will run when the
-quadricopter’s orientation is within acceptable bounds.  The Arduino
-will receive target acceleration values over bluetooth from the Droid,
-which will calculate them based on GPS velocity data.
+\section{Future Improvements}
 
-In one sense, this does indeed imply a failure of the project’s
-premise: the Droid is not capable of flying a quadrocopter.  Even its
-sensors are insufficient, let alone processor and power limitations.
-However, the higher-level communication, telemetry and navigation
-functions work quite well and show great potential.  Despite the
-outsourcing of the low-level stability to control to another chip, we
-anticipate development of a robust and flexible aerial platform that
-is significantly enhanced by the Droid.
+Moving forward, we have a number of enhancements planned that we think
+will drastically improve stability.  Most importantly, we will be using
+a newer Android device to pilot the quadricopter.  This device--an HTC
+Evo 3D--possesses 4 times the processing power of the Droid, and
+includes a gyroscope.  Between the two, we expect both more accurate
+orientation readings and a faster sample rate.  We hope to run the
+control loop at 33hz, instead of the current 10hz.
+
+We will also implement changes to the control algorithms themselves.
+First, we will not attempt to directly control the speed of the
+quadricopter.  Instead, we will endeavor to control its orientation
+directly, and control speed indirectly by altering target orientation.  
+Second, as discussed earlier, PID control works best on a linear system.
+Quadricopter mechanics, however, are far from linear.  Consequently, the
+transformation from linear control variables--on which the PID loop
+operates directly--to the non-linear motor speeds is of the utmost
+importance.  Deeper analysis of the transformation we used on the
+Jabberwock platform showed it to be quite flawed.  We have developed a
+newer algorithm that we believe is far more accurate.
+
+The chassis design will also undergo significant alteration, to improve
+stability.  Each arm will be comprised of three brass rods, instead of
+two.  Additionally, we will move the batteries from their current
+positions on the arms to a new position under quadricopter's center of
+gravity.  Between these two changes--and the software changes mentioned
+above--we anticipate a hugely improved quadricopter system.
 
 \newpage
 \appendix

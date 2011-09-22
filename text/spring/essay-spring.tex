@@ -1,4 +1,4 @@
-\input{/home/haldean/Documents/latex_template.tex}
+\input{latex_template.tex}
 \title{Stable Flight and Object Tracking with a Quadricopter using an
   Android Device}
 \author{Benjamin Bardin \and William Brown 
@@ -124,7 +124,12 @@ changes.
 \end{figure}
 
 \begin{landscape}
-  \imgfighere{hostarch}{.5}{The architecture of the host system}
+  \begin{figure}[h]
+    \centering
+    \includegraphics[scale=.5]{figures/hostarch}
+    \caption{The architecture of the host system}
+    \label{fig:hostarch}
+  \end{figure}
 \end{landscape}
 
 The software is designed for two purposes: control and
@@ -334,7 +339,7 @@ JVM. The algorithm is capable of image segmentation, labelling and
 object motion tracking. The architecture of this algorithm is outlined
 in \figref{blob}.
 
-\imgfig{blob}{.5}{Architecture of the blob tracking system}
+\imgfig{blob}{.5}{Architecture of the blob tracking system}{blob}
 
 \subsection{Algorithm}
 \subsubsection{Image Segmentation}
@@ -343,7 +348,7 @@ image based on a color and a threshold. There is a matching phase, and
 then a learning phase. In the matching phase, the segmenter takes an
 RGB image and outputs a binary image, representing color
 matches. Treating color as a 3-vector, the output image is defined by
-\eqnref{segment}, where $O$ is the output image, $I$ is the input
+\ref{eq:segment}, where $O$ is the output image, $I$ is the input
 image, $C$ is the target color and $t$ is the threshold. After the
 output is computed, it iteratively expands this field. Each iteration
 passes through the image, activating any pixel that has a neighbor who
@@ -466,7 +471,7 @@ and submits 4 motor values per loop, we were broadcasting system-wide
 for Android, which could not process the \code{Intent}s nearly fast
 enough.
 
-\imgfig{motor1}{.5}{Actual motor speeds vs. broadcasted motor speeds}
+\imgfig{motor1}{.5}{Actual motor speeds vs. broadcasted motor speeds}{motor1}
 
 A graph of desired versus actual motor speeds is shown in
 \figref{motor1}. The red line indicates desired motor speeds, as
@@ -487,7 +492,7 @@ similar graph to the one in \figref{motor1} is shown in
 modification.
 
 \imgfig{motor3}{.5}{Actual motor speeds vs. broadcasted motor speeds,
-  post-modification}
+  post-modification}{motor3}
 
 While perhaps inelegant, this solution worked quite well.  The
 convergence between \code{Guidance} and \code{AmarinoService} is

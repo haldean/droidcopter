@@ -1,0 +1,62 @@
+\documentclass[letterpaper]{scrartcl}
+
+\author{William Brown (whb2107)}
+
+\usepackage{amsmath,amssymb,appendix,color,etoolbox,
+  graphicx,index,listings,lscape,natbib,url}
+
+\definecolor{gray}{gray}{0.95}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\lstset{
+  language=Python,
+  basicstyle=\footnotesize\ttfamily,
+  numbersep=5pt,              
+  tabsize=2,                  
+  extendedchars=true,         
+  breaklines=true,            
+  stringstyle=\ttfamily, 
+  showspaces=false,      
+  showtabs=false,        
+  xleftmargin=17pt,
+  framexleftmargin=17pt,
+  framexrightmargin=5pt,
+  framexbottommargin=4pt,
+  backgroundcolor=\color{gray},
+  showstringspaces=false 
+ }
+
+\newcommand\imgfig[4]{
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=#2]{figures/#1}
+  \caption{#3}
+  \label{fig:#4}
+\end{figure}}
+
+\newcommand\figref[1]{Figure \ref{fig:#1}}
+\newcommand\tabref[1]{Table \ref{tab:#1}}
+\newcommand\code[1]{\texttt{#1}}
+\newcommand\pipe[0]{\;|\;}
+\newcommand\st[0]{\;\mathrm{s.t.}\;}
+
+\newindex{todo}{tod}{tnd}{TODO List}
+
+\newcommand\todo[1]{
+  % Add to todo list
+  \index[todo]{#1}
+  % Make the margin par
+  \marginpar{
+    \raggedright
+    \textbf{TODO}:\\
+    #1
+  }
+}
+
+\newcommand\todolist{\printindex[todo]}
+
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{5}
+
+\newcommand\startappendix{\appendix\appendixpage\addappheadtotoc}

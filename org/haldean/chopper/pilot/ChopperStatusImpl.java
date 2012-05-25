@@ -431,7 +431,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 				setReadingField(ROLL, orientation[2] * -180.0 / Math.PI);
 				break;
 			case Sensor.TYPE_ROTATION_VECTOR:
-				Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
+				//Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
 				grav_time = time;
 				String timestring = Long.toString(time/1000000);
 				try {

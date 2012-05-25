@@ -757,10 +757,11 @@ public class AmarinoService extends Service {
 	
 	/* ---------- use setForeground() but be also backward compatible ---------- */
 	
-	@SuppressWarnings("unchecked")
+
+	@SuppressWarnings("rawtypes")
 	private static final Class[] mStartForegroundSignature = new Class[] {
         int.class, Notification.class};
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
 	private static final Class[] mStopForegroundSignature = new Class[] {
         boolean.class};
     

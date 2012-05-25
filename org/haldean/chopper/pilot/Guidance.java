@@ -126,7 +126,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Temporary: need real tuning values at some point. Crap.
 		for (int i = 0; i < 3; i++)
 			mGain[i][0] = .01;
-		mGain[3][0] = .01;
+		//mGain[3][0] = .01;
 				
 		try {
 			if (mEnableLogging)
@@ -262,6 +262,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 			}
 			if (parts[1].equals("MANUAL")) {
 				//autoPilot(false);
+				@SuppressWarnings("unused")
 				String log = "manual mode: ";				
 				if (parts.length > 2) {
 					double[] newTarget = new double[4];
@@ -272,7 +273,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 					//Log.v(TAG, log);
 					newTarget[0] *= Angler.MAX_ANGLE;
 					newTarget[1] *= Angler.MAX_ANGLE;
-					newTarget[2] *= 3.0;
+					// newTarget[2] *= 3.0;
 					synchronized (mAngleTarget) {
 						System.arraycopy(newTarget, 0, mAngleTarget, 0, 4);
 					}
@@ -308,14 +309,15 @@ public class Guidance implements Runnable, Constants, Receivable {
 		
 		double[] errors = new double[4];
 		synchronized (mAngleTarget) {
-			logArray("mAngleTarget", mAngleTarget);
+			//logArray("mAngleTarget", mAngleTarget);
 			errors[0] = mAngleTarget[0] - mRollDeg;
 			errors[1] = mAngleTarget[1] - mPitchDeg;
 			errors[2] = mAngleTarget[2] - mStatus.getGpsField(dALT);
 			errors[3] = mAngleTarget[3] - mAzimuth;
-			logArray("errors", errors);
+			//logArray("errors", errors);
 		}
 		
+		@SuppressWarnings("unused")
 		String errs = "errors: ";
 		for (int i = 0; i < 4; i++) {
 			errs += errors[i] + ": ";
@@ -367,7 +369,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		// Constrain control vars:
 		mControlVars[0] = constrainValue(mControlVars[0], -1, 1);
 		mControlVars[1] = constrainValue(mControlVars[1], -1, 1);
-		mControlVars[2] = constrainValue(mControlVars[2], 0, 4);
+		mControlVars[2] = constrainValue(mControlVars[2], 0, 1);
 		mControlVars[3] = constrainValue(mControlVars[3], -2, 2);
 		
 		/*String vars = "Control vars: ";
@@ -384,7 +386,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		//Log.v(TAG, "motors: " + mMotorSpeed[0] + ", " + mMotorSpeed[1] + ", " + mMotorSpeed[2] + ", " + mMotorSpeed[3]);
 		//Sleep a while
 		long timetonext = (1000 / PIDREPS) - (System.currentTimeMillis() - starttime);
-		Log.v(TAG, "time to next: " + timetonext);
+		//Log.v(TAG, "time to next: " + timetonext);
 		int currentMode = mGuidanceMode.get();
 		if ((currentMode == MANUAL) || (currentMode == AUTOPILOT)) {
 			if (timetonext > 0)
@@ -414,7 +416,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		if (cosGrad != 0) {
 			z = mControlVars[2] / cosGrad;
 		} else {
-			z = mControlVars[2];
+			z = mControlVars[2]; // Chopper is vertical, we got other problems.
 		}
 		double t = mControlVars[3];
 		
@@ -422,6 +424,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 		mMotorSpeed[1] = Math.sqrt(constrainValue(t + 2*y + z, 0, 1));
 		mMotorSpeed[2] = Math.sqrt(constrainValue(-t - 2*x + z, 0, 1));
 		mMotorSpeed[3] = Math.sqrt(constrainValue(-t + 2*x + z, 0, 1));
+		logArray("motorSpeeds", mMotorSpeed);
 	}
 	
 	private void updateAngleTarget() {

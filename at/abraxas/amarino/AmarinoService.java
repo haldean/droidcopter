@@ -793,7 +793,7 @@ public class AmarinoService extends Service {
         }
         
         // Fall back on the old API.
-        setForeground(true);
+ //       setForeground(true);
         notifyManager.notify(id, notification);
     }
     
@@ -820,6 +820,6 @@ public class AmarinoService extends Service {
         // Fall back on the old API.  Note to cancel BEFORE changing the
         // foreground state, since we could be killed at that point.
         cancelNotification();
-        setForeground(false);
+//        setForeground(false);
     }
 }

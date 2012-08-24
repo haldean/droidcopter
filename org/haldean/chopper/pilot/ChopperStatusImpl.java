@@ -279,14 +279,14 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 			}
 		}*/
 		/* Registers this class as a sensor listener for every necessary sensor. */
-		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_NORMAL);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);				
 		
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_NORMAL);
-		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
+		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_TEMPERATURE), SensorManager.SENSOR_DELAY_NORMAL);
 		//sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_FASTEST);				
 		sensors.registerListener(this, sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_FASTEST);
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
@@ -411,7 +411,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 				setReadingField(TEMPERATURE, event.values[0]);
 				break;
 			case Sensor.TYPE_GRAVITY:
-				
+				//NOT REGISTERED
 				/*Log.v(TAG, "");
 				Log.v(TAG, "" + event.values[0]);
 				Log.v(TAG, "" + event.values[1]);
@@ -431,7 +431,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 				setReadingField(ROLL, orientation[2] * -180.0 / Math.PI);
 				break;
 			case Sensor.TYPE_ROTATION_VECTOR:
-				//Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
+				Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
 				grav_time = time;
 				String timestring = Long.toString(time/1000000);
 				try {

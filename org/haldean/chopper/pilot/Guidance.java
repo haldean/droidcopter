@@ -38,7 +38,7 @@ import android.util.Log;
 public class Guidance implements Runnable, Constants, Receivable {
 	
 	/** How many times per second the PID loop will run */
-	public static final int PIDREPS = 40;
+	public static final int PIDREPS = 30;
 	
 	/** The maximum change in motor speed permitted at one time.  Must be positive. */
 	public static final double MAX_DMOTOR = .05;
@@ -173,6 +173,7 @@ public class Guidance implements Runnable, Constants, Receivable {
 					break;
 				case NEW_PID_VALUE:
 					mGain[msg.arg1][msg.arg2] = (Double)msg.obj;
+					resetControlVars();
 					break;
 				case NEW_GUID_VECTOR:
 					Double[] mVector = (Double[])msg.obj;
@@ -293,6 +294,14 @@ public class Guidance implements Runnable, Constants, Receivable {
 	public void registerReceiver(Receivable rec) {
 		synchronized (mRec) {
 			mRec.add(rec);
+		}
+	}
+	
+	private void resetControlVars() {
+		synchronized (mControlVars) {
+			for (int i = 0; i < 4; i++) {
+				mControlVars[i] = 0;
+			}
 		}
 	}
 	

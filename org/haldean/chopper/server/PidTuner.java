@@ -46,6 +46,7 @@ public class PidTuner implements Updatable {
 	    }
 	} catch (IllegalArgumentException e) {
 	    // Default state; no tuning.
+	    return;
 	}
 	mFringe = new ArrayList<PidExperiment>();
 	mHistory = new TreeSet<PidExperiment>();

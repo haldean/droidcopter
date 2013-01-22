@@ -2,6 +2,9 @@ package org.haldean.chopper.server;
 
 import java.util.ArrayList;
 
+/**
+ * Note: this class has a natural ordering that is inconsistent with equals.
+ */
 public class PidExperiment implements Comparable<PidExperiment> {
     public static final long MAX_TIME_MILLIS = 10000;
     public static final double THRESHOLD_ANGLE = 20.0;
@@ -62,6 +65,8 @@ public class PidExperiment implements Comparable<PidExperiment> {
 	// mScore saved once processed (lazy evaluation)
 	if (mScore != -1) return mScore;
 
+	// If we don't get to the start of a third cycle, this experiment
+	// was really bad. Return MAX_VALUE.
 	if (isTimeUp()) {
 	    mScore =  Integer.MAX_VALUE;
 	    return mScore;
@@ -122,6 +127,12 @@ public class PidExperiment implements Comparable<PidExperiment> {
     /** Does not compare scores, only PID values. */
     public boolean equals(PidExperiment other) {
 	return (getP() == other.getP()) && (getI() == other.getI()) && (getD() == other.getD());
+    }
+
+    public int hashCode() {
+	return new Double(getP()).hashCode() ^
+	    new Double(getI()).hashCode() ^
+	    new Double(getD()).hashCode();
     }
 
     public int compareTo(PidExperiment other) {

@@ -42,16 +42,16 @@ public class ServerCreator {
 
     public static String getArgument(String argumentName) throws IllegalArgumentException {
 	if (! arguments.containsKey(argumentName)) {
-	    throw new IllegalArgumentException(argumentName + 
+	    throw new IllegalArgumentException(argumentName +
 					       " was not specified on the command line.");
 	}
 
 	return arguments.get(argumentName);
     }
 
-    /** Run the chopper host 
+    /** Run the chopper host
      *  @param args -d enables printing debug information to the command line,
-     *  and -h followed by a hostname specifies the hostname to connect to 
+     *  and -h followed by a hostname specifies the hostname to connect to
      *  @throws Exception if the provided host name is invalid */
     public static void main(String args[]) {
 	/* Parse command line arguments */
@@ -64,7 +64,7 @@ public class ServerCreator {
 		arguments.put(argparts[0], value);
 	    }
 	}
-	 
+
 	if (arguments.containsKey("debug")) {
 	    Debug.setEnabled(true);
 	    if (arguments.containsKey("debuglog")) {

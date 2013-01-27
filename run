@@ -37,7 +37,7 @@ run() {
     CMD="java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m
 	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator
 	host=$HOST port=$PORT $DEBUG $HEARTLESS pidlog=pidlog.txt imgdir=video/
-        debuglog=debug.txt pidTuning=dx"
+        debuglog=debug.txt"
     echo $CMD
     exec $CMD
 }
@@ -98,7 +98,8 @@ else
     clean
     
     if [ '' == "$1" ]; then 
-	export HOST='droidcopter.cs.columbia.edu'
+#	export HOST='droidcopter.cs.columbia.edu'
+	export HOST='192.168.168.65'
     else 
 	export HOST=$1
     fi

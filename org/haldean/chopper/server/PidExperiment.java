@@ -104,20 +104,23 @@ public class PidExperiment implements Comparable<PidExperiment> {
 	int truncateStart = fromPos;
 	if (fromPos == 0) {
 	    // Cycle a bit longer, to compensate for the weird start.
+	    if (truncateStart >= mErrors.size()) return -1;
 	    for (; mErrors.get(truncateStart) <= 0; truncateStart++) {
 		// If value at index is nonpositive, continue until positive.
-		if (truncateStart == mErrors.size()) return -1;
+		if (truncateStart == mErrors.size() -1) return -1;
 	    }
 	}
 	int negativeIndex = truncateStart;
+	if (negativeIndex >= mErrors.size()) return -1;
 	for (; mErrors.get(negativeIndex) >= 0; negativeIndex++) {
 	    // If value at index nonnegative, continue until negative.
-	    if (negativeIndex == mErrors.size()) return -1;
+	    if (negativeIndex == mErrors.size() - 1) return -1;
 	}
 	int cycleStart = negativeIndex;
+	if (cycleStart >= mErrors.size()) return -1;
 	for (; mErrors.get(cycleStart) <= 0; cycleStart++) {
 	    // If value at index is nonpositive, continue until positive.
-	    if (negativeIndex == mErrors.size()) return -1;
+	    if (cycleStart == mErrors.size() - 1) return -1;
 	}
 	return cycleStart;
     }

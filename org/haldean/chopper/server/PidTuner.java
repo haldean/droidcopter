@@ -30,6 +30,8 @@ public class PidTuner implements Updatable {
     private static final int SELECT_NUM = 3;
     // Number of children to expand from each selected node.
     private static final int EXPAND_NUM = 3;
+    private static final int START_AFTER_N_CYCLES = 900;
+    private int currentCycle = 0;
 
     private static SimpleDateFormat dateFormat =
 	new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
@@ -95,11 +97,17 @@ public class PidTuner implements Updatable {
 	    double d = rn.nextDouble() * initRange + initRangeStart;
 	    mFringe.add(new PidExperiment(p, i, d));
 	}
+	System.out.println("setting pid to 0");
+	EnsignCrusher.tunePid(mAxis.ordinal(), 0, 0.0);
+	EnsignCrusher.tunePid(mAxis.ordinal(), 1, 0.0);
+	EnsignCrusher.tunePid(mAxis.ordinal(), 2, 0.0);
     }
 
     public void update(String message) {
 	if (!mEnabled) return;
 	if (!message.startsWith("GUID:ERROR")) return;
+	currentCycle++;
+	if (currentCycle < START_AFTER_N_CYCLES) return;
 	// retrieve error for my axis
 	String parts[] = message.split(":");
 	Double error = new Double(parts[2 + mAxis.ordinal()]);
@@ -119,9 +127,10 @@ public class PidTuner implements Updatable {
 	    Debug.log("WARNING: PID TUNING LOGGING FAILED");
 	    e.printStackTrace();
 	}
+	System.out.println("New experiment, cycle " + currentCycle);
 	mFringeIndex++;
 	// If index <= mFringe.size(), send new PID values, return;
-	if (mFringeIndex <= mFringe.size()) {
+	if (mFringeIndex < mFringe.size()) {
 	    PidExperiment newExp = mFringe.get(mFringeIndex);
 	    EnsignCrusher.tunePid(mAxis.ordinal(), 0, newExp.getP());
 	    EnsignCrusher.tunePid(mAxis.ordinal(), 1, newExp.getI());

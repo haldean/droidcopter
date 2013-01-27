@@ -1,11 +1,54 @@
-\input{latex_template.tex}
+\documentclass[letterpaper]{article}
+\usepackage{amsmath,amssymb,appendix,color,etoolbox,
+  graphicx,index,listings,lscape,natbib,url}
+
+\usepackage{mathpazo} % math & rm
+\linespread{1.05}        % Palatino needs more leading (space between lines)
+\usepackage[scaled]{helvet} % ss
+\normalfont
+\usepackage[T1]{fontenc}
+
+\newcommand\figref[1]{Figure \ref{fig:#1}}
+\newcommand\tabref[1]{Table \ref{tab:#1}}
+\newcommand\code[1]{\texttt{#1}}
+\newcommand\pipe[0]{\;|\;}
+\newcommand\st[0]{\;\mathrm{s.t.}\;}
+\newcommand\startappendix{\appendix\appendixpage\addappheadtotoc}
+
+\newcommand\imgfig[4]{
+\begin{figure}[h]
+  \centering
+  \includegraphics[scale=#2]{figures/#1}
+  \caption{#3}
+  \label{fig:#4}
+\end{figure}}
+
+\definecolor{gray}{gray}{0.95}
+
+\lstset{
+  language=Python,
+  basicstyle=\footnotesize\ttfamily,
+  numbersep=5pt,              
+  tabsize=2,                  
+  extendedchars=true,         
+  breaklines=true,            
+  stringstyle=\ttfamily, 
+  showspaces=false,      
+  showtabs=false,        
+  xleftmargin=17pt,
+  framexleftmargin=17pt,
+  framexrightmargin=5pt,
+  framexbottommargin=4pt,
+  backgroundcolor=\color{gray},
+  showstringspaces=false 
+ }
+
 \title{Stable Flight and Object Tracking with a Quadricopter using an
   Android Device}
 \author{Benjamin Bardin \and William Brown 
   \and Dr. Paul Blaer}
 
 \begin{document}
-\todolist
 
 \maketitle
 
@@ -19,6 +62,7 @@
   platform on our first hardware iteration, named Jabberwock.
 \end{abstract}
 \tableofcontents
+\pagebreak
 
 \section{Motivation}
 \subsection{Objectives}
@@ -77,42 +121,42 @@ generate.
 
 \section{Pilot Android Application}
 \label{sec:pilot}
-The Pilot program has two core functionalities.‭ ‬The first is the
-actual robotic control of the quadrocopter itself‭; ‬the second is
-communication with the control server.‭ ‬The parallel processing
+The Pilot program has two core functionalities. The first is the
+actual robotic control of the quadrocopter itself; the second is
+communication with the control server. The parallel processing
 required in these distinct tasks is complicated by the performance
-requirements of the program.‭ ‬Flight control processing must take place
-in real time -- or an extremely close approximation.‭ ‬Communication
+requirements of the program. Flight control processing must take place
+in real time -- or an extremely close approximation. Communication
 with the control server, on the other hand, yields priority to flight
-control.‭ ‬Consequently,‭ ‬a great deal of effort went into prioritizing
-inter-thread communications and access of shared data.‭ ‬For flight
-control algorithms,‭ ‬blocking on locked data is unacceptable,‭ ‬since
-timely performance is essential‭; ‬instead of blocking,‭ ‬they will use
-the most recent,‭ ‬locally stored version of the data requested.‭ ‬For
-communication algorithms,‭ ‬accessing flawed data is unacceptable‭; ‬the
+control. Consequently, a great deal of effort went into prioritizing
+inter-thread communications and access of shared data. For flight
+control algorithms, blocking on locked data is unacceptable, since
+timely performance is essential; instead of blocking, they will use
+the most recent, locally stored version of the data requested. For
+communication algorithms, accessing flawed data is unacceptable; the
 control server must not receive out-of-date information portrayed as
 current.
 
 \subsection{Flight Control}
-Flight control itself is divided into two main components:‭ ‬navigation
+Flight control itself is divided into two main components: navigation
 and guidance.
 	
 \subsubsection{Navigation}
-Navigation determines a desired velocity vector for the quadrocopter.‭
-‬In‭ “‬manual‭” ‬mode,‭ ‬it simply accepts this vector from the control
-server.‭ ‬In‭ “‬autopilot‭” ‬mode,‭ ‬or when the connection is lost,‭ ‬autopilot
-subroutines determine the desired velocity vector.‭ ‬It's determination
-is based on two factors.‭ ‬The first is its current location.‭ ‬The second
-is either previously transmitted autopilot instructions,‭ ‬or
-pre-programmed safeties‭ (‬for low power,‭ ‬bad network,‭ ‬etc.‭).
+Navigation determines a desired velocity vector for the quadrocopter.
+In ``manual'' mode, it simply accepts this vector from the control
+server. In ``autopilot'' mode, or when the connection is lost, autopilot
+subroutines determine the desired velocity vector. It's determination
+is based on two factors. The first is its current location. The second
+is either previously transmitted autopilot instructions, or
+pre-programmed safeties (for low power, bad network, etc.).
 
 \subsubsection{Guidance}
-Guidance takes the desired velocity from Navigation,‭ ‬and uses PID
+Guidance takes the desired velocity from Navigation, and uses PID
 loops to adjust individual motor speeds to achieve and maintain that
-vector.‭  ‬To improve the performance of the PID loop,‭ ‬the system is
-transformed into an approximately linear one.‭  ‬The transformation
+vector.  To improve the performance of the PID loop, the system is
+transformed into an approximately linear one.  The transformation
 accounts both for the quadratic relationship between motor speed and
-thrust,‭ ‬and for changing effects of motor thrust as its orientation
+thrust, and for changing effects of motor thrust as its orientation
 changes.
 
 \section{Server Software}
@@ -202,40 +246,40 @@ helicopter for the motor speeds, in which each ``motor'' is given a
 color from red to green, denoting the current speed of the motor.
 
 \section{Communication}
-Communication is composed of two main components:‭ ‬telemetry and
-commands/data.‭ ‬Each is relayed on separate ports,‭ ‬since commands must
+Communication is composed of two main components: telemetry and
+commands/data. Each is relayed on separate ports, since commands must
 be relayed as synchronously as possible and telemetry will be
 asynchronous.
 
 \subsection{Telemetry}
 The telemetry modules continuously run the Android's preview
-functionality,‭ ‬at‭ ‬5fps.‭  ‬Each frame is saved to a buffer as it is
-available,‭ ‬overwriting the previous frame.‭  ‬When the Android has
-finished sending one frame to the control server,‭ ‬it immediately
-copies the buffer and starts sending the frame.‭  ‬The result is real
-time telepresence,‭ ‬at approximately two to four fps and a lag of
+functionality, at 5fps.  Each frame is saved to a buffer as it is
+available, overwriting the previous frame.  When the Android has
+finished sending one frame to the control server, it immediately
+copies the buffer and starts sending the frame.  The result is real
+time telepresence, at approximately two to four fps and a lag of
 less than one second.
 
 \subsection{Commands and Data}
 Commands and data are relayed in the form of strings over standard
-Java sockets.‭ ‬When the connection is lost,‭ ‬the Android device
-immediately tries to reconnect,‭ ‬continuing to do so indefinitely.‭
-‬While the connection is lost, autopilot is enabled and the‭
-``‬communication lost‭'' pre-programmed instruction set is engaged.
+Java sockets. When the connection is lost, the Android device
+immediately tries to reconnect, continuing to do so indefinitely.
+While the connection is lost, autopilot is enabled and the
+``communication lost'' pre-programmed instruction set is engaged.
 
 \subsection{Message Formats}
 \label{sec:msgs}
 ‏Messages between the Android and the control server are sent as
-strings,‭ ‬delimited by colons.‭ ‬The strings from the control server --
-commands -- contain the instruction itself,‭ ‬prefixed by a sequence of
-meta-data describing the instruction.‭ ‬Similarly,‭ ‬data from the Android
-device contain not just the data,‭ ‬but also a prefix tag describing the
-data.‭ ‬This enables somewhat efficient analysis on each end:‭ ‬messages can
+strings, delimited by colons. The strings from the control server --
+commands -- contain the instruction itself, prefixed by a sequence of
+meta-data describing the instruction. Similarly, data from the Android
+device contain not just the data, but also a prefix tag describing the
+data. This enables somewhat efficient analysis on each end: messages can
 be routed only to those components that are registered to process a
 given prefix tag.  Messages are not transmitted directly between the
-Android device and the control server.‭ ‬Instead,‭ ‬they are routed through
-a separate,‭ ‬dedicated broker server.‭ ‬This enables the control server
-itself to operate easily from different IP addresses,‭ ‬and hence from
+Android device and the control server. Instead, they are routed through
+a separate, dedicated broker server. This enables the control server
+itself to operate easily from different IP addresses, and hence from
 various locations. It also allows for easy logging and playback of
 sessions -- the broker server logs all data and commands, and can replay
 a session later for analysis.

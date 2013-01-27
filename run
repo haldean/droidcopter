@@ -12,7 +12,7 @@ if [ -z "${ANDROIDPATH}" ]; then
 fi
 
 export ANDROIDPATH="$ANDROID_ROOT/platforms/android-8/android.jar"
-export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:/usr/share/java/j3dcore.jar:/usr/share/java/j3dutils.jar:/usr/share/java/vecmath.jar:.
+export CLASSPATH=$ANDROIDPATH:$CLASSPATH:./lib/simplegraph/:`ls -1 jars/*.jar jars/worldwind/*.jar | xargs | sed "s/ /:/g"`:/usr/share/java/j3dcore.jar:/usr/share/java/j3dutils.jar:/usr/share/java/vecmath.jar:.:/usr/lib/jvm/java-7-openjdk/jre/lib/ext/j3dcore.jar:/usr/lib/jvm/java-7-openjdk/jre/lib/ext/j3dutils.jar:/usr/lib/jvm/java-7-openjdk/jre/lib/ext/vecmath.jar:
 export PORT=7000
 
 if [ 'heartless' == "$1" ] || [ 'heartless' == "$2" ]; then
@@ -37,7 +37,7 @@ run() {
     CMD="java -Djava.library.path=/lib/:jars/worldwind/:jars/ -Xmx512m
 	-Dsun.java2d.noddraw=true $DOCK org.haldean.chopper.server.ServerCreator
 	host=$HOST port=$PORT $DEBUG $HEARTLESS pidlog=pidlog.txt imgdir=video/
-        debuglog=debug.txt"
+        debuglog=debug.txt pidTuning=dx"
     echo $CMD
     exec $CMD
 }
@@ -53,7 +53,7 @@ check() {
 }
 
 build() {
-    javac org/haldean/chopper/server/ServerCreator.java -Xlint:deprecation
+    javac org/haldean/chopper/server/ServerCreator.java -Xlint:deprecation -encoding ISO-8859-1
 }
 
 keyboard() {

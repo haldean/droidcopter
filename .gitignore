@@ -9,6 +9,7 @@ doc
 *.dvi
 *.dex
 *.apk
+*.so
 video
 Pilot/bin
 PilotTest/bin

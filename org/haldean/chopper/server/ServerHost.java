@@ -10,7 +10,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 /** The superclass! This is the frame that encompasses everything
- *  else. 
+ *  else.
  *  @author William Brown */
 public class ServerHost extends JFrame {
     /** The chopper name. We've been changing it enough that
@@ -24,7 +24,7 @@ public class ServerHost extends JFrame {
     /** The component that displays the globe with tracking
      *  data and location selection */
     final WorldWindComponent globeComponent;
-    /** The component that displays a 3D rendering of the 
+    /** The component that displays a 3D rendering of the
      *  current orientation of the chopper */
     final OrientationComponent orientationComponent;
     /** The component that displays telemetry and allows for
@@ -35,6 +35,7 @@ public class ServerHost extends JFrame {
     /** The component that displays error values from the four PID
      *  loops on the chopper. */
     final PidErrorComponent pidComponent;
+    final PidTuner pidTuner;
     /** An Updatable that receives all messages from the chopper
      *  @see EchoUpdatable */
     final Updatable status;
@@ -78,6 +79,7 @@ public class ServerHost extends JFrame {
 	imagePanel = new ImagePanel();
 	accelerationComponent = new AccelerationComponent();
 	pidComponent = new PidErrorComponent();
+	pidTuner = new PidTuner();
 	sensorComponent = new SensorComponent();
 	status = new EchoUpdatable();
 	motorComponent = new MotorComponent();
@@ -98,6 +100,8 @@ public class ServerHost extends JFrame {
 	dataReceiver.tie(pidComponent);
 	dataReceiver.tie(PidTuningComponent.getInstance());
 	dataReceiver.tieImage(imagePanel);
+
+	dataReceiver.tie(pidTuner);
 
 	MessageHookManager.addHook(motorComponent);
 	MessageHookManager.addHook(sp);
@@ -147,7 +151,7 @@ public class ServerHost extends JFrame {
 
     /** Initialize operating system specific stuff */
     public void osInit() {
-	Debug.log("Running on " + System.getProperty("os.name") + " " + 
+	Debug.log("Running on " + System.getProperty("os.name") + " " +
 		  System.getProperty("os.arch"));
 	if (System.getProperty("os.name").startsWith("Mac"))
             System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -157,7 +161,7 @@ public class ServerHost extends JFrame {
     public void start() {
 	/* Update the Look and Feel of components created
 	 * in the constructor */
-	
+
 	/* The right/left pane creator */
 	JPanel horizontalPanel = new JPanel(new GridLayout(1,2));
 
@@ -198,7 +202,7 @@ public class ServerHost extends JFrame {
 	disconnectButton.addActionListener(new ActionListener() {
 		private boolean connected = true;
 		public void actionPerformed(ActionEvent e) {
-		    /* If connected, stop the DataReceiver and switch the 
+		    /* If connected, stop the DataReceiver and switch the
 		     * text of the button. If not connected, restart the
 		     * DataReceiver thread */
 		    if (connected) {

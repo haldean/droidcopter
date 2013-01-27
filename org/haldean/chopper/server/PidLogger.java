@@ -46,7 +46,7 @@ public class PidLogger implements MessageHook {
 
     public String[] processablePrefixes() {
 	if (activated) {
-	    return new String[] {"ACCEL", "MOTORSPEED", "GUID:PID:SET", "GUID:PID:VALUE"};
+	    return new String[] {"GUID:ERROR", "MOTORSPEED", "GUID:PID:SET", "GUID:PID:VALUE"};
 	} else {
 	    return new String[0];
 	}

@@ -101,7 +101,15 @@ public class PidExperiment implements Comparable<PidExperiment> {
     }
 
     private int getNextCycle(int fromPos) {
-	int negativeIndex = fromPos;
+	int truncateStart = fromPos;
+	if (fromPos == 0) {
+	    // Cycle a bit longer, to compensate for the weird start.
+	    for (; mErrors.get(truncateStart) <= 0; truncateStart++) {
+		// If value at index is nonpositive, continue until positive.
+		if (truncateStart == mErrors.size()) return -1;
+	    }
+	}
+	int negativeIndex = truncateStart;
 	for (; mErrors.get(negativeIndex) >= 0; negativeIndex++) {
 	    // If value at index nonnegative, continue until negative.
 	    if (negativeIndex == mErrors.size()) return -1;
@@ -140,5 +148,35 @@ public class PidExperiment implements Comparable<PidExperiment> {
 	if (getScore() < other.getScore()) return -1;
 	// if (getScore() > other.getScore())
 	return 1;
+    }
+
+    public String gnuplotLine() {
+	return getP() + " " + getI() + " " + getD() + " " + getScore();
+    }
+
+    public static void main(String args[]) {
+	// Tests.
+	PidExperiment pe = new PidExperiment(0.0, 0.0, 0.0);
+	pe.addError(1);
+	pe.addError(-1);
+	pe.addError(1);
+	pe.addError(-1);
+	if (2 != pe.getNextCycle(0)) {
+	    System.out.println("TEST #1 FAILED. Expected 2, got " + pe.getNextCycle(0));
+	    System.exit(1);
+	}
+
+	pe = new PidExperiment(0.0, 0.0, 0.0);
+	pe.addError(-1);
+	pe.addError(1);
+	pe.addError(-1);
+	pe.addError(1);
+	pe.addError(-1);
+	if (3 != pe.getNextCycle(0)) {
+	    System.out.println("TEST #2 FAILED. Expected 3, got " + pe.getNextCycle(0));
+	    System.exit(1);
+	}
+
+	System.out.println("SUCCESS");
     }
 }

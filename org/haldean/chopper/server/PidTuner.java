@@ -2,10 +2,17 @@ package org.haldean.chopper.server;
 
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.PriorityQueue;
 import java.util.Random;
-import java.util.TreeSet;
+import java.util.HashSet;
 
 public class PidTuner implements Updatable {
     private static enum TuningAxis { DX, DY, DZ, DT };
@@ -24,12 +31,16 @@ public class PidTuner implements Updatable {
     // Number of children to expand from each selected node.
     private static final int EXPAND_NUM = 3;
 
+    private static SimpleDateFormat dateFormat =
+	new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
+
     private ArrayList<PidExperiment> mFringe;
-    private TreeSet<PidExperiment> mHistory;
+    private HashSet<PidExperiment> mHistory;
     private int mFringeIndex;
     // Covariance matrix for expanding nodes.
     private double[][] mExpCovar;
     private Random rn;
+    private BufferedWriter output;
 
     private boolean mEnabled = false;
 
@@ -41,6 +52,8 @@ public class PidTuner implements Updatable {
 		mAxis = TuningAxis.DX;
 	    } else if (axis.equals("dy")) {
 		mAxis = TuningAxis.DY;
+	    } else if (axis.equals("dt")) {
+		mAxis = TuningAxis.DT;
 	    } else {
 		mEnabled = false;
 	    }
@@ -49,10 +62,20 @@ public class PidTuner implements Updatable {
 	    return;
 	}
 	mFringe = new ArrayList<PidExperiment>();
-	mHistory = new TreeSet<PidExperiment>();
+	mHistory = new HashSet<PidExperiment>();
 	mFringeIndex = 0;
 	rn = new Random();
-
+	try {
+	    output = new BufferedWriter(new FileWriter("tuning_" + mAxis + ".txt", true));
+	    output.write("# "+ dateFormat.format(new Date()));
+	    output.newLine();
+	    output.write("# tuning " + mAxis + " select_num " + SELECT_NUM + " expand_num " +
+			 EXPAND_NUM);
+	    output.newLine();
+	} catch (IOException e) {
+	    Debug.log("WARNING: PID TUNING LOGGING FAILED.");
+	    e.printStackTrace();
+	}
 	mExpCovar = new double[3][3];
 	for (int i = 0; i < 3; i++) {
 	    for (int j = 0; j < 3; j++) {
@@ -85,7 +108,17 @@ public class PidTuner implements Updatable {
 	currentExp.addError(error);
 	// If PidE not done, return;
 	if (!currentExp.isDone()) return;
-	// PidE done: increment index
+	// PidE done: record result, increment index
+	try {
+	    if (output != null) {
+		output.write(currentExp.gnuplotLine());
+		output.newLine();
+		output.flush();
+	    }
+	} catch (IOException e) {
+	    Debug.log("WARNING: PID TUNING LOGGING FAILED");
+	    e.printStackTrace();
+	}
 	mFringeIndex++;
 	// If index <= mFringe.size(), send new PID values, return;
 	if (mFringeIndex <= mFringe.size()) {
@@ -139,8 +172,5 @@ public class PidTuner implements Updatable {
 		mFringe.add(child);
 	    }
 	}
-	// For debugging:
-	System.out.println("Best PID error so far: " + mHistory.first().getScore());
-	System.out.println(mHistory.first().getP() + ", " + mHistory.first().getI() + ", " + mHistory.first().getD());
     }
 }

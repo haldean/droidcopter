@@ -231,12 +231,12 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 		Thread.currentThread().setName("ChopperStatusImpl");
 		File root = Environment.getExternalStorageDirectory();
 		if (root == null) Log.e(TAG, "No root directory found");
-		try {
+		/*try {
 			logwriter = new BufferedWriter(new FileWriter(root + "/chopper/" + logfilename, false));
 		} catch (IOException e) {
 			Log.e(TAG, "No ChopperStatusImpl logfile");
 			e.printStackTrace();
-		}
+		}*/
         /* Register to receive battery status updates */
         BroadcastReceiver batteryInfo = new BroadcastReceiver() {
 			public void onReceive(Context context, Intent intent) {
@@ -431,7 +431,7 @@ public final class ChopperStatusImpl implements Runnable, SensorEventListener, C
 				setReadingField(ROLL, orientation[2] * -180.0 / Math.PI);
 				break;
 			case Sensor.TYPE_ROTATION_VECTOR:
-				Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
+				//Log.v(TAG, "my grav time: " + ((time - grav_time)/1000000));
 				grav_time = time;
 				String timestring = Long.toString(time/1000000);
 				try {

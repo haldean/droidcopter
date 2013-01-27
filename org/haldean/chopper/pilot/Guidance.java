@@ -46,6 +46,8 @@ public class Guidance implements Runnable, Constants, Receivable {
 	/** The maximum change in motor speed permitted at one time if the chopper is stabilizing.  Must be positive. */
 	public static final double MAX_DSTABLE = .1;
 	
+	public static final double MAX_AUTO_MOTOR = .67;
+	
 	/** Tag for logging */
 	public static final String TAG = new String("chopper.Guidance");
 	
@@ -429,10 +431,10 @@ public class Guidance implements Runnable, Constants, Receivable {
 		}
 		double t = mControlVars[3];
 		
-		mMotorSpeed[0] = Math.sqrt(constrainValue(t - 2*y + z, 0, 1));
-		mMotorSpeed[1] = Math.sqrt(constrainValue(t + 2*y + z, 0, 1));
-		mMotorSpeed[2] = Math.sqrt(constrainValue(-t - 2*x + z, 0, 1));
-		mMotorSpeed[3] = Math.sqrt(constrainValue(-t + 2*x + z, 0, 1));
+		mMotorSpeed[0] = Math.sqrt(constrainValue(t - 2*y + z, 0, MAX_AUTO_MOTOR));
+		mMotorSpeed[1] = Math.sqrt(constrainValue(t + 2*y + z, 0, MAX_AUTO_MOTOR));
+		mMotorSpeed[2] = Math.sqrt(constrainValue(-t - 2*x + z, 0, MAX_AUTO_MOTOR));
+		mMotorSpeed[3] = Math.sqrt(constrainValue(-t + 2*x + z, 0, MAX_AUTO_MOTOR));
 		logArray("motorSpeeds", mMotorSpeed);
 	}
 	

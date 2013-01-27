@@ -47,7 +47,8 @@ public final class Comm implements Runnable, Receivable, Constants {
 	public final static int CONNECTION_INTERVAL = 5000;
 	
 	/** URL of the control server */
-	private final String mControl = new String("droidcopter.cs.columbia.edu");
+	//private final String mControl = new String("droidcopter.cs.columbia.edu");
+	private final String mControl = new String("192.168.168.65");
 	
 	/** Port used for text connection */
 	private final int mTextOutPort = 7000;

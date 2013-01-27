@@ -22,10 +22,10 @@ public class PidTuner implements Updatable {
     // Search Parameters
 
     // StDev for expanding nodes.
-    private static final double expStdev = 1.0e-6;
+    private static final double expStdev = 2.0e-6;
     // Uniform distribution for creating initial nodes
     private static final double initRangeStart = 0;
-    private static final double initRangeEnd = 1.0e-5;
+    private static final double initRangeEnd = 1.0e-4;
     // Number of nodes to select from fringe.
     private static final int SELECT_NUM = 3;
     // Number of children to expand from each selected node.

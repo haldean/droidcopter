@@ -84,7 +84,8 @@ elif [ 'check' == "$1" ]; then
     check
 elif [ 'nobuild' == "$1" ]; then
     if [ '' == "$2" ]; then 
-	export HOST=droidcopter.cs.columbia.edu
+#	export HOST=droidcopter.cs.columbia.edu
+	export HOST=192.168.168.65
     else 
 	export HOST=$2
     fi
